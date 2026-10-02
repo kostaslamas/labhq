@@ -1,6 +1,6 @@
 # Σχέδιο έργου: `labhq` — self-hosted project orchestrator
 
-Ημερομηνία: 2026-10-02 · Κατάσταση: πρόχειρο προς έγκριση · Όνομα: `labhq`
+Ημερομηνία: 2026-10-02 · Κατάσταση: σε εκτέλεση, Φάση 1 · Όνομα: `labhq`
 
 ## 1. Σκοπός
 
@@ -101,7 +101,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 
 ## 4. Τεχνολογίες
 
-Ακολουθούμε τις μηχανικές συμβάσεις (θα γραφτούν στο `CONTRIBUTING.md`): Python με PEP 8/484, ruff, pytest, pydantic, uv· migrations ως μοναδική αρχή σχήματος· χρήματα σε integer minor units· UTC instants.
+Ακολουθούμε τις μηχανικές συμβάσεις (θα γραφτούν στο `CONTRIBUTING.md`): Python με PEP 8/484, ruff, pytest, pydantic, uv· migrations ως μοναδική αρχή σχήματος· χρήματα σε integer micro-USD (ADR 0002)· UTC instants.
 
 ### 4.1 Backend
 
@@ -109,7 +109,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 |---|---|
 | Γλώσσα / εργαλεία | Python 3.12, `uv`, FastAPI, pydantic, pytest, ruff |
 | Βάση | SQLite (ένας χρήστης), Alembic migrations. Ποτέ `create_all` στον κώδικα εφαρμογής |
-| Χρήμα | Integer minor units (π.χ. cents), ποτέ float |
+| Χρήμα | Integer micro-USD (`*_micros`, ADR 0002), ποτέ float |
 | Χρόνος | UTC timezone-aware instants |
 | Workers | Claude Agent SDK για Python (`ClaudeSDKClient`) |
 | MCP server | `mcp` SDK 2.x (`MCPServer`, όχι `FastMCP`): stateless Streamable HTTP, JSON χωρίς SSE |
@@ -164,19 +164,19 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 
 ## 6. Μοντέλο δεδομένων
 
-Ελάχιστο σύνολο. Όλα τα timestamps σε UTC, τα ποσά σε minor units.
+Ελάχιστο σύνολο. Όλα τα timestamps σε UTC, τα ποσά σε integer micro-USD (ADR 0002).
 
 | Πίνακας | Βασικές στήλες / ρόλος |
 |---|---|
-| `projects` | `id`, `name`, `repo_path`, `budget_minor`, `status` |
-| `agents` | `role`, `title`, `reports_to`, `project_id`, `adapter`, `config`, `budget_minor` |
+| `projects` | `id`, `name`, `repo_path`, `budget_micros`, `status` |
+| `agents` | `role`, `title`, `reports_to`, `project_id`, `adapter`, `config`, `budget_micros` |
 | `tasks` | `status`, `priority`, `parent_id`, `assignee`, `checkout_run_id` (atomic checkout lock) |
 | `comments` | σχόλια και mentions σε tasks |
 | `meetings` | `kind`, `agenda`, `status`, `channel_adapter`, `external_ref` (thread)· παιδιά: `meeting_participants`, `meeting_transcript_entries`, `meeting_decisions`, `meeting_action_items` |
 | `wakeup_requests` | `source`, `reason`, `coalesced_count`, `idempotency_key` |
 | `runs` | `status`, `session_id_before`, `session_id_after`, `usage`, `exit` |
 | `run_events` | γεγονότα ροής ανά run |
-| `cost_events` | κόστος ανά run/agent/project σε minor units |
+| `cost_events` | κόστος ανά run/agent/project σε micro-USD (`cost_micros`) |
 | `approvals` | `type`, `risk_class`, `status`, `payload` |
 | `agent_task_sessions` | αντιστοίχιση agent + task σε session για resume |
 | `hosts` | `name`, `address`, `ssh_user`, `status` |
@@ -342,6 +342,23 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ένα `interrupt()` καταγράφει το run ως `interrupted`, όχι ως `failed` (το SDK το επιστρέφει ως `error_during_execution` με `terminal_reason` `aborted_streaming`) (test).
 - ruff, τύποι και έλεγχος μεγέθους αρχείων περνούν στο CI. Tag `v0.1.0-alpha.1`.
 
+Εκτέλεση: ένα GitHub issue ανά κομμάτι, ένα cloud session (`claude --cloud`) ανά issue, ένα PR ανά session. Τα κύματα τρέχουν παράλληλα μέσα τους και σειριακά μεταξύ τους. Κάθε issue κατέχει δικούς του φακέλους (`CLAUDE.md`), ώστε τα παράλληλα sessions να μη συγκρούονται.
+
+| Κύμα | Issue | Περιεχόμενο |
+|---|---|---|
+| 0 | Foundation | Σκελετός πακέτου, ruff, mypy, pytest, CI, settings, clock, `money`, όλα τα μοντέλα και τα migrations, έλεγχος μεγέθους αρχείων |
+| 0 | CI guards | gitleaks, απαγορευμένοι όροι από repository secret, guard για αναφορές σε credentials (ADR 0001) |
+| 1 | Adapters and runs | Registry, fake adapter, Claude adapter, κύκλος ζωής run, `run_events`, `cost_events`, `interrupted` |
+| 1 | Worktrees and push guard | Worktree ανά task, parsed-command hook, απενεργοποιημένο push URL, περιβάλλον χωρίς credentials |
+| 1 | Health and rules | Collector για το τοπικό μηχάνημα, registry κανόνων, κανόνας ορίου, incidents |
+| 1 | Token economy | Ύφος ανά αποδέκτη, δομημένα handoffs, `rtk` hook |
+| 1 | Budgets | Υπολογισμός κόστους ανά agent και project, προειδοποίηση στο 80%, σταμάτημα στο 100% |
+| 2 | Scheduler | Wakeups, idempotency, coalescing, concurrency, ατομικό checkout, έλεγχος budget στο enqueue και πριν την εκκίνηση, timeouts, reaper |
+| 2 | Approvals | `approvals` με κλάση ρίσκου ως δεδομένα, push μόνο μετά την έγκριση, εκτέλεση από τη μηχανή |
+| 3 | CLI and demo | Εντολές CLI, demo από άκρη σε άκρη, χειροκίνητοι έλεγχοι στο `docs/checks/` |
+
+Τα tests δεν καλούν ποτέ πραγματικό μοντέλο. Το demo με πραγματικό login και το A/B του `rtk` τρέχουν τοπικά, και τα αποτελέσματα μπαίνουν στο `docs/checks/`. Το tag μπαίνει τοπικά, μετά το gate.
+
 ### Φάση 2 — Call Center (MCP)
 
 Περιεχόμενο: τα tools, annotations, async tickets, δοκιμή με φωνή σε Claude και ChatGPT.
@@ -457,4 +474,4 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 
 ## 14. Επόμενο βήμα
 
-Ξεκίνα τη Φάση 0, βήμα 1: `git init` και γράψε το `.gitignore` πριν από οποιοδήποτε commit. Μετά το spike του Agent SDK (hook που μπλοκάρει `git push` σε `bypassPermissions`, `interrupt()`, resume).
+Ξεκίνα το κύμα 0 της Φάσης 1: τα issues Foundation και CI guards σε δύο παράλληλα cloud sessions. Το κύμα 1 ξεκινά μόλις γίνει merge το Foundation.
