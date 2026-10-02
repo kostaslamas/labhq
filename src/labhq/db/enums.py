@@ -81,3 +81,8 @@ class HealthRuleAction(StrEnum):
 class IncidentStatus(StrEnum):
     OPEN = "open"
     RESOLVED = "resolved"
+
+
+class BudgetScope(StrEnum):
+    AGENT = "agent"
+    PROJECT = "project"
