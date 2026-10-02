@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed. The owner decides.
+Accepted (2026-10-02).
 
 ## Date
 
@@ -90,24 +90,38 @@ signed in on their own machine can choose to let agents use that existing login.
   recommendation of subscription use in marketing, and a written question to
   Anthropic (sales contact is named on the page) before a 1.0 release.
 
-## Recommendation
+## Decision
 
-Option 3. This is a recommendation, not a decision. It is pending the owner's
-choice.
+The user's existing Claude Code login (their subscription) is the default.
+An Anthropic API key is the alternative: labhq uses API billing automatically
+when `ANTHROPIC_API_KEY` is set in the environment. Onboarding shows a one-time
+notice that links to Anthropic's Consumer Terms of Service and to the
+legal-and-compliance page, and says that the user is responsible for staying
+within their plan's terms. labhq never handles credentials: it only starts the
+unmodified Claude Code binary, which uses whatever login the user completed
+through Anthropic's own flow.
+
+This differs from the earlier recommendation (option 3, API key as the
+default). The owner chose it for two reasons: people who already pay for a plan
+incur no extra cost, and the documentation explicitly allows an end user to
+sign in to the unmodified Claude Code binary with their own subscription.
+
+## Original recommendation
+
+Option 3. This was a recommendation, written before the owner decided.
 
 ## Consequences
 
-If option 3 is accepted:
-
-- Onboarding asks which authentication the user wants. API key is preselected.
-  Choosing the existing login shows the notice and requires a confirmation.
-  labhq checks only that the `claude` binary reports a logged-in state through
+- Onboarding uses the existing Claude Code login by default and shows the notice once; setting `ANTHROPIC_API_KEY` switches to API billing.
+- labhq checks only that the `claude` binary reports a logged-in state through
   its documented interface.
-- The README and docs explain both paths, state that the API key is the
-  documented default, and link to the quoted pages. They do not describe
+- The README and docs explain both paths, state that the subscription login is
+  the default and that an API key is the alternative, and link to the quoted pages. They do not describe
   subscription use as a way to avoid API costs.
+- Risk mitigations: low default concurrency, so scheduled agents stay close to
+  "ordinary, individual usage", and a written question to Anthropic before 1.0.
 - Agent configuration offers a per-run budget and turn limit so scheduled
-  agents on an API key cannot run up cost unnoticed.
+  agents cannot run up cost or exhaust plan limits unnoticed.
 - The usage dashboard reads limits and usage only from official sources, such as
   the `rate_limits` JSON that Claude Code passes to the statusline command, and
   from the Agent SDK's own result messages. It never reads credential files,

@@ -302,7 +302,7 @@ docker compose up
 
 ### Φάση 0 — Spike / risk retirement
 
-Κατάσταση: τα spikes πέρασαν (2026-10-02)· εκκρεμεί η απόφαση στο ADR 0001 (`docs/adr/0001-billing-subscription-or-api-key.md`).
+Κατάσταση: τα spikes πέρασαν και το ADR 0001 έγινε δεκτό (2026-10-02): default το υπάρχον login του Claude Code (συνδρομή), API key όταν υπάρχει `ANTHROPIC_API_KEY`.
 
 Στόχος: να μετρηθούν τα ρίσκα πριν γραφτεί η μηχανή.
 
@@ -311,7 +311,7 @@ docker compose up
 1. `git init` και `.gitignore` πριν το πρώτο commit.
 2. Agent SDK spike: σε `bypassPermissions` ένα PreToolUse hook μπλοκάρει `git push`· `interrupt()`· resume· και `can_use_tool` σε αναμονή για το strict mode.
 3. Έκθεση και auth χωρίς Cloudflare Access: δοκιμαστικός MCP με ακίνδυνο tool και ενσωματωμένο auth (token σε header και secret path), JSON χωρίς SSE. Η φωνή μέσω custom MCP είναι ήδη αποδεδειγμένη (§3.4), οπότε δεν χρειάζεται νέα δοκιμή φωνής.
-4. Απόφαση billing: συνδρομή ή API key (βλ. §12).
+4. Απόφαση billing: συνδρομή ή API key (βλ. §12). Αποφασίστηκε: συνδρομή ως default (ADR 0001).
 
 Κριτήρια αποδοχής:
 
@@ -434,7 +434,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 |---|---|---|
 | Agents με πλήρη πρόσβαση στο μηχάνημα (`bypassPermissions`) | Ένας agent αλλάζει αρχεία έξω από το worktree ή διαρρέει credentials | Hook που απορρίπτει push/merge, κανένα credential στο περιβάλλον, προαιρετικό sandbox ή ξεχωριστός OS user, strict mode |
 | Πολυπλοκότητα OAuth/DCR | Ο self-hosted server δεν προστίθεται ως connector | Spike στη Φάση 0· fallback σε σταθερό token σε header |
-| Όροι συνδρομής | Παραβίαση όρων ή περιορισμοί ορίων | Απόφαση billing στη Φάση 0· API key για προϊόν πάνω στο Agent SDK |
+| Όροι συνδρομής | Παραβίαση όρων ή περιορισμοί ορίων | Ειδοποίηση στην εγκατάσταση, χαμηλό concurrency και budgets, API key ως εναλλακτική, γραπτή ερώτηση στην Anthropic πριν το 1.0 |
 | Έκρηξη κόστους από ιεραρχία και meetings | Απρόβλεπτος λογαριασμός | Budget ανά project, team-size caps, χαμηλό concurrency, 80%/100% όρια |
 | Μεγάλα, ώριμα εργαλεία orchestration agents υπάρχουν ήδη | Αδύνατος ανταγωνισμός σε εύρος | Ανταγωνισμός στη γωνία (φωνή, ασφάλεια, meetings), όχι στο εύρος |
 | Έλεγχος διεργασιών στα Windows | Ορφανές διεργασίες, ασταθή runs | Interface ανά πλατφόρμα, `taskkill /T`, WSL2/Docker ως επίσημη διαδρομή, CI matrix |
@@ -444,17 +444,16 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | Λακωνικό ύφος ή συμπίεση χαλάει την ποιότητα | Λάθη και κακές αποφάσεις των agents | A/B με έλεγχο ποιότητας, ύφος μόνο στο κείμενο και όχι στη σκέψη, `headroom` προαιρετικό |
 
 ### Σημείωση billing
-Η τεκμηρίωση της Anthropic λέει ότι τα όρια Pro/Max προϋποθέτουν συνηθισμένη ατομική χρήση, και ότι προϊόντα πάνω στο Agent SDK πρέπει να χρησιμοποιούν API keys. Η προγραμματισμένη χρήση πολλών agents σε προσωπική συνδρομή δεν καλύπτεται ρητά: γκρίζα ζώνη. Μέχρι την απόφαση, ο σχεδιασμός υποστηρίζει API key ως default.
+Η τεκμηρίωση της Anthropic λέει ότι τα όρια Pro/Max προϋποθέτουν συνηθισμένη ατομική χρήση, και ότι προϊόντα πάνω στο Agent SDK πρέπει να χρησιμοποιούν API keys. Η προγραμματισμένη χρήση πολλών agents σε προσωπική συνδρομή δεν καλύπτεται ρητά: γκρίζα ζώνη. Απόφαση (ADR 0001): default το υπάρχον login του Claude Code (συνδρομή)· API key όταν υπάρχει `ANTHROPIC_API_KEY`. Το labhq δεν αγγίζει ποτέ credentials.
 
 ## 13. Ανοιχτά ερωτήματα
 
 | # | Ερώτημα | Κατάσταση |
 |---|---|---|
-| 1 | Συνδρομή ή API key | Αποφασίζεται στη Φάση 0 |
-| 2 | Ποιο project είναι το pilot; | Αναποφάσιστο |
-| 3 | Πόση αυτονομία έχουν οι managers: σχηματίζουν ομάδες μόνοι τους; Κάνουν merge ή σταματούν σε branch; | Αναποφάσιστο (σήμερα: team creation και merge είναι heavy) |
-| 4 | Συχνότητα συσκέψεων (cadence) | Αναποφάσιστο |
-| 5 | Default concurrency και budget caps | Αναποφάσιστο (πρόταση concurrency: 1) |
+| 1 | Ποιο project είναι το pilot; | Αναποφάσιστο |
+| 2 | Πόση αυτονομία έχουν οι managers: σχηματίζουν ομάδες μόνοι τους; Κάνουν merge ή σταματούν σε branch; | Αναποφάσιστο (σήμερα: team creation και merge είναι heavy) |
+| 3 | Συχνότητα συσκέψεων (cadence) | Αναποφάσιστο |
+| 4 | Default concurrency και budget caps | Αναποφάσιστο (πρόταση concurrency: 1) |
 
 ## 14. Επόμενο βήμα
 
