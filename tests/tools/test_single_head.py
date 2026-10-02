@@ -49,4 +49,5 @@ def test_no_migrations_fail(tmp_path: Path) -> None:
 
 
 def test_the_repository_has_one_head() -> None:
-    assert single_head.heads(REPO_ROOT / "migrations") == ["0001"]
+    # Not pinned to a revision: every issue that adds a migration moves the head.
+    assert len(single_head.heads(REPO_ROOT / "migrations")) == 1
