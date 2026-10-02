@@ -101,7 +101,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 
 ## 4. Τεχνολογίες
 
-Ακολουθούμε τις μηχανικές συμβάσεις (θα γραφτούν στο `CONTRIBUTING.md`): Python με PEP 8/484, ruff, pytest, pydantic, uv· migrations ως μοναδική αρχή σχήματος· χρήματα σε integer minor units· UTC instants.
+Ακολουθούμε τις μηχανικές συμβάσεις (θα γραφτούν στο `CONTRIBUTING.md`): Python με PEP 8/484, ruff, pytest, pydantic, uv· migrations ως μοναδική αρχή σχήματος· χρήματα σε integer micro-USD (ADR 0002)· UTC instants.
 
 ### 4.1 Backend
 
@@ -109,7 +109,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 |---|---|
 | Γλώσσα / εργαλεία | Python 3.12, `uv`, FastAPI, pydantic, pytest, ruff |
 | Βάση | SQLite (ένας χρήστης), Alembic migrations. Ποτέ `create_all` στον κώδικα εφαρμογής |
-| Χρήμα | Integer minor units (π.χ. cents), ποτέ float |
+| Χρήμα | Integer micro-USD (`*_micros`, ADR 0002), ποτέ float |
 | Χρόνος | UTC timezone-aware instants |
 | Workers | Claude Agent SDK για Python (`ClaudeSDKClient`) |
 | MCP server | `mcp` SDK 2.x (`MCPServer`, όχι `FastMCP`): stateless Streamable HTTP, JSON χωρίς SSE |
@@ -164,19 +164,19 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 
 ## 6. Μοντέλο δεδομένων
 
-Ελάχιστο σύνολο. Όλα τα timestamps σε UTC, τα ποσά σε minor units.
+Ελάχιστο σύνολο. Όλα τα timestamps σε UTC, τα ποσά σε integer micro-USD (ADR 0002).
 
 | Πίνακας | Βασικές στήλες / ρόλος |
 |---|---|
-| `projects` | `id`, `name`, `repo_path`, `budget_minor`, `status` |
-| `agents` | `role`, `title`, `reports_to`, `project_id`, `adapter`, `config`, `budget_minor` |
+| `projects` | `id`, `name`, `repo_path`, `budget_micros`, `status` |
+| `agents` | `role`, `title`, `reports_to`, `project_id`, `adapter`, `config`, `budget_micros` |
 | `tasks` | `status`, `priority`, `parent_id`, `assignee`, `checkout_run_id` (atomic checkout lock) |
 | `comments` | σχόλια και mentions σε tasks |
 | `meetings` | `kind`, `agenda`, `status`, `channel_adapter`, `external_ref` (thread)· παιδιά: `meeting_participants`, `meeting_transcript_entries`, `meeting_decisions`, `meeting_action_items` |
 | `wakeup_requests` | `source`, `reason`, `coalesced_count`, `idempotency_key` |
 | `runs` | `status`, `session_id_before`, `session_id_after`, `usage`, `exit` |
 | `run_events` | γεγονότα ροής ανά run |
-| `cost_events` | κόστος ανά run/agent/project σε minor units |
+| `cost_events` | κόστος ανά run/agent/project σε micro-USD (`cost_micros`) |
 | `approvals` | `type`, `risk_class`, `status`, `payload` |
 | `agent_task_sessions` | αντιστοίχιση agent + task σε session για resume |
 | `hosts` | `name`, `address`, `ssh_user`, `status` |
