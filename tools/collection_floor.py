@@ -23,6 +23,8 @@ def collected(root: Path, pytest_args: list[str]) -> int:
             "pytest",
             "--collect-only",
             "-q",
+            # FORCE_COLOR would wrap the summary line in escapes and hide the count.
+            "--color=no",
             "-p",
             "no:cacheprovider",
             *pytest_args,
