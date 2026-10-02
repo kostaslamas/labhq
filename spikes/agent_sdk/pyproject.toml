@@ -1,0 +1,9 @@
+[project]
+name = "agent-sdk-spike"
+version = "0.0.0"
+description = "Phase 0 spike: Claude Agent SDK behaviours the orchestrator depends on"
+requires-python = ">=3.12"
+dependencies = ["claude-agent-sdk"]
+
+[dependency-groups]
+dev = ["ruff"]

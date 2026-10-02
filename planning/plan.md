@@ -112,6 +112,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 | Χρήμα | Integer minor units (π.χ. cents), ποτέ float |
 | Χρόνος | UTC timezone-aware instants |
 | Workers | Claude Agent SDK για Python (`ClaudeSDKClient`) |
+| MCP server | `mcp` SDK 2.x (`MCPServer`, όχι `FastMCP`): stateless Streamable HTTP, JSON χωρίς SSE |
 | Adapters | Registry (dispatch as data): Claude πρώτα, Codex και Ollama/local αργότερα |
 
 Γιατί Python αντί Node: όλο το stack σου είναι Python, και το `uvx` δίνει εγκατάσταση με μία εντολή, όπως το `npx`.
@@ -154,9 +155,9 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 
 1. Default: `--dangerously-skip-permissions` (`bypassPermissions`), ώστε οι agents να δουλεύουν χωρίς διακοπές μέσα στο worktree τους.
 2. Εξαίρεση: οι agents του IT/Infra τρέχουν σε `strict` με εντολές μόνο για ανάγνωση (§2.2).
-3. Προαιρετικό αυστηρό mode (`strict`): κάθε tool εκτός allowlist περνά από έγκριση μέσω `can_use_tool`.
+3. Προαιρετικό αυστηρό mode (`strict`): κάθε tool εκτός allowlist περνά από έγκριση μέσω `can_use_tool`. Το Claude Code εγκρίνει μόνο του όσες εντολές θεωρεί read-only, οπότε το strict mode συμπληρώνεται με PreToolUse hook.
 4. Η έγκριση νέων agents είναι on by default.
-5. Οι agents δεν κάνουν push ή merge μόνοι τους: PreToolUse hook απορρίπτει `git push`, `gh pr merge` και παρόμοια, το push URL του worktree είναι απενεργοποιημένο, και κανένα git credential δεν υπάρχει στο περιβάλλον του worker. Το αν τα hooks ισχύουν σε `bypassPermissions` επιβεβαιώνεται στη Φάση 0.
+5. Οι agents δεν κάνουν push ή merge μόνοι τους: PreToolUse hook που αναλύει την εντολή (όχι απλή αναζήτηση κειμένου, που παρακάμπτεται π.χ. με `git -c x=y push`) απορρίπτει `git push`, `gh pr merge` και παρόμοια, το push URL του worktree είναι απενεργοποιημένο, και κανένα git credential δεν υπάρχει στο περιβάλλον του worker. Η Φάση 0 επιβεβαίωσε ότι το hook ισχύει και σε `bypassPermissions`.
 6. Προαιρετικό sandbox (bubblewrap σε Linux) ή ξεχωριστός OS user, για πραγματική απομόνωση: σε `bypassPermissions` ο agent έχει πρόσβαση σε ό,τι έχει ο χρήστης του server.
 7. Ένας voice client δεν μπορεί ποτέ να εκδώσει heavy approval, ούτε αν το ζητήσει ο ίδιος ο agent.
 8. Κάθε έγκριση καταγράφεται με payload, κλάση ρίσκου, αποφασίζοντα και χρόνο.
@@ -301,19 +302,21 @@ docker compose up
 
 ### Φάση 0 — Spike / risk retirement
 
+Κατάσταση: τα spikes πέρασαν και το ADR 0001 έγινε δεκτό (2026-10-02): default το υπάρχον login του Claude Code (συνδρομή), API key όταν υπάρχει `ANTHROPIC_API_KEY`.
+
 Στόχος: να μετρηθούν τα ρίσκα πριν γραφτεί η μηχανή.
 
 Βήματα:
 
 1. `git init` και `.gitignore` πριν το πρώτο commit.
 2. Agent SDK spike: σε `bypassPermissions` ένα PreToolUse hook μπλοκάρει `git push`· `interrupt()`· resume· και `can_use_tool` σε αναμονή για το strict mode.
-3. Έκθεση και auth χωρίς Cloudflare Access: δοκιμαστικός MCP με ακίνδυνο tool και ενσωματωμένο auth (πρώτα token, μετά OAuth 2.1 με DCR), πίσω από Cloudflare quick tunnel και μετά Tailscale Funnel· σύνδεση στο Claude και κλήση με φωνή.
-4. Απόφαση billing: συνδρομή ή API key (βλ. §12).
+3. Έκθεση και auth χωρίς Cloudflare Access: δοκιμαστικός MCP με ακίνδυνο tool και ενσωματωμένο auth (token σε header και secret path), JSON χωρίς SSE. Η φωνή μέσω custom MCP είναι ήδη αποδεδειγμένη (§3.4), οπότε δεν χρειάζεται νέα δοκιμή φωνής.
+4. Απόφαση billing: συνδρομή ή API key (βλ. §12). Αποφασίστηκε: συνδρομή ως default (ADR 0001).
 
 Κριτήρια αποδοχής:
 
 - Script spike δείχνει: σε `bypassPermissions` ένα PreToolUse hook μπλοκάρει `git push`· ένα `interrupt()` σταματά run· ένα resume κρατά context· σε strict mode ένα `can_use_tool` μένει σε αναμονή >60 s και συνεχίζει μετά την απάντηση.
-- Ο δοκιμαστικός MCP απαντά σε κλήση με φωνή από το Claude, πίσω από quick tunnel και πίσω από Funnel, με token και με OAuth· ή ADR με ό,τι δεν δούλεψε.
+- Ο δοκιμαστικός MCP περνά τα tests: 401 χωρίς token ή με λάθος token, `initialize`, `tools/list` και `tools/call` με σωστό token, απαντήσεις JSON χωρίς SSE, secret path.
 - ADR για billing στο `docs/adr/`.
 - Το repo έχει `.gitignore` πριν το πρώτο commit, και tag `v0.0.1-spike` με τα αποτελέσματα.
 
@@ -336,6 +339,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Το ύφος εξόδου ορίζεται ανά αποδέκτη στο config· ένα handoff ανάμεσα σε agents είναι λακωνικό και δομημένο (test).
 - Με τον `rtk` hook ενεργό, ένα test run καταγράφει στο `cost_events` λιγότερα input tokens από το ίδιο run χωρίς αυτόν (A/B).
 - CI σε κάθε push ελέγχει ότι δεν μπαίνουν μυστικά ή προσωπικά στοιχεία (`gitleaks` και λίστα απαγορευμένων όρων) (guard).
+- Ένα `interrupt()` καταγράφει το run ως `interrupted`, όχι ως `failed` (το SDK το επιστρέφει ως `error_during_execution` με `terminal_reason` `aborted_streaming`) (test).
 - ruff, τύποι και έλεγχος μεγέθους αρχείων περνούν στο CI. Tag `v0.1.0-alpha.1`.
 
 ### Φάση 2 — Call Center (MCP)
@@ -352,6 +356,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ο notifier στέλνει μήνυμα (ntfy ή Telegram) όταν δημιουργείται έγκριση.
 - Το `health` απαντά με προφορικό κείμενο για την κατάσταση των μηχανημάτων (test).
 - Ο MCP server απαντά με JSON χωρίς SSE και δουλεύει πίσω από Cloudflare quick tunnel (test).
+- Ένας custom connector του Claude συνδέεται στον MCP με σταθερό credential ή secret path, χωρίς Cloudflare Access (demo).
 - Tag `v0.2.0-alpha.1`.
 
 ### Φάση 3 — Hierarchy & meetings
@@ -429,7 +434,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 |---|---|---|
 | Agents με πλήρη πρόσβαση στο μηχάνημα (`bypassPermissions`) | Ένας agent αλλάζει αρχεία έξω από το worktree ή διαρρέει credentials | Hook που απορρίπτει push/merge, κανένα credential στο περιβάλλον, προαιρετικό sandbox ή ξεχωριστός OS user, strict mode |
 | Πολυπλοκότητα OAuth/DCR | Ο self-hosted server δεν προστίθεται ως connector | Spike στη Φάση 0· fallback σε σταθερό token σε header |
-| Όροι συνδρομής | Παραβίαση όρων ή περιορισμοί ορίων | Απόφαση billing στη Φάση 0· API key για προϊόν πάνω στο Agent SDK |
+| Όροι συνδρομής | Παραβίαση όρων ή περιορισμοί ορίων | Ειδοποίηση στην εγκατάσταση, χαμηλό concurrency και budgets, API key ως εναλλακτική, γραπτή ερώτηση στην Anthropic πριν το 1.0 |
 | Έκρηξη κόστους από ιεραρχία και meetings | Απρόβλεπτος λογαριασμός | Budget ανά project, team-size caps, χαμηλό concurrency, 80%/100% όρια |
 | Μεγάλα, ώριμα εργαλεία orchestration agents υπάρχουν ήδη | Αδύνατος ανταγωνισμός σε εύρος | Ανταγωνισμός στη γωνία (φωνή, ασφάλεια, meetings), όχι στο εύρος |
 | Έλεγχος διεργασιών στα Windows | Ορφανές διεργασίες, ασταθή runs | Interface ανά πλατφόρμα, `taskkill /T`, WSL2/Docker ως επίσημη διαδρομή, CI matrix |
@@ -439,17 +444,16 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | Λακωνικό ύφος ή συμπίεση χαλάει την ποιότητα | Λάθη και κακές αποφάσεις των agents | A/B με έλεγχο ποιότητας, ύφος μόνο στο κείμενο και όχι στη σκέψη, `headroom` προαιρετικό |
 
 ### Σημείωση billing
-Η τεκμηρίωση της Anthropic λέει ότι τα όρια Pro/Max προϋποθέτουν συνηθισμένη ατομική χρήση, και ότι προϊόντα πάνω στο Agent SDK πρέπει να χρησιμοποιούν API keys. Η προγραμματισμένη χρήση πολλών agents σε προσωπική συνδρομή δεν καλύπτεται ρητά: γκρίζα ζώνη. Μέχρι την απόφαση, ο σχεδιασμός υποστηρίζει API key ως default.
+Η τεκμηρίωση της Anthropic λέει ότι τα όρια Pro/Max προϋποθέτουν συνηθισμένη ατομική χρήση, και ότι προϊόντα πάνω στο Agent SDK πρέπει να χρησιμοποιούν API keys. Η προγραμματισμένη χρήση πολλών agents σε προσωπική συνδρομή δεν καλύπτεται ρητά: γκρίζα ζώνη. Απόφαση (ADR 0001): default το υπάρχον login του Claude Code (συνδρομή)· API key όταν υπάρχει `ANTHROPIC_API_KEY`. Το labhq δεν αγγίζει ποτέ credentials.
 
 ## 13. Ανοιχτά ερωτήματα
 
 | # | Ερώτημα | Κατάσταση |
 |---|---|---|
-| 1 | Συνδρομή ή API key | Αποφασίζεται στη Φάση 0 |
-| 2 | Ποιο project είναι το pilot; | Αναποφάσιστο |
-| 3 | Πόση αυτονομία έχουν οι managers: σχηματίζουν ομάδες μόνοι τους; Κάνουν merge ή σταματούν σε branch; | Αναποφάσιστο (σήμερα: team creation και merge είναι heavy) |
-| 4 | Συχνότητα συσκέψεων (cadence) | Αναποφάσιστο |
-| 5 | Default concurrency και budget caps | Αναποφάσιστο (πρόταση concurrency: 1) |
+| 1 | Ποιο project είναι το pilot; | Αναποφάσιστο |
+| 2 | Πόση αυτονομία έχουν οι managers: σχηματίζουν ομάδες μόνοι τους; Κάνουν merge ή σταματούν σε branch; | Αναποφάσιστο (σήμερα: team creation και merge είναι heavy) |
+| 3 | Συχνότητα συσκέψεων (cadence) | Αναποφάσιστο |
+| 4 | Default concurrency και budget caps | Αναποφάσιστο (πρόταση concurrency: 1) |
 
 ## 14. Επόμενο βήμα
 
