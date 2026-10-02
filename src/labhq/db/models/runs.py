@@ -25,6 +25,10 @@ class WakeupRequest(Base):
     coalesced_count: Mapped[int] = mapped_column(default=0)
     # Unique so a retried enqueue finds the existing request instead of adding work.
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True)
+    # Set on a COALESCED request: the pending request that absorbed it.
+    coalesced_into_id: Mapped[int | None] = mapped_column(
+        ForeignKey("wakeup_requests.id", ondelete="SET NULL")
+    )
     run_id: Mapped[int | None] = mapped_column(ForeignKey("runs.id", ondelete="SET NULL"))
     created_at: Mapped[datetime]
     updated_at: Mapped[datetime]

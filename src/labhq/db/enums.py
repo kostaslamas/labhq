@@ -37,6 +37,8 @@ class WakeupSource(StrEnum):
 
 class WakeupStatus(StrEnum):
     PENDING = "pending"
+    # Merged into another pending request; the row keeps its key so a retry stays a no-op.
+    COALESCED = "coalesced"
     DISPATCHED = "dispatched"
     REFUSED = "refused"
     CANCELLED = "cancelled"
