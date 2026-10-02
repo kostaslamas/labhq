@@ -112,8 +112,8 @@ async def test_the_push_uses_the_main_repository_not_the_worktree_config(
 async def test_a_failed_push_is_recorded_as_execution_failed(
     world: World, repo: Path, remote: Path, worktree: Worktree
 ) -> None:
-    approval_id = await request_push(world, repo, worktree)
-    run_git("remote", "set-url", "origin", str(remote.parent / "missing.git"), cwd=repo)
+    payload = push_payload(repo, worktree.branch) | {"url": str(remote.parent / "missing.git")}
+    approval_id = (await world.service.request(PUSH_ACTION, payload, task_id=world.task_id)).id
 
     approval = await world.service.approve(approval_id, decider="operator", confirmation="cli")
 
@@ -124,11 +124,64 @@ async def test_a_failed_push_is_recorded_as_execution_failed(
     assert worktree.branch not in remote_refs(remote)
 
 
+async def test_the_request_pins_the_commit_and_url(
+    world: World, repo: Path, remote: Path, worktree: Worktree
+) -> None:
+    approval = await world.service.get(await request_push(world, repo, worktree))
+
+    assert approval.payload["commit"] == head(worktree.path)
+    assert approval.payload["url"] == str(remote)
+
+
+async def test_a_commit_made_after_the_request_is_never_pushed(
+    world: World, repo: Path, remote: Path, worktree: Worktree
+) -> None:
+    approved = head(worktree.path)
+    approval_id = await request_push(world, repo, worktree)
+    later = commit_file(worktree.path, "after-request.txt")
+
+    approval = await world.service.approve(approval_id, decider="operator", confirmation="cli")
+
+    assert approval.status == ApprovalStatus.EXECUTED
+    assert head(remote, worktree.branch) == approved
+    assert later not in run_git("rev-list", "--all", cwd=remote)
+    assert approval.execution is not None
+    assert approval.execution["commit"] == approved
+
+
+async def test_a_remote_changed_after_the_request_does_not_redirect_the_push(
+    world: World, repo: Path, remote: Path, worktree: Worktree, tmp_path: Path
+) -> None:
+    approval_id = await request_push(world, repo, worktree)
+    elsewhere = tmp_path / "elsewhere.git"
+    run_git("init", "--quiet", "--bare", str(elsewhere), cwd=tmp_path)
+    run_git("remote", "set-url", "origin", str(elsewhere), cwd=repo)
+
+    await world.service.approve(approval_id, decider="operator", confirmation="cli")
+
+    assert head(remote, worktree.branch) == head(worktree.path)
+    assert remote_refs(elsewhere) == ""
+
+
+@pytest.mark.parametrize("commit", ["", "abc123", "HEAD", "g" * 40])
+async def test_a_push_needs_a_full_commit_name(
+    world: World, repo: Path, worktree: Worktree, commit: str
+) -> None:
+    payload = push_payload(repo, worktree.branch) | {"commit": commit}
+
+    with pytest.raises(ValidationError):
+        await world.service.request(PUSH_ACTION, payload, task_id=world.task_id)
+
+    assert await world.service.list() == []
+
+
 @pytest.mark.parametrize("branch", ["main", "feature/x", "refs/heads/labhq/task-1"])
 async def test_only_task_branches_can_be_requested(world: World, repo: Path, branch: str) -> None:
     with pytest.raises(ValidationError):
         await world.service.request(
-            PUSH_ACTION, {"repo_path": str(repo), "branch": branch}, task_id=world.task_id
+            PUSH_ACTION,
+            {"repo_path": str(repo), "branch": branch, "commit": "a" * 40, "url": "/srv/remote"},
+            task_id=world.task_id,
         )
 
     assert await world.service.list() == []
