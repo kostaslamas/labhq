@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # A scratch data directory, so migrations run against an empty database.
+      LABHQ_DATA_DIR: ${{ github.workspace }}/.ci-data
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Format
+        run: uv run --frozen ruff format --check .
+
+      - name: Lint
+        run: uv run --frozen ruff check .
+
+      - name: Types
+        run: uv run --frozen mypy
+
+      - name: Test collection floor
+        run: uv run --frozen python -m tools.collection_floor
+
+      - name: Tests
+        run: uv run --frozen pytest
+
+      - name: File size
+        run: uv run --frozen python -m tools.file_size
+
+      - name: Single Alembic head
+        run: uv run --frozen python -m tools.single_head
+
+      - name: Migrate an empty database
+        run: |
+          test ! -e "$LABHQ_DATA_DIR"
+          uv run --frozen alembic upgrade head
+
+      - name: Models match migrations
+        run: uv run --frozen alembic check
