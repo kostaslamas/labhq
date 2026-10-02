@@ -95,7 +95,7 @@ def tracked_paths(repo: Path) -> list[str]:
 
 def read_tracked(path: Path) -> str | None:
     if path.is_symlink():
-        return os.readlink(path)
+        return str(path.readlink())
     if not path.is_file():
         # Deleted in the working tree, or a submodule: there is no content to read.
         return None
@@ -123,9 +123,7 @@ def commit_messages(repo: Path, rev_range: str) -> list[tuple[str, str]]:
     return commits
 
 
-def scan_commits(
-    commits: list[tuple[str, str]], terms: list[Term]
-) -> Iterator[Finding]:
+def scan_commits(commits: list[tuple[str, str]], terms: list[Term]) -> Iterator[Finding]:
     for sha, message in commits:
         yield from scan_text(f"commit {sha} message", message, terms)
 

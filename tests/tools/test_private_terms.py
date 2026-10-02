@@ -45,9 +45,7 @@ def commit(repo: Path, name: str, content: str, message: str) -> str:
 def run_guard(
     repo: Path, *args: str, terms: str | None = TERMS
 ) -> subprocess.CompletedProcess[str]:
-    env = {
-        key: value for key, value in os.environ.items() if key != "LABHQ_PRIVATE_TERMS"
-    }
+    env = {key: value for key, value in os.environ.items() if key != "LABHQ_PRIVATE_TERMS"}
     if terms is not None:
         env["LABHQ_PRIVATE_TERMS"] = terms
     return subprocess.run(
@@ -118,9 +116,7 @@ def test_term_in_commit_message_fails(repo: Path) -> None:
     result = run_guard(repo, "--commits", f"{base}..HEAD")
 
     assert result.returncode == 1
-    assert (
-        f"commit {sha} message:3: private term #{SECOND_TERM_NUMBER}" in result.stdout
-    )
+    assert f"commit {sha} message:3: private term #{SECOND_TERM_NUMBER}" in result.stdout
     assert_no_term_leaks(result)
 
 
@@ -135,12 +131,8 @@ def test_commit_outside_the_range_is_not_scanned(repo: Path) -> None:
     assert "1 commit messages" in result.stdout
 
 
-@pytest.mark.parametrize(
-    "terms", [None, "", "\n  \n"], ids=["missing", "empty", "blank"]
-)
-def test_missing_or_empty_terms_fail_with_a_clear_message(
-    repo: Path, terms: str | None
-) -> None:
+@pytest.mark.parametrize("terms", [None, "", "\n  \n"], ids=["missing", "empty", "blank"])
+def test_missing_or_empty_terms_fail_with_a_clear_message(repo: Path, terms: str | None) -> None:
     result = run_guard(repo, terms=terms)
 
     assert result.returncode == 2

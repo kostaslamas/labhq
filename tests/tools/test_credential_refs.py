@@ -25,12 +25,8 @@ def run_guard(cwd: Path, *roots: str) -> subprocess.CompletedProcess[str]:
 def tree(tmp_path: Path) -> Path:
     (tmp_path / "src" / "labhq").mkdir(parents=True)
     (tmp_path / "migrations").mkdir()
-    (tmp_path / "src" / "labhq" / "clean.py").write_text(
-        "VALUE = 1\n", encoding="utf-8"
-    )
-    (tmp_path / "migrations" / "env.py").write_text(
-        "# migration env\n", encoding="utf-8"
-    )
+    (tmp_path / "src" / "labhq" / "clean.py").write_text("VALUE = 1\n", encoding="utf-8")
+    (tmp_path / "migrations" / "env.py").write_text("# migration env\n", encoding="utf-8")
     return tmp_path
 
 
@@ -60,9 +56,7 @@ def test_clean_tree_passes(tree: Path) -> None:
         ),
     ],
 )
-def test_credential_reference_in_src_fails(
-    tree: Path, line: str, pattern_name: str
-) -> None:
+def test_credential_reference_in_src_fails(tree: Path, line: str, pattern_name: str) -> None:
     plant(tree, "src/labhq/runs/env.py", f"import os\n{line}\n")
 
     result = run_guard(tree)

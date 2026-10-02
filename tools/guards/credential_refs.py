@@ -88,18 +88,14 @@ def scan_file(path: Path, patterns: tuple[Pattern, ...]) -> Iterator[Finding]:
     for line_number, line in enumerate(text.splitlines(), start=1):
         for entry in patterns:
             for match in entry.regex.finditer(line):
-                yield Finding(
-                    path=path, line=line_number, match=match.group(), pattern=entry
-                )
+                yield Finding(path=path, line=line_number, match=match.group(), pattern=entry)
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Fail when code refers to Claude credential files or tokens."
     )
-    parser.add_argument(
-        "roots", nargs="*", type=Path, default=[Path(r) for r in DEFAULT_ROOTS]
-    )
+    parser.add_argument("roots", nargs="*", type=Path, default=[Path(r) for r in DEFAULT_ROOTS])
     args = parser.parse_args(argv)
 
     roots: list[Path] = args.roots
