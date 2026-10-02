@@ -39,8 +39,10 @@ jobs:
       - name: Scan every commit reachable from the checked-out head
         run: |
           set -euo pipefail
-          # --redact keeps any finding out of the public log.
-          "${RUNNER_TEMP}/gitleaks" git --redact --verbose --exit-code 1 .
+          # --redact keeps any finding out of the public log. gitleaks defaults to
+          # `git log --all`, which would let a leak on any fetched branch fail every
+          # other branch; HEAD limits the scan to this commit's full history.
+          "${RUNNER_TEMP}/gitleaks" git --redact --verbose --exit-code 1 --log-opts=HEAD .
 
   private-terms:
     name: Private terms
