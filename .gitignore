@@ -1,0 +1,41 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+
+# Node / Vue
+node_modules/
+web/dist/
+# Machine-specific overrides (Vite *.local env files etc.)
+*.local
+
+# Environment and secrets: never commit credentials, keep the template
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local data: the SQLite database and runtime state belong to one user's machine
+*.sqlite
+*.sqlite3
+*.db
+data/
+var/
+
+# Editor / OS noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Private planning notes are not part of the public repository
+planning/private/
