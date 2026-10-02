@@ -21,6 +21,7 @@ PHASE_1_TABLES = {
     "run_events",
     "cost_events",
     "approvals",
+    "budget_warnings",
     "agent_task_sessions",
     "hosts",
     "health_samples",
