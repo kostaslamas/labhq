@@ -1,0 +1,119 @@
+name: Guards
+
+# Secrets, private terms and credential references (CONTRIBUTING.md §6, ADR 0001).
+# Kept apart from ci.yml so a guard never waits on, or hides behind, the build.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: Secrets (gitleaks, full history)
+    runs-on: ubuntu-latest
+    env:
+      # gitleaks-action needs a paid license for organisation accounts; the binary does not.
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Install gitleaks (checksum verified)
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          curl --fail --silent --show-error --location --retry 3 \
+            --output "${RUNNER_TEMP}/${archive}" "${url}"
+          echo "${GITLEAKS_SHA256}  ${RUNNER_TEMP}/${archive}" | sha256sum --check --strict
+          tar --extract --gzip --file "${RUNNER_TEMP}/${archive}" \
+            --directory "${RUNNER_TEMP}" gitleaks
+          "${RUNNER_TEMP}/gitleaks" version
+
+      - name: Scan every commit reachable from the checked-out head
+        run: |
+          set -euo pipefail
+          # --redact keeps any finding out of the public log.
+          "${RUNNER_TEMP}/gitleaks" git --redact --verbose --exit-code 1 .
+
+  private-terms:
+    name: Private terms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse pull requests from forks
+        if: >-
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo "::error::Pull requests from forks receive no repository secrets, so the private-terms guard cannot run. A maintainer must push the branch to this repository to check it."
+          exit 1
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Work out the pushed commit range
+        id: range
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [[ "${EVENT}" == "pull_request" ]]; then
+            range="${PR_BASE}..${PR_HEAD}"
+          elif [[ "${BEFORE}" =~ ^0+$ ]] || ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+            # A new branch, or a force push whose old head is gone: everything not on the
+            # default branch is new.
+            range="origin/${DEFAULT_BRANCH}..${AFTER}"
+          else
+            range="${BEFORE}..${AFTER}"
+          fi
+          echo "Commit range: ${range}"
+          echo "commits=${range}" >> "${GITHUB_OUTPUT}"
+
+      - name: Scan tracked files and commit messages
+        env:
+          LABHQ_PRIVATE_TERMS: ${{ secrets.LABHQ_PRIVATE_TERMS }}
+          COMMITS: ${{ steps.range.outputs.commits }}
+        run: |
+          uv run --no-project --python 3.12 \
+            tools/guards/private_terms.py --commits "${COMMITS}"
+
+  credential-refs:
+    name: Credential references (ADR 0001)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Scan src and migrations
+        run: uv run --no-project --python 3.12 tools/guards/credential_refs.py src migrations
+
+  guard-tests:
+    name: Guard self-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+
+      - name: Run the guard tests
+        run: uvx --python 3.12 pytest tests/tools
