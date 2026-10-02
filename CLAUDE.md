@@ -27,8 +27,7 @@ Read these before changing anything:
    acceptance criterion next to the test or guard that proves it. A criterion you could not
    prove is listed as not done, with the reason.
 
-Never push to `main`, merge a pull request, create a tag or edit another issue's paths
-beyond the minimum.
+Never push to `main`, create a tag or edit another issue's paths beyond the minimum.
 
 ## Checks
 
