@@ -90,8 +90,23 @@ each reading would grow its context.
 Readings come in different units: USD for an API key, a percentage of a plan limit for a
 subscription, tokens for others. A USD reading becomes a `cost_events` row through
 `labhq.money` (ADR 0002). Other units go to a new table of usage readings, keyed by agent,
-run, unit and time. How a budget is set and enforced for a non-USD unit is decided in the
-issue that builds the adapter, before its code.
+run, unit and time.
+
+### A plan limit is the budget
+
+On a subscription, the plan's own limit is the budget; labhq adds no budget of its own in
+non-USD units. The CLIs print a notice on screen when the limit is reached. The model is
+not running at that point, so the engine reads the notice, not the agent:
+
+1. When a turn ends or stalls, the engine captures the pane and the same extractor reports
+   whether a limit notice is shown, and its reset time.
+2. While the limit holds, no new run starts for that agent kind. Running turns are not cut.
+   The owner is notified. The scheduler wakes the paused work after the reset time.
+3. If the agent's configuration names a fallback agent kind, the task continues there.
+   Sessions do not move between CLIs, so the fallback starts from the status file and the
+   commits, not from the conversation.
+
+USD budgets stay as they are (plan §7) for runs billed to an API key.
 
 ### Weaker guarantees, stated
 
