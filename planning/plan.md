@@ -4,7 +4,7 @@
 
 ## 1. Σκοπός
 
-Για ιδιώτες, hobbyists και developers που δουλεύουν μόνοι τους: ένας άνθρωπος, πολλά projects, μια ομάδα από AI. Χτίζεις έναν open-source, self-hosted orchestrator έργων. Ένας Orchestrator ("CEO") επιβλέπει όλα τα software repos σου. Κάθε έργο έχει Manager, κάθε Manager έχει ομάδες. Μιλάς στον CEO από όποια AI εφαρμογή χρησιμοποιείς ήδη, με τη φωνή της.
+Για ιδιώτες, hobbyists και developers που δουλεύουν μόνοι τους: ένας άνθρωπος, πολλά projects, μια ομάδα από AI. Χτίζεις έναν open-source, self-hosted orchestrator έργων. Ένας Orchestrator ("CEO") επιβλέπει όλα τα software repos σου. Κάθε έργο έχει Manager, κάθε Manager έχει ομάδες. Μιλάς στο Call Center από όποια AI εφαρμογή χρησιμοποιείς ήδη, με τη φωνή της· το Call Center διαβάζει την κατάσταση χωρίς να διακόπτει τους agents που δουλεύουν.
 
 Στόχος: να αξίζει να το δοκιμάσει κάθε hobbyist και homelab developer, και να στήνεται με μία εντολή.
 
@@ -22,11 +22,15 @@
 ## 2. Ιεραρχία και ρόλοι
 
 ```
+Call Center                     ένας agent ανά κλήση: διαβάζει και δρομολογεί, δεν αποφασίζει
 Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα projects
  └─ Manager (ένας ανά project)  long-lived, memory
      └─ Team lead               long-lived, memory
          └─ Worker              ephemeral: ένας ανά task, δικό του git worktree
 ```
+
+- Το Call Center στέκεται δίπλα στον CEO, όχι πάνω του: απαντά για την κατάσταση, προωθεί ερωτήσεις και απαντήσεις, αλλά δεν αναθέτει, δεν αποφασίζει και δεν εγκρίνει (§3.5, ADR 0004).
+- Κάθε agent κρατά ενημερωμένο το `.labhq/status.md` στο worktree του, με τα πεδία του handoff (`summary`, `done`, `next`, `blockers`, `refs`) και `questions`. Η μηχανή περνά κάθε αλλαγή στη βάση.
 
 - Ο Orchestrator αναθέτει Manager ανά project.
 - Ο Manager σχηματίζει ομάδες: team leads και μέλη (developers, designers, QA, ό,τι χρειάζεται). Η δημιουργία ομάδας είναι βαριά απόφαση (§5).
@@ -60,7 +64,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 
 ### 3.1 Αρχιτεκτονική
 
-Δεν γράφουμε κώδικα φωνής. Το προϊόν εκθέτει έναν MCP server (Streamable HTTP). Προσθέτεις τον server ως connector στην AI εφαρμογή που ήδη χρησιμοποιείς (ChatGPT, Claude, Grok…) και μιλάς στον CEO με το voice chat της. Η εφαρμογή έχει δική της κρίση για το τι θα ρωτήσει και πότε.
+Δεν γράφουμε κώδικα φωνής. Το προϊόν εκθέτει έναν MCP server (Streamable HTTP). Προσθέτεις τον server ως connector στην AI εφαρμογή που ήδη χρησιμοποιείς (ChatGPT, Claude, Grok…) και μιλάς στο Call Center με το voice chat της. Η εφαρμογή έχει δική της κρίση για το τι θα ρωτήσει και πότε.
 
 ```
 Εσύ ──φωνή──> AI app (ChatGPT / Claude / Grok)
@@ -88,7 +92,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 | `inbox` | ανάγνωση | `readOnlyHint` | Εκκρεμείς εγκρίσεις και ερωτήσεις |
 | `decide` | εγγραφή | `destructiveHint` για βαριές | Εγκρίνει/απορρίπτει (οι βαριές μόνο ζητούνται, βλ. §5) |
 | `order` / `assign` | εγγραφή | write | Δίνει εντολή ή αναθέτει task |
-| `ask_ceo` | async | write | Ρωτά τον CEO, επιστρέφει ticket |
+| `ask_ceo` | async | write | Ρωτά το Call Center (agent ανά κλήση), επιστρέφει ticket |
 | `get_reply` | ανάγνωση | `readOnlyHint` | Παραλαβή απάντησης από ticket |
 | `meeting_minutes` | ανάγνωση | `readOnlyHint` | Πρακτικά σύσκεψης |
 | `health` | ανάγνωση | `readOnlyHint` | Κατάσταση μηχανημάτων και ανοιχτά incidents |
@@ -98,6 +102,15 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 ### 3.4 Τι έχει ήδη αποδειχθεί
 
 Δουλεύει ήδη στην πράξη: ένας custom MCP server (Streamable HTTP) πίσω από tunnel χρησιμοποιείται καθημερινά με φωνή. Η βάση του Call Center είναι αποδεδειγμένη, όχι υπόθεση. Το Gemini (consumer) μένει εκτός, γιατί δεν δέχεται custom MCP.
+
+### 3.5 Πρόγραμμα και agent ανά κλήση (ADR 0004)
+
+- Το πρόγραμμα (μηχανή και MCP server) τρέχει πάντα. Ό,τι απαντιέται από τη βάση (projects, tasks, εγκρίσεις, κόστος, υγεία) το απαντά μόνο του, σε <2 s, χωρίς agent.
+- Ό,τι θέλει ανάγνωση και κρίση πηγαίνει σε έναν Call Center agent ανά κλήση, σε tmux (ADR 0003). Κλήση είναι ένα παράθυρο χρόνου: ερωτήσεις μέσα σε 5 λεπτά (ρυθμιζόμενο) κάνουν resume το ίδιο session. Δύο ταυτόχρονες κλήσεις είναι δύο agents.
+- Ο agent απαντά από το status των agents όταν είναι φρέσκο, δηλαδή νεότερο από την τελευταία δραστηριότητά τους (`run_events` ή αλλαγή οθόνης). Όταν είναι μπαγιάτικο, διαβάζει την οθόνη τους με `capture-pane`. Δεν στέλνει ποτέ πλήκτρα σε agent που δουλεύει.
+- Τα εσωτερικά tools του (ανάγνωση βάσης, status, events, οθόνης· παράδοση μηνύματος· interrupt) έρχονται από stdio MCP server που ξεκινά το ίδιο το CLI. Δεν ανοίγει θύρα, δεν έχει shell, δεν γράφει αρχεία.
+- Οι ερωτήσεις των agents (`questions` στο status) γίνονται γραμμές στη βάση και φτάνουν στον χρήστη αμέσως από τον notifier, χωρίς agent. Η απάντηση του χρήστη πηγαίνει στον agent που ρώτησε, βάσει id, το πολύ μία φορά.
+- Παράδοση μηνύματος σε agent: στο τέλος του γύρου του, ως wakeup. Αν ο χρήστης το ζητήσει, interrupt και παράδοση αμέσως.
 
 ## 4. Τεχνολογίες
 
@@ -111,9 +124,9 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 | Βάση | SQLite (ένας χρήστης), Alembic migrations. Ποτέ `create_all` στον κώδικα εφαρμογής |
 | Χρήμα | Integer micro-USD (`*_micros`, ADR 0002), ποτέ float |
 | Χρόνος | UTC timezone-aware instants |
-| Workers | Claude Agent SDK για Python (`ClaudeSDKClient`) |
+| Workers | Claude Agent SDK για Python (`ClaudeSDKClient`)· tmux adapter για οποιονδήποτε CLI agent (ADR 0003) |
 | MCP server | `mcp` SDK 2.x (`MCPServer`, όχι `FastMCP`): stateless Streamable HTTP, JSON χωρίς SSE |
-| Adapters | Registry (dispatch as data): Claude πρώτα, Codex και Ollama/local αργότερα |
+| Adapters | Registry (dispatch as data): Claude μέσω SDK πρώτα· `tmux` για Claude Code, Codex, Gemini CLI και Aider· Ollama/local αργότερα |
 
 Γιατί Python αντί Node: όλο το stack σου είναι Python, και το `uvx` δίνει εγκατάσταση με μία εντολή, όπως το `npx`.
 
@@ -140,7 +153,7 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 
 | Κλάση | Παραδείγματα | Τι αρκεί |
 |---|---|---|
-| Light | Έναρξη σύσκεψης, ανάθεση task, αλλαγή priority | Φωνή ή tap |
+| Light | Έναρξη σύσκεψης, ανάθεση task, αλλαγή priority, διακοπή (interrupt) agent | Φωνή ή tap |
 | Heavy | Merge στο main, push, διαγραφή branch ή project, δημιουργία ομάδας, υπέρβαση budget, παρέμβαση σε μηχάνημα (restart, καθάρισμα, updates, reboot) | Ο voice agent μπορεί μόνο να ΖΗΤΗΣΕΙ. Η έγκριση απαιτεί ισχυρή επιβεβαίωση |
 
 Τις βαριές ενέργειες τις εκτελεί η μηχανή, όχι ο agent: ο agent τις ζητά, η μηχανή τις εκτελεί μόνο μετά την έγκριση.
@@ -183,12 +196,17 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 | `health_samples` | `host_id`, `metric`, `value`, `sampled_at` |
 | `health_rules` | `type`, `params`, `action` (`notify` ή `ticket`), `reason`, `created_by`, `enabled` |
 | `incidents` | `rule_id`, `host_id`, `status`, `task_id` (το ticket) |
+| `usage_readings` | μετρήσεις usage από την οθόνη σε μονάδες εκτός USD: `agent_id`, `run_id`, `unit`, `value`, `resets_at` (ADR 0003) |
+| `status_updates` | το `.labhq/status.md` κάθε agent ανά αλλαγή, με χρόνο (ADR 0004) |
+| `agent_questions` | ερωτήσεις agents προς τον χρήστη: `agent_id`, `task_id`, `status`, `answer` (ADR 0004) |
+| `calls` | κλήσεις του Call Center: `session_id`, `last_activity_at`, `status` (ADR 0004) |
 
 Αναλλοίωτα:
 
 - Το `tasks.checkout_run_id` αλλάζει με ατομικό conditional update: ένα task έχει το πολύ ένα ενεργό run.
 - Το `wakeup_requests.idempotency_key` είναι unique, ώστε οι επαναλήψεις να μη διπλασιάζουν δουλειά.
 - Ένα `meeting_action_items` row δημιουργεί task και κρατά αναφορά σε αυτό.
+- Ένα `agent_questions` row απαντιέται το πολύ μία φορά, με ατομικό conditional update.
 
 ## 7. Χρονοπρογραμματιστής
 
@@ -202,6 +220,7 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 4. Προειδοποίηση στο 80% του budget, σκληρό σταμάτημα στο 100%.
 5. Stale-run reaper: runs χωρίς heartbeat μέσα σε όριο κλείνουν ως `failed`.
 6. Timeouts ανά run, ρυθμιζόμενα στο `agents.config`.
+7. Σε συνδρομή, το όριο του plan είναι το budget (ADR 0003): όταν η οθόνη ενός CLI δείχνει μήνυμα ορίου, κανένα νέο run γι' αυτό το είδος agent μέχρι το reset, με ειδοποίηση στον χρήστη. Αν το `agents.config` ορίζει εναλλακτικό είδος agent, το task συνεχίζει εκεί από το status και τα commits.
 
 Η τερματική διαδικασία (kill) κρύβεται πίσω από interface ανά πλατφόρμα (§9).
 
@@ -258,7 +277,7 @@ Dark-first, Oxanium + IBM Plex Mono, indigo/purple accent, glass.
 | Native Windows | Best effort, με CI matrix |
 
 - Ο τερματισμός διεργασιών κρύβεται πίσω από interface ανά πλατφόρμα. Στα Windows δεν υπάρχουν SIGTERM ή process groups, οπότε χρησιμοποιούμε π.χ. `taskkill /T`.
-- Καμία εξάρτηση από tmux.
+- tmux μόνο για τον `tmux` adapter (ADR 0003). Στα native Windows τρέχει μόνο ο SDK adapter.
 
 Εγκατάσταση:
 
@@ -357,11 +376,13 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | 2 | Approvals | `approvals` με κλάση ρίσκου ως δεδομένα, push μόνο μετά την έγκριση, εκτέλεση από τη μηχανή |
 | 3 | CLI and demo | Εντολές CLI, demo από άκρη σε άκρη, χειροκίνητοι έλεγχοι στο `docs/checks/` |
 
+Μετά το CLI and demo: ένα issue για τον `tmux` adapter (ADR 0003). Δεν είναι κριτήριο της Φάσης 1· τα κριτήρια της Φάσης 1 καλύπτονται από τον SDK adapter.
+
 Τα tests δεν καλούν ποτέ πραγματικό μοντέλο. Το demo με πραγματικό login και το A/B του `rtk` τρέχουν τοπικά, και τα αποτελέσματα μπαίνουν στο `docs/checks/`. Το tag μπαίνει τοπικά, μετά το gate.
 
 ### Φάση 2 — Call Center (MCP)
 
-Περιεχόμενο: τα tools, annotations, async tickets, δοκιμή με φωνή σε Claude και ChatGPT.
+Περιεχόμενο: τα tools, annotations, async tickets, απαντήσεις του προγράμματος από τη βάση, ερωτήσεις των agents προς τον χρήστη με ειδοποίηση (§3.5), δοκιμή με φωνή σε Claude και ChatGPT.
 
 Κριτήρια αποδοχής:
 
@@ -371,6 +392,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ένα `decide` για heavy ενέργεια επιστρέφει "ζητήθηκε έγκριση" και δημιουργεί `approvals` row· δεν εκτελεί.
 - Live δοκιμή με φωνή: τουλάχιστον μία εφαρμογή (Claude ή ChatGPT) ολοκληρώνει το σενάριο brief → ask_ceo → get_reply. Καταγράφεται βίντεο.
 - Ο notifier στέλνει μήνυμα (ntfy ή Telegram) όταν δημιουργείται έγκριση.
+- Μια ερώτηση agent φτάνει στον χρήστη από τον notifier· η απάντησή του πηγαίνει μόνο στον agent που ρώτησε, μία φορά, ακόμα και με δύο ταυτόχρονες απαντήσεις (test).
 - Το `health` απαντά με προφορικό κείμενο για την κατάσταση των μηχανημάτων (test).
 - Ο MCP server απαντά με JSON χωρίς SSE και δουλεύει πίσω από Cloudflare quick tunnel (test).
 - Ένας custom connector του Claude συνδέεται στον MCP με σταθερό credential ή secret path, χωρίς Cloudflare Access (demo).
@@ -378,7 +400,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 
 ### Φάση 3 — Hierarchy & meetings
 
-Περιεχόμενο: CEO → managers → leads → workers, δημιουργία ομάδας με έγκριση, standup/planning/review με πρακτικά → tasks, Discord adapter για τις συσκέψεις, τμήμα IT/Infra (κανόνες από agent, tickets, SSH), `graphify` index ανά project.
+Περιεχόμενο: CEO → managers → leads → workers, δημιουργία ομάδας με έγκριση, standup/planning/review με πρακτικά → tasks, Discord adapter για τις συσκέψεις, τμήμα IT/Infra (κανόνες από agent, tickets, SSH), `graphify` index ανά project, Call Center agent ανά κλήση με status αρχεία και ανάγνωση οθόνης (§3.5).
 
 Κριτήρια αποδοχής:
 
@@ -395,6 +417,8 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ένα απομακρυσμένο μηχάνημα στέλνει μετρήσεις μέσω SSH με χρήστη μόνο για ανάγνωση (demo).
 - Οι agents του IT δεν μπορούν να εκτελέσουν εντολή εγγραφής στο μηχάνημα (test).
 - Ο manager ενός project απαντά από το `graphify` index αντί να διαβάζει αρχεία, με μετρημένη διαφορά tokens (A/B στο `cost_events`).
+- Ο Call Center απαντά για ένα project από φρέσκο status χωρίς να στείλει τίποτα στον manager· με μπαγιάτικο status διαβάζει την οθόνη του (test).
+- Δύο ταυτόχρονες κλήσεις εξυπηρετούνται από δύο agents· μια ερώτηση μέσα στο παράθυρο της κλήσης κάνει resume το ίδιο session (test).
 - Tag `v0.3.0-alpha.1`.
 
 ### Φάση 4 — UI
@@ -437,7 +461,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | # | Beat | Τι φαίνεται / ακούγεται |
 |---|---|---|
 | 1 | Ανοίγεις το voice chat της AI εφαρμογής που ήδη χρησιμοποιείς | Καμία νέα εφαρμογή, μόνο το connector `labhq` |
-| 2 | Ρωτάς τον CEO τι έκαναν οι ομάδες το βράδυ | `brief` απαντά με 3-4 σύντομες προτάσεις |
+| 2 | Ρωτάς το Call Center τι έκαναν οι ομάδες το βράδυ | `brief` απαντά με 3-4 σύντομες προτάσεις |
 | 3 | Ζητάς τα πρακτικά του πρωινού standup | `meeting_minutes` διαβάζει αποφάσεις και action items· στην οθόνη φαίνεται το ίδιο standup ως thread στο Discord |
 | 4 | Ρωτάς αν είναι καλά ο server | Το τμήμα IT απαντά και αναφέρει ένα ανοιχτό ticket (π.χ. ο δίσκος γεμίζει σε 5 μέρες) |
 | 5 | Δίνεις εντολή να γίνει merge στο main | Ο agent απαντά ότι χρειάζεται έγκριση, δεν εκτελεί |
@@ -458,6 +482,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | Οι συζητήσεις περνούν από τρίτο SaaS (Discord, Slack) | Κώδικας και αποφάσεις σε servers τρίτων | Προαιρετικό κανάλι, self-hosted επιλογές (Mattermost, Matrix), η βάση μας μένει η πηγή της αλήθειας |
 | Agents του IT με πρόσβαση στα μηχανήματα (τοπικά και μέσω SSH) | Λάθος εντολή ρίχνει υπηρεσία ή μηχάνημα | `strict` mode, μόνο ανάγνωση, χρήστης SSH μόνο για ανάγνωση, διορθώσεις μόνο ως ticket με biometrics |
 | Εταιρικά φίλτρα μπλοκάρουν domains υπηρεσιών tunnel | Δεν ανοίγουν login, εγκρίσεις και UI από εταιρικό δίκτυο | Δικό σου domain (Cloudflare Tunnel, Pangolin, Caddy) για καθημερινή χρήση· η φωνή δεν περνά από το εταιρικό δίκτυο |
+| Ανάγνωση οθόνης στον `tmux` adapter (τέλος γύρου, usage, όριο) | Μια αλλαγή στη μορφή ενός CLI σπάει την ανίχνευση ή δίνει λάθος νούμερα | Fixtures οθόνης ανά agent στα tests, extractor με έλεγχο σχήματος και αυτούσιων αριθμών, αποτυχημένη μέτρηση ποτέ ως μηδέν |
 | Λακωνικό ύφος ή συμπίεση χαλάει την ποιότητα | Λάθη και κακές αποφάσεις των agents | A/B με έλεγχο ποιότητας, ύφος μόνο στο κείμενο και όχι στη σκέψη, `headroom` προαιρετικό |
 
 ### Σημείωση billing
