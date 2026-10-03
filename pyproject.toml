@@ -70,9 +70,17 @@ xfail_strict = true
 filterwarnings = ["error"]
 
 [tool.labhq.file_size]
-# CONTRIBUTING.md §2. Generated code, locks and fixtures live outside these roots.
-roots = ["src", "tests", "tools"]
-suffixes = [".py"]
+# CONTRIBUTING.md §2. Locks and Python fixtures live outside these roots.
+roots = ["src", "tests", "tools", "web/src", "web/e2e"]
+suffixes = [".py", ".ts", ".vue"]
+# Exempt by kind: i18n resources, generated code and test fixtures. `*` crosses directories.
+exclude = [
+  "web/src/*/locales/*",
+  "web/src/*/generated/*",
+  "web/src/*.gen.ts",
+  "web/src/*.d.ts",
+  "web/src/*/__fixtures__/*",
+]
 soft_limit = 400
 hard_limit = 600
 # Each exemption: { path = "...", date = "YYYY-MM-DD", reason = "..." }.

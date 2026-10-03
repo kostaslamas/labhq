@@ -1,12 +1,14 @@
 """File size guard (CONTRIBUTING.md §2): warn past the soft limit, fail past the hard one.
 
-Limits, roots and dated exemptions live in `[tool.labhq.file_size]` in pyproject.toml.
+Limits, roots, excluded globs and dated exemptions live in `[tool.labhq.file_size]` in
+pyproject.toml.
 """
 
 import argparse
 import sys
 from dataclasses import dataclass
 from datetime import date
+from fnmatch import fnmatch
 from pathlib import Path
 
 from tools._config import labhq_config
@@ -50,6 +52,9 @@ def check(root: Path) -> Report:
     config = labhq_config(root, "file_size")
     soft, hard = int(config["soft_limit"]), int(config["hard_limit"])
     suffixes = set(config["suffixes"])
+    # Generated code and i18n resources are exempt by kind (CONTRIBUTING.md §2), so they are
+    # excluded by pattern rather than listed one by one as dated exemptions.
+    excluded = list(config.get("exclude", []))
     exemptions = _parse_exemptions(config.get("exemptions", []))
 
     files = sorted(
@@ -57,7 +62,9 @@ def check(root: Path) -> Report:
         for name in config["roots"]
         if (root / name).is_dir()
         for path in (root / name).rglob("*")
-        if path.is_file() and path.suffix in suffixes
+        if path.is_file()
+        and path.suffix in suffixes
+        and not any(fnmatch(path.relative_to(root).as_posix(), glob) for glob in excluded)
     )
     if not files:
         # A guard that checked nothing must not pass (CONTRIBUTING.md §6).
