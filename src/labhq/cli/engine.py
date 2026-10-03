@@ -74,6 +74,14 @@ class Engine:
         await self._after(report, report.finished)
         return report
 
+    async def tick_pass(self) -> PassReport:
+        """One scheduler tick that leaves started runs running; the caller ticks on a timer."""
+        report = PassReport()
+        tick = await self.scheduler.tick()
+        report.absorb(tick)
+        await self._after(report, tick.finished)
+        return report
+
     async def run_loop(self, max_ticks: int | None = None) -> PassReport:
         """Tick on the clock until stopped (or for `max_ticks`); shut runs down on the way out."""
         report = PassReport()
