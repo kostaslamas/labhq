@@ -1,4 +1,26 @@
 {
   "nav": "Today",
-  "placeholder": "What happened and what needs you will appear here."
+  "failed": "Today could not be loaded. It will retry when something changes.",
+  "needs": {
+    "title": "Needs you",
+    "empty": "Nothing is waiting on you.",
+    "approval": "Approval to {type}",
+    "heavy": "heavy",
+    "asked_by": "Question from {agent}",
+    "project": "Project",
+    "on_host": "Incident on",
+    "budget": "Budget warning for {name}",
+    "of": "of"
+  },
+  "delivered": {
+    "title": "Delivered",
+    "empty": "Nothing was delivered in this window.",
+    "commits": "commits | commit | commits",
+    "executed": "{type} executed"
+  },
+  "spend": {
+    "title": "Spend without a deliverable",
+    "line": "{agent} ({project}) spent money and delivered nothing.",
+    "no_project": "no project"
+  }
 }
