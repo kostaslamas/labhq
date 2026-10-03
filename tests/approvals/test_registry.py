@@ -77,7 +77,7 @@ async def test_an_executor_validates_the_payload_at_request_time(world: World) -
 
 
 async def test_an_approved_action_without_an_executor_stays_approved(world: World) -> None:
-    requested = await world.service.request("create_team", {"members": ["dev", "qa"]})
+    requested = await world.service.request("merge", {"members": ["dev", "qa"]})
 
     approved = await world.service.approve(requested.id, decider="operator", confirmation="cli")
 

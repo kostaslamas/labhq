@@ -26,7 +26,7 @@ async def test_a_decision_records_payload_risk_class_decider_kind_and_time(
     world: World, decision: str
 ) -> None:
     requested = await world.service.request(
-        "create_team", PAYLOAD, task_id=world.task_id, agent_id=world.agent_id
+        "merge", PAYLOAD, task_id=world.task_id, agent_id=world.agent_id
     )
     world.clock.advance(90)
 
@@ -47,7 +47,7 @@ async def test_a_decision_records_payload_risk_class_decider_kind_and_time(
 
 
 async def test_a_pending_approval_has_no_decision(world: World) -> None:
-    requested = await world.service.request("create_team", PAYLOAD)
+    requested = await world.service.request("merge", PAYLOAD)
 
     row = await world.service.get(requested.id)
 
@@ -58,7 +58,7 @@ async def test_a_pending_approval_has_no_decision(world: World) -> None:
 async def test_a_light_only_confirmation_cannot_approve_a_heavy_action(
     world: World, voice: str
 ) -> None:
-    requested = await world.service.request("create_team", PAYLOAD)
+    requested = await world.service.request("merge", PAYLOAD)
 
     with pytest.raises(ConfirmationNotAllowedError):
         await world.service.approve(requested.id, decider="operator", confirmation=voice)
@@ -78,7 +78,7 @@ async def test_a_light_only_confirmation_approves_a_light_action(world: World, v
 
 
 async def test_any_confirmation_may_reject(world: World, voice: str) -> None:
-    requested = await world.service.request("create_team", PAYLOAD)
+    requested = await world.service.request("merge", PAYLOAD)
 
     rejected = await world.service.reject(requested.id, decider="operator", confirmation=voice)
 
@@ -86,7 +86,7 @@ async def test_any_confirmation_may_reject(world: World, voice: str) -> None:
 
 
 async def test_an_unknown_confirmation_kind_decides_nothing(world: World) -> None:
-    requested = await world.service.request("create_team", PAYLOAD)
+    requested = await world.service.request("merge", PAYLOAD)
 
     for decide in (world.service.approve, world.service.reject):
         with pytest.raises(UnknownEntryError):
@@ -96,7 +96,7 @@ async def test_an_unknown_confirmation_kind_decides_nothing(world: World) -> Non
 
 
 async def test_a_decided_approval_cannot_be_decided_again(world: World) -> None:
-    requested = await world.service.request("create_team", PAYLOAD)
+    requested = await world.service.request("merge", PAYLOAD)
     await world.service.reject(requested.id, decider="operator", confirmation="cli")
 
     with pytest.raises(ApprovalNotPendingError, match="rejected"):
