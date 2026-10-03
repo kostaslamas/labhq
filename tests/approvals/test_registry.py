@@ -36,9 +36,11 @@ async def test_the_risk_class_comes_from_the_registry(world: World, risk_class: 
 
 
 async def test_changing_a_registration_changes_the_risk_class(world: World) -> None:
-    world.actions.register("merge", ActionType("merge", RiskClass.LIGHT), replace=True)
+    world.actions.register(
+        "delete_branch", ActionType("delete_branch", RiskClass.LIGHT), replace=True
+    )
 
-    approval = await world.service.request("merge", {"branch": "labhq/task-1"})
+    approval = await world.service.request("delete_branch", {"branch": "labhq/task-1"})
 
     assert approval.risk_class == RiskClass.LIGHT
 
@@ -77,7 +79,7 @@ async def test_an_executor_validates_the_payload_at_request_time(world: World) -
 
 
 async def test_an_approved_action_without_an_executor_stays_approved(world: World) -> None:
-    requested = await world.service.request("merge", {"members": ["dev", "qa"]})
+    requested = await world.service.request("delete_branch", {"members": ["dev", "qa"]})
 
     approved = await world.service.approve(requested.id, decider="operator", confirmation="cli")
 
