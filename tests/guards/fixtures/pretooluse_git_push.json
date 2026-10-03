@@ -1,0 +1,15 @@
+{
+  "session_id": "0b6f3c1e-5d2a-4a7e-9a51-3f1c2d4e5f60",
+  "transcript_path": "/home/owner/.claude/projects/-srv-demo/0b6f3c1e.jsonl",
+  "cwd": "/srv/labhq/worktrees/project-1/task-7",
+  "permission_mode": "bypassPermissions",
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Bash",
+  "tool_input": {
+    "command": "git -c credential.helper= push origin HEAD:main",
+    "description": "Push the branch",
+    "timeout": 120000,
+    "run_in_background": false
+  },
+  "tool_use_id": "toolu_01ABC123"
+}
