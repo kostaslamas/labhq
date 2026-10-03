@@ -10,6 +10,7 @@ from typing import Any
 
 from labhq.approvals.push import PUSH_ACTION, PushPayload, push_branch
 from labhq.approvals.registry import Registry
+from labhq.health.intervention import INTERVENTION_ACTION, HostIntervention, InterventionPayload
 
 Payload = Mapping[str, Any]
 
@@ -24,4 +25,8 @@ class Executor:
 default_executors = Registry[Executor]("executor")
 default_executors.register(
     PUSH_ACTION, Executor(run=push_branch, validate=PushPayload.model_validate)
+)
+default_executors.register(
+    INTERVENTION_ACTION,
+    Executor(run=HostIntervention().run, validate=InterventionPayload.model_validate),
 )
