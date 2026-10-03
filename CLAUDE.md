@@ -97,3 +97,26 @@ Tests mirror the source tree under `tests/`.
 | `src/labhq/callcenter/calls/`, `docs/checks/voice.md` | #39 ask_ceo and get_reply |
 
 New CLI commands register in `src/labhq/cli/__init__.py` with a one-line edit each.
+
+## Module ownership in Phase 4
+
+| Path | Owner issue |
+|---|---|
+| `pyproject.toml`, `uv.lock`, `src/labhq/api/` (app, errors, pagination, deps, `routes.py`, hooks, `openapi.py`, settings), the API mount in `src/labhq/cli/serve.py` | #59 API foundation |
+| `web/` scaffolding (`package.json`, `package-lock.json`, root configs, `src/main.ts`, `src/App.vue`, `src/shell/`, `src/router/`, `src/i18n/`, `src/status/`, `src/ui/`, `src/styles/`, `src/format/`, `scripts/`, `playwright.config.ts`, `e2e/smoke.spec.ts`), `.github/workflows/web.yml`, the `web/` coverage in `tools/file_size.py` | #60 Web foundation |
+| `web/openapi.json`, `web/src/api/`, `web/e2e/support/server.ts`, `tools/ui_seed.py`, `src/labhq/api/vocabulary.py`, the drift step and `e2e` job in `web.yml` | #61 API client |
+| `src/labhq/auth/`, `src/labhq/db/models/auth.py`, its migration, `src/labhq/cli/passkey.py`, `web/src/auth/`, `web/src/areas/auth/`, `web/e2e/support/auth.ts` | #62 Passkeys and sessions |
+| `src/labhq/live/` (except `topics/meetings.py`), `web/src/live/`, the live-updates ADR | #63 Live updates |
+| `src/labhq/api/today/`, `web/src/areas/today/` | #64 Today |
+| `src/labhq/api/projects/`, `web/src/areas/projects/` | #65 Projects |
+| `src/labhq/api/approvals/`, `web/src/areas/approvals/`, the `tap` and `passkey` confirmation kinds in `src/labhq/approvals/policy.py` | #66 Approvals |
+| `src/labhq/api/meetings/`, `src/labhq/live/topics/meetings.py`, `web/src/areas/meetings/` | #90 Meetings |
+| `src/labhq/api/rules/`, `web/src/areas/rules/` | #91 Health rules in the UI |
+| `web/src/areas/approve/`, `src/labhq/api/public_url.py`, the click URL in `src/labhq/approvals/service.py`, `docs/checks/passkey-phone.md` | #67 Approval page from the notification |
+| `web/e2e/gate.spec.ts`, `web/lighthouserc.cjs`, the Lighthouse step in `web.yml`, `docs/checks/phase-4.md` | #92 Phase 4 gate |
+
+Each issue also owns its tests under `tests/` and its `web/e2e/<area>.spec.ts`. API routers register in
+`src/labhq/api/routes.py` with a one-line edit each. Areas plug into the UI by folder: routes from
+`web/src/areas/<area>/routes.ts` and messages from `web/src/areas/<area>/locales/{el,en}.json`; nobody
+edits the router or the i18n loader to add one. Python dependencies come only from #59 and npm
+dependencies only from #60.
