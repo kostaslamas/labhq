@@ -27,6 +27,11 @@ RTK_BINARY = "rtk"
 SHELL_TOOL = "Bash"
 RTK_MISSING = "rtk_missing"
 REWRITE_TIMEOUT_SECONDS = 5.0
+# `rtk rewrite` prints the rewritten command and exits 0 when its rules allow it, or 3 when no
+# rule matched and the host should keep its own prompt; 3 is the common case. It exits 1 with
+# no filter and 2 on a deny rule. This hook never grants permission, so 0 and 3 are both just a
+# rewrite (rtk 0.51.0, src/hooks/rewrite_cmd.rs).
+REWRITTEN_EXIT_CODES = frozenset({0, 3})
 # rtk reads its own config from the home directory; nothing else reaches the child process.
 _CHILD_ENV_KEYS = ("PATH", "HOME")
 
@@ -88,7 +93,7 @@ async def rewrite_command(
         logger.warning("rtk rewrite timed out; running the command unfiltered")
         return None
     rewritten = stdout.decode("utf-8", errors="replace").strip()
-    if process.returncode != 0 or not rewritten or rewritten == command:
+    if process.returncode not in REWRITTEN_EXIT_CODES or not rewritten or rewritten == command:
         return None
     return rewritten
 
