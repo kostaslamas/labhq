@@ -3,6 +3,8 @@
 Each event is committed with a fresh `heartbeat_at`, so the reaper sees a live run as
 live. The terminal result sets the status through `labhq.runs.status`, writes one
 `cost_events` row in micros through `labhq.money`, and stores the session for resume.
+A long-lived agent's memory is seeded before the run and taken back after it, whatever
+its status (`labhq.memory`).
 """
 
 from collections.abc import Sequence
@@ -25,8 +27,10 @@ from labhq.adapters import default_registry as builtin_adapters
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, AgentTaskSession, CostEvent, Run, RunEvent, Task
+from labhq.memory import AgentMemory, PreparedMemory
 from labhq.money import usd_to_micros
 from labhq.runs.status import status_for
+from labhq.settings import Settings
 
 TOKEN_COLUMNS = (
     "input_tokens",
@@ -34,6 +38,9 @@ TOKEN_COLUMNS = (
     "cache_read_input_tokens",
     "cache_creation_input_tokens",
 )
+
+MEMORY_EVENT = "memory_updated"
+WARNING_EVENT = "warning"
 
 
 class RunStartError(RuntimeError):
@@ -51,10 +58,12 @@ class RunService:
         *,
         clock: Clock,
         registry: AdapterRegistry = builtin_adapters,
+        memory: AgentMemory | None = None,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
         self._registry = registry
+        self._memory = memory if memory is not None else AgentMemory.from_settings(Settings())
 
     async def start(
         self,
@@ -80,6 +89,12 @@ class RunService:
             agent = await db.get_one(Agent, agent_id)
             task = await db.get_one(Task, task_id) if task_id is not None else None
             stored = await _stored_session(db, agent, task_id)
+            if cwd is None and stored is not None and stored.cwd:
+                # Sessions are stored per working directory; resume needs the same one.
+                cwd = Path(stored.cwd)
+            memory = self._memory.prepare(agent, cwd)
+            if memory is not None:
+                cwd, prompt = memory.cwd, memory.prompt(prompt)
             now = self._clock.now()
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = agent.adapter
@@ -87,9 +102,6 @@ class RunService:
             run.session_id_before = resume_session_id or (stored.session_id if stored else None)
             run.started_at = run.heartbeat_at = now
             await db.commit()
-            if cwd is None and stored is not None and stored.cwd:
-                # Sessions are stored per working directory; resume needs the same one.
-                cwd = Path(stored.cwd)
             request = RunRequest(
                 prompt=prompt,
                 cwd=cwd,
@@ -99,7 +111,9 @@ class RunService:
                 tools=tools,
             )
             project_id = task.project_id if task is not None else agent.project_id
-            active = ActiveRun(db, self._clock, self._registry.create(agent.adapter), run)
+            active = ActiveRun(
+                db, self._clock, self._registry.create(agent.adapter), run, self._memory, memory
+            )
             await active.begin(request, project_id)
         except BaseException:
             await db.close()
@@ -132,11 +146,21 @@ class RunService:
 class ActiveRun:
     """A started run. `wait()` drives its stream; `send` and `interrupt` steer it meanwhile."""
 
-    def __init__(self, db: AsyncSession, clock: Clock, adapter: Adapter, run: Run) -> None:
+    def __init__(
+        self,
+        db: AsyncSession,
+        clock: Clock,
+        adapter: Adapter,
+        run: Run,
+        memory: AgentMemory | None = None,
+        prepared: PreparedMemory | None = None,
+    ) -> None:
         self._db = db
         self._clock = clock
         self._adapter = adapter
         self.run = run
+        self._memory = memory
+        self._prepared = prepared
         self._seq = 0
         self._project_id: int | None = None
         self._cwd: Path | None = None
@@ -179,9 +203,22 @@ class ActiveRun:
         finally:
             try:
                 await self._adapter.close()
+                await self._keep_memory()
             finally:
                 await self._db.close()
         return self.run
+
+    async def _keep_memory(self) -> None:
+        if self._memory is None or self._prepared is None:
+            return
+        try:
+            update = self._memory.collect(self._prepared)
+        except OSError as error:
+            # A lost memory must stay visible on the run, not end it as failed.
+            await self.note(WARNING_EVENT, {"memory": type(error).__name__, "message": str(error)})
+            return
+        if update is not None:
+            await self.note(MEMORY_EVENT, update.as_event_payload())
 
     async def _record(self, event: AdapterEvent) -> None:
         now = self._clock.now()
