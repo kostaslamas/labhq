@@ -19,8 +19,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labhq.budgets import BudgetCheck, BudgetSettings, Decision, check
 from labhq.clock import Clock
 from labhq.db.enums import WakeupSource, WakeupStatus
-from labhq.db.models import WakeupRequest
+from labhq.db.models import Agent, WakeupRequest
 from labhq.scheduler.sources import SourceRegistry, default_sources
+from labhq.usage import PlanCheck, UsageSettings, check_agent
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,8 @@ class EnqueueResult:
     request: WakeupRequest
     # None for a duplicate: the first enqueue already checked.
     budget: BudgetCheck | None = None
+    # A plan stop does not refuse: the wakeup waits for the window's reset (ADR 0003).
+    plan: PlanCheck | None = None
 
 
 async def enqueue(
@@ -57,6 +60,7 @@ async def enqueue(
     *,
     sources: SourceRegistry = default_sources,
     budget_settings: BudgetSettings | None = None,
+    usage_settings: UsageSettings | None = None,
 ) -> EnqueueResult:
     sources.handler(wakeup.source).validate(wakeup.task_id)
     existing = await _by_key(session, wakeup.idempotency_key)
@@ -66,6 +70,15 @@ async def enqueue(
     budget = await check(session, wakeup.agent_id, clock, budget_settings)
     if budget.decision is Decision.STOP:
         return await _insert(session, wakeup, clock, Outcome.REFUSED, budget)
+    agent = await session.get_one(Agent, wakeup.agent_id)
+    plan = await check_agent(session, agent, clock, usage_settings)
+    result = await _enqueue_allowed(session, wakeup, clock, budget)
+    return EnqueueResult(result.outcome, result.request, result.budget, plan)
+
+
+async def _enqueue_allowed(
+    session: AsyncSession, wakeup: Wakeup, clock: Clock, budget: BudgetCheck
+) -> EnqueueResult:
 
     target = await _pending_for(session, wakeup.agent_id, wakeup.task_id)
     if target is None:

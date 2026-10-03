@@ -29,6 +29,7 @@ from labhq.scheduler.reaper import LIVE_STATUSES, reap_stale_runs
 from labhq.scheduler.settings import SchedulerSettings, get_scheduler_settings
 from labhq.scheduler.sources import SourceRegistry, default_sources
 from labhq.scheduler.wakeups import EnqueueResult, Wakeup, enqueue
+from labhq.usage import UsageSettings
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +65,7 @@ class Scheduler:
         sources: SourceRegistry = default_sources,
         settings: SchedulerSettings | None = None,
         budget_settings: BudgetSettings | None = None,
+        usage_settings: UsageSettings | None = None,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
@@ -71,6 +73,7 @@ class Scheduler:
         self._sources = sources
         self._settings = settings or get_scheduler_settings()
         self._budget_settings = budget_settings
+        self._usage_settings = usage_settings
         self._live: dict[int, LiveRun] = {}
         # Abandoned waiters, kept referenced until their cancellation has run.
         self._abandoned: set[asyncio.Task[Run]] = set()
@@ -87,6 +90,7 @@ class Scheduler:
                 self._clock,
                 sources=self._sources,
                 budget_settings=self._budget_settings,
+                usage_settings=self._usage_settings,
             )
             await db.commit()
             return result
@@ -209,6 +213,7 @@ class Scheduler:
                     sources=self._sources,
                     settings=self._settings,
                     budget_settings=self._budget_settings,
+                    usage_settings=self._usage_settings,
                 )
             if outcome.verdict is Verdict.QUEUED:
                 await self._start(outcome, report)
@@ -224,6 +229,7 @@ class Scheduler:
                 task_id=dispatch.task_id,
                 prompt=dispatch.prompt,
                 run_id=run_id,
+                config=dispatch.config or None,
             )
         except RunStartError:
             # Already recorded as failed by the run service; only the task is ours to free.
