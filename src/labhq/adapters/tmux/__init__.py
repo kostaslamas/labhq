@@ -8,6 +8,7 @@ from labhq.adapters.tmux.adapter import TmuxAdapter, TmuxAgentConfig, split_sess
 from labhq.adapters.tmux.agents import (
     AgentKind,
     AgentKinds,
+    RulesInjection,
     SessionIdSource,
     TurnEnd,
     UnknownAgentKindError,
@@ -41,6 +42,7 @@ def default_tmux_adapter() -> TmuxAdapter:
 __all__ = [
     "AgentKind",
     "AgentKinds",
+    "RulesInjection",
     "SessionIdSource",
     "TmuxAdapter",
     "TmuxAgentConfig",

@@ -71,6 +71,9 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("serve",): (("serve",),),
     ("onboard",): (("onboard", "--non-interactive", "--no-serve"),),
     ("ready",): (("ready",),),
+    ("adopt", "discover"): (("adopt", "discover", "--kind", "nope"),),
+    ("adopt", "request"): (("init",), ("adopt", "request", "999999999")),
+    ("adopt", "check"): (("adopt", "check"),),
 }
 
 

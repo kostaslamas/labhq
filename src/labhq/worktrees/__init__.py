@@ -1,5 +1,6 @@
 """Task worktrees and the credential-free environment workers run in."""
 
+from labhq.worktrees.adopted import adopted_environment
 from labhq.worktrees.environment import worker_environment
 from labhq.worktrees.git import GitError
 from labhq.worktrees.manager import (
@@ -17,6 +18,7 @@ __all__ = [
     "Worktree",
     "WorktreeError",
     "Worktrees",
+    "adopted_environment",
     "branch_name",
     "default_root",
     "worker_environment",

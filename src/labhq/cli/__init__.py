@@ -5,6 +5,7 @@ from typing import Annotated
 import typer
 
 from labhq import __version__
+from labhq.cli.adopt import adopt_app
 from labhq.cli.approvals import approvals_app
 from labhq.cli.demo import demo
 from labhq.cli.health import health
@@ -39,6 +40,7 @@ app.command()(demo)
 app.command()(serve)
 app.command()(onboard)
 app.command()(ready)
+app.add_typer(adopt_app, name="adopt")
 
 
 def _print_version(value: bool) -> None:
