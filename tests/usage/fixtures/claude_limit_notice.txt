@@ -1,0 +1,4 @@
+● I'll continue with the parser tests next.
+
+  ⎿  5-hour limit reached ∙ resets 3pm
+     /upgrade to increase your usage limit.

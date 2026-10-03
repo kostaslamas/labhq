@@ -1,0 +1,13 @@
+/stats
+
+  Session Stats
+
+  Interaction Summary
+  Session ID:                 3f1c2d4e-5f60-4a7e-9a51-0b6f3c1e5d2a
+  Tool Calls:                 7 ( ✓ 7 x 0 )
+  Success Rate:               100.0%
+
+  Model Usage                 Reqs   Input Tokens  Output Tokens
+  gemini-2.5-pro                 4         21,480          1,912
+
+  Quota used:                 18% (resets in 19h 4m)

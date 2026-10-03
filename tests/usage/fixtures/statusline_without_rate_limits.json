@@ -1,0 +1,7 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "0b6f3c1e-5d2a-4a7e-9a51-3f1c2d4e5f60",
+  "cwd": "/srv/labhq/worktrees/project-1/task-7",
+  "model": {"id": "claude-opus-5-5", "display_name": "Opus"},
+  "cost": {"total_cost_usd": 0.01234, "total_duration_ms": 45000}
+}
