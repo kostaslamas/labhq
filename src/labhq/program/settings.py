@@ -15,6 +15,8 @@ class ProgramSettings(BaseSettings):
     notify_interval_seconds: float = Field(default=15.0, gt=0)
     # Status files change while a run is live, so a question surfaces before the run ends.
     status_interval_seconds: float = Field(default=30.0, gt=0)
+    # How often the change feed reads each live topic's watermark; the UI lags at most this.
+    live_interval_seconds: float = Field(default=1.0, gt=0)
     # Time the server gets to stop before it is cancelled on shutdown.
     shutdown_grace_seconds: float = Field(default=10.0, gt=0)
 

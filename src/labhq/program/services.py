@@ -8,6 +8,7 @@ from labhq.cli.context import Context
 from labhq.cli.engine import Engine
 from labhq.cli.statuses import ingest_statuses
 from labhq.db.models import Run
+from labhq.live import live_feed
 from labhq.notify import Dispatcher
 from labhq.program.loops import LoopRegistry, Step
 from labhq.scheduler.reaper import LIVE_STATUSES
@@ -51,3 +52,4 @@ default_loops: LoopRegistry[Services] = LoopRegistry()
 default_loops.register("scheduler", "scheduler_interval_seconds", _scheduler)
 default_loops.register("notifications", "notify_interval_seconds", _notifications)
 default_loops.register("statuses", "status_interval_seconds", _statuses)
+default_loops.register("live", "live_interval_seconds", live_feed)
