@@ -39,7 +39,12 @@ from labhq.adapters.tmux.agents import (
     SessionIdSource,
     default_python,
 )
-from labhq.adapters.tmux.blocking import blocking_screen, created_by_labhq
+from labhq.adapters.tmux.blocking import (
+    BlockingScreen,
+    blocking_screen,
+    created_by_labhq,
+    selected_line,
+)
 from labhq.adapters.tmux.environment import session_environment
 from labhq.adapters.tmux.server import TmuxServer
 from labhq.adapters.tmux.tools import TOOL_LAUNCHES, ToolServer
@@ -335,12 +340,16 @@ class TmuxAdapter:
         found = blocking_screen(kind.blocking_screens, screen)
         if found is None or found.name in answered:
             return False
-        if found.accept_keys and self._cwd is not None:
+        if found.accept_option is not None and self._cwd is not None:
             if created_by_labhq(self._cwd, self._owned_root):
                 answered.add(found.name)
-                name, _, _ = self._started()
-                await asyncio.to_thread(self._server.send_keys, name, *found.accept_keys)
-                return False
+                if await self._choose(found, found.accept_option):
+                    return False
+                self._blocked = (
+                    BLOCKED_REASON,
+                    f"{found.reason}, and {found.accept_option!r} could not be selected",
+                )
+                return True
             self._blocked = (
                 BLOCKED_REASON,
                 f"{found.reason}, and {self._cwd} is not a directory labhq created",
@@ -348,6 +357,23 @@ class TmuxAdapter:
             return True
         self._blocked = (BLOCKED_REASON, found.reason)
         return True
+
+    async def _choose(self, dialog: BlockingScreen, option: str) -> bool:
+        """Move the cursor to `option`, looking at the pane after every press, then confirm.
+
+        Enter is sent only with the cursor on the option: on any other option it would
+        answer the dialog the wrong way.
+        """
+        name, _, _ = self._started()
+        for _ in range(dialog.max_presses + 1):
+            screen = await asyncio.to_thread(self._server.capture, name)
+            line = selected_line(screen)
+            if line is not None and option in line:
+                await asyncio.to_thread(self._server.send_keys, name, dialog.confirm_key)
+                return True
+            await asyncio.to_thread(self._server.send_keys, name, dialog.select_key)
+            await self._clock.sleep(self._started()[2].poll_seconds)
+        return False
 
     def _final_result(
         self, kind: AgentKind, watch: Watch, exit_status: int | None, dead: bool

@@ -1,3 +1,4 @@
+import socket
 from pathlib import Path
 
 import pytest
@@ -85,7 +86,10 @@ def test_cli_without_cloudflared_exits_non_zero_and_does_not_serve_locally(
     data_dir: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("PATH", str(tmp_path))
-    result = CliRunner().invoke(app, ["mcp", "serve", "--expose", "quick-tunnel"])
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = str(probe.getsockname()[1])
+    result = CliRunner().invoke(app, ["mcp", "serve", "--port", port, "--expose", "quick-tunnel"])
     assert result.exit_code != 0
     assert "cloudflared is not installed" in result.stderr
     assert "Connector URL" not in result.stdout
