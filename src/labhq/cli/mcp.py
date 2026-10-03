@@ -5,8 +5,10 @@ from typing import Annotated
 import typer
 import uvicorn
 
+from labhq.agenttools import default_registry as agent_tools
+from labhq.agenttools.stdio import run_tools, serve_stdio
 from labhq.approvals.registry import UnknownEntryError
-from labhq.cli.context import fail, load_settings
+from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.expose import ExposureError, exposures, serve_exposed
 from labhq.mcp.auth import ensure_token, write_token
 from labhq.mcp.server import build_app
@@ -64,3 +66,19 @@ def serve(
         )
     except ExposureError as error:
         fail(str(error))
+
+
+@mcp_app.command()
+def agent(
+    run: Annotated[int, typer.Option("--run", help="The run whose agent the tools serve.")],
+) -> None:
+    """Serve a run agent's engine tools over stdio, for its CLI to start as a child."""
+
+    async def command(context: Context) -> None:
+        try:
+            tools = await run_tools(agent_tools, context.sessions, context.clock, run)
+        except LookupError as error:
+            raise CliError(str(error)) from error
+        await serve_stdio(tools)
+
+    execute(command)
