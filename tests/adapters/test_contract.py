@@ -1,7 +1,9 @@
 """The adapter contract, run against every registered adapter.
 
 The fake runs as it is; the Claude adapter runs with `ClaudeSDKClient` stubbed at the
-boundary. A real login runs the same checks by hand (docs/checks/claude-adapter.md).
+boundary, and the Ollama adapter against a fake `/api/chat` on `httpx.MockTransport`. A real
+login or a local Ollama runs the same checks by hand (docs/checks/claude-adapter.md,
+docs/checks/ollama-adapter.md).
 """
 
 from collections.abc import Callable
@@ -11,19 +13,28 @@ import pytest
 
 from labhq.adapters import AdapterFactory, FakeAdapter, FakeScript, default_registry
 from labhq.adapters.contract import CHECKS, ContractViolationError, check_interrupt
+from tests.adapters.fake_ollama import FakeOllama
 from tests.adapters.stub_sdk import StubScript, stub_claude
 
 
-def _fake(check: str) -> AdapterFactory:
+def _fake(check: str, tmp_path: Path) -> AdapterFactory:
     script = FakeScript(wait_for_interrupt=check == "interrupt")
     return lambda: FakeAdapter(script)
 
 
-def _claude(check: str) -> AdapterFactory:
+def _claude(check: str, tmp_path: Path) -> AdapterFactory:
     return stub_claude(StubScript(wait_for_interrupt=check == "interrupt"))
 
 
-HARNESSES: dict[str, Callable[[str], AdapterFactory]] = {"fake": _fake, "claude": _claude}
+def _ollama(check: str, tmp_path: Path) -> AdapterFactory:
+    return FakeOllama(hold=check == "interrupt").factory(tmp_path / "sessions")
+
+
+HARNESSES: dict[str, Callable[[str, Path], AdapterFactory]] = {
+    "fake": _fake,
+    "claude": _claude,
+    "ollama": _ollama,
+}
 
 
 def test_every_registered_adapter_has_a_contract_harness() -> None:
@@ -34,7 +45,7 @@ def test_every_registered_adapter_has_a_contract_harness() -> None:
 @pytest.mark.parametrize("check", sorted(CHECKS))
 @pytest.mark.parametrize("key", default_registry.adapter_keys())
 async def test_adapter_honours_the_contract(key: str, check: str, tmp_path: Path) -> None:
-    results = await CHECKS[check](HARNESSES[key](check), tmp_path)
+    results = await CHECKS[check](HARNESSES[key](check, tmp_path), tmp_path)
     assert results
 
 

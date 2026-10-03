@@ -14,6 +14,7 @@ from labhq.adapters.base import (
 )
 from labhq.adapters.claude import ClaudeAdapter, default_cli_path
 from labhq.adapters.fake import FakeAdapter, FakeScript
+from labhq.adapters.ollama import OllamaAdapter
 from labhq.adapters.registry import AdapterFactory, AdapterRegistry, UnknownAdapterError
 from labhq.settings import get_settings
 
@@ -25,6 +26,7 @@ def _claude() -> Adapter:
 default_registry = AdapterRegistry()
 default_registry.register("fake", FakeAdapter)
 default_registry.register("claude", _claude)
+default_registry.register("ollama", OllamaAdapter)
 
 __all__ = [
     "Adapter",
@@ -37,6 +39,7 @@ __all__ = [
     "ClaudeAdapter",
     "FakeAdapter",
     "FakeScript",
+    "OllamaAdapter",
     "RunRequest",
     "UnknownAdapterError",
     "default_registry",

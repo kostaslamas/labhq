@@ -2,7 +2,8 @@
 
 CI runs these against the fake and against the Claude adapter with its SDK client stubbed.
 `python -m labhq.adapters.contract claude` runs them against a real login; see
-docs/checks/claude-adapter.md. The prompts are chosen so a real model can satisfy them.
+docs/checks/claude-adapter.md. `... contract ollama` runs them against a local Ollama; see
+docs/checks/ollama-adapter.md. The prompts are chosen so a real model can satisfy them.
 """
 
 import argparse
@@ -124,7 +125,7 @@ async def _run_all(key: str, cwd: Path) -> bool:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the adapter contract for real.")
-    parser.add_argument("adapter", help="registered adapter key, e.g. claude")
+    parser.add_argument("adapter", help="registered adapter key, e.g. claude or ollama")
     args = parser.parse_args(argv)
     # Sessions are stored per working directory, so every check shares one.
     with tempfile.TemporaryDirectory(prefix="labhq-contract-") as scratch:

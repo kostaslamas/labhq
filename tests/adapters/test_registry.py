@@ -6,15 +6,17 @@ from labhq.adapters import (
     AdapterRegistry,
     ClaudeAdapter,
     FakeAdapter,
+    OllamaAdapter,
     UnknownAdapterError,
     default_registry,
 )
 
 
 def test_built_in_adapters_are_registered() -> None:
-    assert default_registry.adapter_keys() == ["claude", "fake"]
+    assert default_registry.adapter_keys() == ["claude", "fake", "ollama"]
     assert isinstance(default_registry.create("fake"), FakeAdapter)
     assert isinstance(default_registry.create("claude"), ClaudeAdapter)
+    assert isinstance(default_registry.create("ollama"), OllamaAdapter)
 
 
 def test_each_create_builds_a_new_instance() -> None:
