@@ -71,6 +71,7 @@ class WorkspaceRunService(RunService):
         resume_session_id: str | None = None,
         tools: Sequence[AgentTool] = (),
         config: dict[str, Any] | None = None,
+        tools_server: Sequence[str] = (),
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
             cwd = await self._task_worktree(task_id)
@@ -84,6 +85,7 @@ class WorkspaceRunService(RunService):
             resume_session_id=resume_session_id,
             tools=tools,
             config=config,
+            tools_server=tools_server,
         )
         # A log line scrolls away; the run's own events are where a lost saving stays visible.
         for warning in self._rtk.warnings:

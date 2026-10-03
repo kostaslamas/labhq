@@ -64,6 +64,7 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("mcp", "token"): (("mcp", "token"),),
     ("mcp", "serve"): (("mcp", "serve"),),
     ("mcp", "agent"): (("init",), ("mcp", "agent", "--run", "42")),
+    ("mcp", "internal"): (("init",), ("mcp", "internal", "--call", "42")),
     ("serve",): (("serve",),),
     ("onboard",): (("onboard", "--non-interactive", "--no-serve"),),
     ("ready",): (("ready",),),

@@ -13,8 +13,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class CallAgentSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LABHQ_CALLCENTER_", extra="ignore")
 
-    # The SDK adapter until the tmux adapter lands (ADR 0004, Phase 2 amendment).
-    agent_adapter: str = "claude"
+    # In tmux, like every agent (ADR 0004); `claude` keeps the SDK path, as on native
+    # Windows, where tmux does not run (ADR 0003).
+    agent_adapter: str = "tmux"
+    # The tmux agent kind; it must be one that can drop its built-in tools.
+    agent_kind: str = "claude-code"
     agent_model: str | None = None
     # Its own budget, per budget period, so a chatty call cannot eat the workers' money.
     agent_budget_micros: int = Field(default=2_000_000, ge=0)

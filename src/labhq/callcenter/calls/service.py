@@ -27,7 +27,8 @@ from labhq.callcenter.calls.bounds import Interrupter, NoInterrupter
 from labhq.callcenter.calls.settings import CallAgentSettings, get_call_agent_settings
 from labhq.callcenter.calls.spoken import to_speech
 from labhq.callcenter.calls.tickets import expire_if_old, next_pending, record_request
-from labhq.callcenter.calls.tools import CallTools
+from labhq.callcenter.calls.tools import CallTools, internal_arguments
+from labhq.callcenter.screens import ScreenReader, default_screen_reader
 from labhq.callcenter.settings import CallCenterSettings, get_callcenter_settings
 from labhq.clock import Clock
 from labhq.db.enums import CallRequestStatus, RunStatus
@@ -78,6 +79,8 @@ class CallCenter:
     settings: CallCenterSettings = field(default_factory=get_callcenter_settings)
     agent_settings: CallAgentSettings = field(default_factory=get_call_agent_settings)
     budget_settings: BudgetSettings | None = None
+    # Reads working agents' panes when a status is stale; None where tmux is missing.
+    screens: ScreenReader | None = field(default_factory=default_screen_reader)
     _workers: dict[int, _Worker] = field(default_factory=dict, init=False)
 
     async def ask(self, text: str) -> Ticket:
@@ -171,7 +174,9 @@ class CallCenter:
 
         if self.workdir is not None:
             self.workdir.mkdir(parents=True, exist_ok=True)
-        tools = CallTools(self.sessions, self.clock, self.interrupter, call_id).specs()
+        tools = CallTools(
+            self.sessions, self.clock, self.interrupter, call_id, self.screens
+        ).specs()
         runs = RunService(self.sessions, clock=self.clock, registry=self.adapters)
         try:
             active = await runs.start(
@@ -181,6 +186,8 @@ class CallCenter:
                 cwd=self.workdir,
                 resume_session_id=resume,
                 tools=tools,
+                # An agent in tmux gets the same tools from its CLI's own stdio child.
+                tools_server=internal_arguments(call_id),
             )
         except RunStartError:
             log.exception("call %s: the Call Center agent did not start", call_id)
