@@ -4,6 +4,7 @@ import pytest
 from alembic import command
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect
 
 import labhq.db.models  # noqa: F401
@@ -30,12 +31,28 @@ PHASE_1_TABLES = {
 }
 
 
+PHASE_2_TABLES = {
+    "calls",
+    "call_requests",
+    "deliveries",
+    "agent_questions",
+    "status_updates",
+    "notifications",
+}
+ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES
+
+
 def _sync_url(async_url: str) -> str:
     return async_url.replace("sqlite+aiosqlite", "sqlite")
 
 
-def test_models_declare_exactly_the_phase_1_tables() -> None:
-    assert set(Base.metadata.tables) == PHASE_1_TABLES
+def test_models_declare_exactly_the_known_tables() -> None:
+    assert set(Base.metadata.tables) == ALL_TABLES
+
+
+def test_the_chain_has_a_single_head() -> None:
+    heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
+    assert heads == ["0003"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:
@@ -43,7 +60,7 @@ def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> No
     with engine.connect() as connection:
         tables = set(inspect(connection).get_table_names())
     engine.dispose()
-    assert tables == PHASE_1_TABLES | {"alembic_version"}
+    assert tables == ALL_TABLES | {"alembic_version"}
 
 
 def test_migrations_and_models_do_not_drift(database_url: str) -> None:
@@ -70,7 +87,7 @@ def test_downgrade_to_base_and_upgrade_again(tmp_path: Path) -> None:
     command.upgrade(config, "head")
 
 
-@pytest.mark.parametrize("table", sorted(PHASE_1_TABLES))
+@pytest.mark.parametrize("table", sorted(ALL_TABLES))
 def test_every_amount_column_is_integer_micros(table: str) -> None:
     for column in Base.metadata.tables[table].columns:
         if "cost" in column.name or "budget" in column.name:
