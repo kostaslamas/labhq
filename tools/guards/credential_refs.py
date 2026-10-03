@@ -73,7 +73,8 @@ class Finding:
     pattern: Pattern
 
     def render(self) -> str:
-        where = f"{self.path}:{self.line}"
+        # POSIX separators, so a finding reads the same on every platform.
+        where = f"{self.path.as_posix()}:{self.line}"
         return f"{where}: {self.match!r} ({self.pattern.name}: {self.pattern.reason})"
 
 
