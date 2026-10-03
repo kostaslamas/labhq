@@ -63,6 +63,8 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("meetings", "start"): (("init",), ("meetings", "start", "nope")),
     ("meetings", "list"): (("meetings", "list"),),
     ("meetings", "show"): (("init",), ("meetings", "show", "42")),
+    ("it", "start"): (("init",), ("it", "start", "--adapter", "nope")),
+    ("it", "wake"): (("it", "wake"),),
     ("demo",): (("demo", "--adapter", "nope"),),
     ("mcp", "token"): (("mcp", "token"),),
     ("mcp", "serve"): (("mcp", "serve"),),

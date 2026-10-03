@@ -21,6 +21,7 @@ from labhq.cli.rules import rules_app
 from labhq.cli.running import run
 from labhq.cli.serve import serve
 from labhq.cli.work import agent_app, init, project_app, task_app
+from labhq.it.cli import it_app
 
 app = typer.Typer(name="labhq", help="Self-hosted project orchestrator.", no_args_is_help=True)
 
@@ -37,6 +38,7 @@ app.add_typer(notify_app, name="notify")
 app.add_typer(org_app, name="org")
 app.add_typer(rules_app, name="rules")
 app.add_typer(meetings_app, name="meetings")
+app.add_typer(it_app, name="it")
 app.command()(demo)
 app.command()(serve)
 app.command()(onboard)
