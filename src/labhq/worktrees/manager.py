@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from labhq.settings import Settings
+from labhq.worktrees.exclude import exclude_state_dir
 from labhq.worktrees.git import run_git
 
 BRANCH_PREFIX = "labhq/task-"
@@ -62,6 +63,8 @@ class Worktrees:
             raise WorktreeError(f"task {task_id} already has a worktree")
         worktree = Worktree(task_id, self.path_for(task_id), branch_name(task_id, title))
         self.root.mkdir(parents=True, exist_ok=True)
+        # Before the worktree exists, so no agent can stage `.labhq/` ahead of the entry.
+        exclude_state_dir(self.repo)
         run_git("worktree", "add", "-b", worktree.branch, str(worktree.path), base, cwd=self.repo)
         self._disable_push(worktree.path)
         return worktree
