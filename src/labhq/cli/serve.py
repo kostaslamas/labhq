@@ -1,4 +1,4 @@
-"""`labhq serve`: the MCP server and the background loops in one process."""
+"""`labhq serve`: the API, the MCP server and the background loops in one process."""
 
 from typing import Annotated
 
@@ -22,12 +22,14 @@ def serve(
     host: Annotated[str, typer.Option(help="Interface to bind.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8787,
 ) -> None:
-    """Run the MCP server, the scheduler, notifications and status ingestion until stopped.
+    """Run the API and MCP server, the scheduler, notifications and status ingestion until stopped.
 
     Stop it with Ctrl-C or SIGTERM; live runs are interrupted and the exit code is 0.
     """
 
-    # Imported here: `labhq.program` imports `labhq.cli`, whose package init imports this module.
+    # Imported here: `labhq.program` and `labhq.api` import `labhq.cli`, whose package init
+    # imports this module.
+    from labhq.api import create_server_app
     from labhq.program import (
         Program,
         ProgramError,
@@ -52,8 +54,9 @@ def serve(
             )
             attach_interrupter(SchedulerInterrupter(services.engine.scheduler))
             # No access log: the secret path would land in it.
+            mcp_app = build_app(default_registry, secret)
             config = uvicorn.Config(
-                build_app(default_registry, secret), host=host, port=port, access_log=False
+                create_server_app(context, mcp_app), host=host, port=port, access_log=False
             )
             program = Program(
                 services,
