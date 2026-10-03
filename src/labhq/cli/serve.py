@@ -1,6 +1,7 @@
 """`labhq serve`: the API, the MCP server and the background loops in one process."""
 
 import asyncio
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -38,8 +39,18 @@ def remember_public_url(data_dir: Path, given: str | None) -> None:
         fail(f"cannot store the public URL: {error.strerror or error}")
 
 
-def _announce(url: str) -> None:
-    typer.echo(f"Connector URL: {url}")
+def _is_terminal() -> bool:
+    return sys.stdout.isatty()
+
+
+def _announce(url: str, secret: str) -> None:
+    """Print the connector URL; off a terminal (a systemd journal) the token stays out of it."""
+    if _is_terminal():
+        typer.echo(f"Connector URL: {url}")
+        return
+    typer.echo(
+        f"Connector URL: {url.removesuffix(secret)} (run `labhq mcp token` to see the token)"
+    )
 
 
 def serve(
@@ -116,7 +127,7 @@ def serve(
             )
             exposing = None
             if expose is None:
-                typer.echo(f"Connector URL: http://{host}:{port}/mcp/{secret}")
+                _announce(f"http://{host}:{port}/mcp/{secret}", secret)
             else:
                 exposing = asyncio.create_task(
                     expose_running(
@@ -124,7 +135,7 @@ def serve(
                         port=port,
                         secret=secret,
                         adapter=exposures.get(expose)(),
-                        announce=_announce,
+                        announce=lambda url: _announce(url, secret),
                         clock=context.clock,
                         verify=verify_connector,
                     )

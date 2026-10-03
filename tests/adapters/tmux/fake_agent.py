@@ -15,7 +15,7 @@ import os
 import shlex
 import subprocess
 import sys
-import time
+import threading
 import tty
 from pathlib import Path
 
@@ -80,12 +80,12 @@ def trust_dialog() -> None:
 
 def login_dialog() -> None:
     print(LOGIN_DIALOG, flush=True)
-    time.sleep(3600)
+    threading.Event().wait()
 
 
 def stall() -> None:
     print("starting", flush=True)
-    time.sleep(3600)
+    threading.Event().wait()
 
 
 def wait_for_interrupt() -> None:
