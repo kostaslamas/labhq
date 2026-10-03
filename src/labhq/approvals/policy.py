@@ -55,6 +55,9 @@ PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
     ConfirmationKind("cli", ANY_RISK),
     ConfirmationKind("voice", LIGHT),
     ConfirmationKind("passkey", ANY_RISK),
+    # An external approval gate proved a passkey; the gate adapter refuses weaker proofs
+    # before it ever asks for this kind (approvals.gates).
+    ConfirmationKind("external_gate", ANY_RISK),
 )
 
 default_actions = Registry[ActionType]("action type")
