@@ -9,6 +9,7 @@ from sqlalchemy import create_engine, inspect
 
 import labhq.db.models  # noqa: F401
 from labhq.db import Base
+from labhq.meetings.channels.models import ChatPost  # noqa: F401
 from labhq.settings import sqlite_url
 from tests.conftest import alembic_config
 
@@ -48,6 +49,7 @@ PHASE_3_TABLES = {
     "meeting_transcript_entries",
     "meeting_decisions",
     "meeting_action_items",
+    "chat_outbox",
 }
 ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES
 
@@ -62,7 +64,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0007"]
+    assert heads == ["0008"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:
