@@ -34,6 +34,22 @@ The `tmux` adapter: Claude Code, Codex CLI, Gemini CLI, Aider or any CLI agent (
 |---|---|---|---|
 | `LABHQ_TMUX_SOCKET` | `str` | `labhq` | The private server's socket: `tmux -L labhq attach -t run-<id>` watches a run. |
 
+## `labhq.adoption.settings.AdoptionSettings`
+
+Adoption settings, from `LABHQ_ADOPT_*` variables. Timings are data, not constants.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_ADOPT_SANDBOX` | `list[str]` | `[]` | Words put before the continued agent's command, for example a bubblewrap invocation ending in `--` (plan §5, rule 6). Empty means none, and the confirmation warns. |
+| `LABHQ_ADOPT_OWNER_TMUX_SOCKET` | `str \| None` | unset | The owner's tmux server, where an agent to adopt may run; None is tmux's default. |
+| `LABHQ_ADOPT_POLL_SECONDS` | `float` | `1.0` |  |
+| `LABHQ_ADOPT_QUIESCENCE_SECONDS` | `float` | `10.0` | The original agent's turn has ended once its screen (or, outside tmux, its CPU time and child processes) stayed the same this long. |
+| `LABHQ_ADOPT_TURN_TIMEOUT_SECONDS` | `float` | `3600.0` |  |
+| `LABHQ_ADOPT_END_TIMEOUT_SECONDS` | `float` | `10.0` | SIGTERM first; SIGKILL when the process outlives this. |
+| `LABHQ_ADOPT_READY_SECONDS` | `float` | `3.0` | The continued agent is ready for the first message once its screen is quiet this long. |
+| `LABHQ_ADOPT_READY_TIMEOUT_SECONDS` | `float` | `120.0` |  |
+| `LABHQ_ADOPT_SESSION_WAIT_SECONDS` | `float` | `30.0` |  |
+
 ## `labhq.api.settings.ApiSettings`
 
 API settings, read from `LABHQ_API_*` environment variables.
