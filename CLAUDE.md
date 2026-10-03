@@ -26,6 +26,9 @@ Read these before changing anything:
 6. Open a pull request with `gh pr create`. The body says `Closes #N` and lists every
    acceptance criterion next to the test or guard that proves it. A criterion you could not
    prove is listed as not done, with the reason.
+7. When every CI check is green, merge it with `gh pr merge --merge --delete-branch`. If CI
+   fails, fix and push until it is green. If you are blocked on something only the owner
+   can provide, add the label `needs-owner` to the issue, comment why, and stop.
 
 Never push to `main`, create a tag or edit another issue's paths beyond the minimum.
 
@@ -78,3 +81,19 @@ repository secret; you cannot see it, and you do not need to.
 | `src/labhq/cli/`, `docs/checks/` | CLI and demo |
 
 Tests mirror the source tree under `tests/`.
+
+## Module ownership in Phase 2
+
+| Path | Owner issue |
+|---|---|
+| `pyproject.toml`, `uv.lock`, `migrations/versions/0003_*`, `src/labhq/db/models/callcenter.py`, `src/labhq/db/enums.py` (Phase 2 values), `src/labhq/speech/`, `src/labhq/work/`, `src/labhq/callcenter/settings.py` | #31 Phase 2 foundation |
+| `src/labhq/notify/`, `src/labhq/cli/notify.py`, `docs/checks/notifier.md` | #32 Notifier |
+| `src/labhq/mcp/server.py`, `src/labhq/mcp/auth.py`, `src/labhq/mcp/tools/registry.py`, `src/labhq/cli/mcp.py` | #33 MCP server |
+| `src/labhq/callcenter/answers/` | #34 Program answers |
+| `src/labhq/callcenter/actions/` | #35 Decide and order |
+| `src/labhq/callcenter/status/`, `src/labhq/callcenter/questions/`, `src/labhq/callcenter/deliveries/` | #36 Agent questions |
+| `src/labhq/expose/`, `docs/checks/connector.md` | #37 Exposure |
+| `src/labhq/mcp/tools/` (except `registry.py`), the inspector step in `.github/workflows/ci.yml` | #38 Call Center tools |
+| `src/labhq/callcenter/calls/`, `docs/checks/voice.md` | #39 ask_ceo and get_reply |
+
+New CLI commands register in `src/labhq/cli/__init__.py` with a one-line edit each.
