@@ -4,7 +4,9 @@ It prints its session and working directory, acts on the words of its prompt, pr
 turn-end marker and then idles like an interactive agent, answering `/usage`.
 
 Prompt words: `ENV` reports what the worker can see of credentials; `PUSH` tries to publish
-(through the push guard hook first when `--hook` is given); `WAIT` blocks until Ctrl-C.
+(through the push guard hook first when `--hook` is given); `WAIT` blocks until Ctrl-C;
+`TRUST` shows Claude Code's folder-trust dialog and goes on only when it is answered with
+`1`; `LOGIN` shows a login dialog nobody may answer; `STALL` prints once and then goes quiet.
 """
 
 import argparse
@@ -13,6 +15,8 @@ import os
 import shlex
 import subprocess
 import sys
+import time
+import tty
 from pathlib import Path
 
 TURN_END = "LABHQ-FAKE-TURN-END"
@@ -48,6 +52,42 @@ def push(hook: str | None) -> None:
     print(f"push-exit={result.returncode}")
 
 
+# The screen of the end-to-end run that found the hang (2026-10-03), as the pane showed it.
+TRUST_DIALOG = """\
+Accessing workspace: {cwd}
+
+Quick safety check: Is this a project you created or one you trust? (Like your own code,
+a well-known open source project, or work from your team). If not, take a moment to
+review what's in this folder first.
+
+Claude Code'll be able to read, edit, and execute files here.
+
+ \u276f No, exit
+   Yes, I trust this folder
+
+Enter to confirm \u00b7 Esc to cancel"""
+LOGIN_DIALOG = "Select login method:\n \u276f 1. Claude account\n   2. Anthropic Console"
+
+
+def trust_dialog() -> None:
+    print(TRUST_DIALOG.format(cwd=Path.cwd()), flush=True)
+    tty.setcbreak(sys.stdin.fileno())
+    if sys.stdin.read(1) != "1":
+        print("exiting without trust")
+        sys.exit(1)
+    print("trusted", flush=True)
+
+
+def login_dialog() -> None:
+    print(LOGIN_DIALOG, flush=True)
+    time.sleep(3600)
+
+
+def stall() -> None:
+    print("starting", flush=True)
+    time.sleep(3600)
+
+
 def wait_for_interrupt() -> None:
     print("waiting", flush=True)
     try:
@@ -68,6 +108,9 @@ def main() -> None:
     actions = {
         "ENV": report_environment,
         "WAIT": wait_for_interrupt,
+        "TRUST": trust_dialog,
+        "LOGIN": login_dialog,
+        "STALL": stall,
         "PUSH": lambda: push(args.hook),
     }
     for word in args.prompt.split():

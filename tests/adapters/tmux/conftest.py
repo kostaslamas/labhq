@@ -19,7 +19,8 @@ from labhq.adapters.tmux import (
     UsageSource,
     default_kinds,
 )
-from labhq.clock import SystemClock
+from labhq.adapters.tmux.agents import CLAUDE_BLOCKING_SCREENS
+from labhq.clock import Clock, SystemClock
 from tests.runs.conftest import World, sessions, world  # noqa: F401  (fixtures)
 from tests.runs.helpers import use_adapter
 from tests.worktrees.conftest import isolated_git, remote, repo  # noqa: F401  (fixtures)
@@ -58,6 +59,7 @@ def fake_kind(name: str, *, hook: bool) -> AgentKind:
         hooks="--hook" if hook else None,
         usage_command="/usage",
         source="tests/adapters/tmux/fake_agent.py",
+        blocking_screens=CLAUDE_BLOCKING_SCREENS,
     )
 
 
@@ -93,10 +95,16 @@ class AdapterMaker:
     def __init__(self, server: TmuxServer) -> None:
         self.server = server
         self.kinds = fake_kinds()
+        self.owned_root: Path | None = None
+        self.clock: Clock = SystemClock()
 
     def __call__(self) -> TmuxAdapter:
         return TmuxAdapter(
-            server=self.server, kinds=self.kinds, clock=SystemClock(), environ=dict(os.environ)
+            server=self.server,
+            kinds=self.kinds,
+            clock=self.clock,
+            environ=dict(os.environ),
+            owned_root=self.owned_root,
         )
 
 

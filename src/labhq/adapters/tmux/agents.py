@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 
+from labhq.adapters.tmux.blocking import BlockingScreen
 from labhq.adapters.tmux.tomlvalue import toml_value
 from labhq.adapters.tmux.tools import TOOL_LAUNCHES
 
@@ -110,6 +111,8 @@ class AgentKind:
     # means the program of `start`.
     processes: tuple[str, ...] = ()
     continue_source: str = ""
+    # Dialogs the agent can stop on before or during a turn (see `blocking`).
+    blocking_screens: tuple[BlockingScreen, ...] = ()
 
     @property
     def process_names(self) -> tuple[str, ...]:
@@ -225,6 +228,23 @@ def default_python() -> str:
     return sys.executable
 
 
+# Screen text from Claude Code's first start in a new directory, captured 2026-10-03. The
+# options are not numbered in the capture; "1" is the documented shortcut of its selectors and
+# is checked in docs/checks/tmux-adapter.md.
+CLAUDE_BLOCKING_SCREENS = (
+    BlockingScreen(
+        name="trust-folder",
+        pattern=r"Is this a project you created or one you trust\?.*Yes, I trust this folder",
+        reason="Claude Code asks whether to trust the working directory",
+        accept_keys=("1",),
+    ),
+    BlockingScreen(
+        name="login",
+        pattern=r"Select login method|Please run /login|Invalid API key",
+        reason="Claude Code is not logged in",
+    ),
+)
+
 CLAUDE_CODE = AgentKind(
     name="claude-code",
     start=("claude", "--dangerously-skip-permissions", "--session-id", "{session_id}", "{prompt}"),
@@ -243,6 +263,7 @@ CLAUDE_CODE = AgentKind(
         "checked 2026-10-03"
     ),
     tool_launch="claude_mcp",
+    blocking_screens=CLAUDE_BLOCKING_SCREENS,
     reply_key="last_assistant_message",
     continue_=(
         "claude",

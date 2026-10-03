@@ -36,7 +36,12 @@ def default_tmux_adapter() -> TmuxAdapter:
     server = TmuxServer(
         socket=get_tmux_settings().socket, state_dir=get_settings().data_dir / "tmux"
     )
-    return TmuxAdapter(server=server, kinds=default_kinds, clock=SystemClock())
+    return TmuxAdapter(
+        server=server,
+        kinds=default_kinds,
+        clock=SystemClock(),
+        owned_root=get_settings().data_dir,
+    )
 
 
 __all__ = [
