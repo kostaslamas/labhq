@@ -1,14 +1,17 @@
 import { defineConfig, devices } from '@playwright/test'
 
-const port = 4173
+import { BASE_URL_ENV } from './e2e/support/server.ts'
 
 export default defineConfig({
   testDir: './e2e',
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? 'github' : 'list',
+  // Seeds a temporary labhq and serves the built UI from it (e2e/support/server.ts).
+  globalSetup: './e2e/support/server.ts',
   use: {
-    baseURL: `http://127.0.0.1:${port}`,
+    // Set by the global setup; workers load this file again after it has run.
+    baseURL: process.env[BASE_URL_ENV],
     locale: 'en-US',
     trace: 'retain-on-failure',
   },
@@ -21,9 +24,4 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: `npm run preview -- --host 127.0.0.1 --port ${port}`,
-    url: `http://127.0.0.1:${port}`,
-    reuseExistingServer: !process.env.CI,
-  },
 })
