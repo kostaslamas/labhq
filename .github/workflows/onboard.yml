@@ -56,9 +56,16 @@ jobs:
           chmod +x "${work}/bin/cloudflared"
 
           ntfy_port="$(free_port)"
-          "${python}" "${fakes}/ntfy.py" --port "${ntfy_port}" --log "${work}/ntfy.log" &
+          "${python}" "${fakes}/ntfy.py" --port "${ntfy_port}" --log "${work}/ntfy.log" \
+            --ready "${work}/ntfy.ready" &
           ntfy=$!
           trap 'kill "${ntfy}" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 100); do
+            test -e "${work}/ntfy.ready" && break
+            kill -0 "${ntfy}"
+            sleep 0.1
+          done
+          test -e "${work}/ntfy.ready"
 
           proxy="http://127.0.0.1:$(free_port)"
           export PATH="${work}/bin:${PATH}"
