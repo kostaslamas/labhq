@@ -13,6 +13,7 @@ from pydantic import BaseModel
 import labhq
 from labhq.api.approvals import router as approvals_router
 from labhq.api.projects import router as projects_router
+from labhq.api.today.router import router as today_router
 from labhq.api.vocabulary import vocabulary_router
 from labhq.auth.routes import public_router as auth_public_router
 from labhq.auth.routes import router as auth_router
@@ -62,3 +63,4 @@ default_routers.register(auth_public_router, public=True)  # Sign-in cannot need
 default_routers.register(auth_router)
 default_routers.register(approvals_router)
 default_routers.register(projects_router)
+default_routers.register(today_router)
