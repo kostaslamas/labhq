@@ -7,19 +7,16 @@ from typing import Annotated, Any
 import typer
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from labhq.adapters import UnknownAdapterError
+from labhq import work
 from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.cli.engine import cli_adapters
-from labhq.clock import Clock
-from labhq.db.enums import AgentStatus, WakeupSource
+from labhq.db.enums import AgentStatus
 from labhq.db.models import Agent, Project, Task
 from labhq.money import usd_to_micros
-from labhq.scheduler import Wakeup, enqueue
-from labhq.worktrees import GitError
-from labhq.worktrees.git import run_git
+
+# Re-exported: callers and tests that build assignments through the CLI module keep working.
+from labhq.work import assignment as assignment
 
 # Migrations ship with the source tree, next to `src/`; `labhq` runs from a checkout.
 MIGRATIONS = Path(__file__).resolve().parents[3] / "migrations"
@@ -60,42 +57,9 @@ def parse_budget(value: str | None) -> int | None:
         raise CliError(f"budget must be a non-negative USD amount, got {value!r}") from error
 
 
-async def find_project(db: AsyncSession, reference: str) -> Project:
-    """A project by numeric id or by name."""
-    query = select(Project).where(Project.name == reference)
-    if reference.isdigit():
-        query = select(Project).where(Project.id == int(reference))
-    project = await db.scalar(query)
-    if project is None:
-        raise CliError(f"no project {reference!r}")
-    return project
-
-
-async def find_agent(db: AsyncSession, agent_id: int) -> Agent:
-    agent = await db.get(Agent, agent_id)
-    if agent is None:
-        raise CliError(f"no agent {agent_id}")
-    return agent
-
-
-def check_repository(path: Path) -> Path:
-    resolved = path.expanduser().resolve()
-    try:
-        run_git("rev-parse", "--verify", "HEAD", cwd=resolved)
-    except (GitError, OSError) as error:
-        raise CliError(f"{resolved} is not a git repository with a commit") from error
-    return resolved
-
-
 async def create_project(context: Context, name: str, repo: Path, budget: int | None) -> Project:
-    now = context.clock.now()
     async with context.sessions() as db:
-        if await db.scalar(select(Project.id).where(Project.name == name)) is not None:
-            raise CliError(f"a project named {name!r} already exists")
-        project = Project(
-            name=name, repo_path=str(repo), budget_micros=budget, created_at=now, updated_at=now
-        )
-        db.add(project)
+        project = await work.add_project(db, context.clock, name=name, repo=repo, budget=budget)
         await db.commit()
     return project
 
@@ -111,7 +75,9 @@ def project_add(
     """Register a git repository as a project."""
 
     async def body(context: Context) -> Project:
-        return await create_project(context, name, check_repository(repo), parse_budget(budget_usd))
+        return await create_project(
+            context, name, work.check_repository(repo), parse_budget(budget_usd)
+        )
 
     project = execute(body)
     typer.echo(f"project {project.id} {project.name}: {project.repo_path}")
@@ -129,26 +95,20 @@ async def create_agent(
     budget: int | None = None,
     status: AgentStatus = AgentStatus.PENDING_APPROVAL,
 ) -> Agent:
-    if adapter not in cli_adapters().adapter_keys():
-        raise UnknownAdapterError(f"no adapter registered as {adapter!r}")
-    now = context.clock.now()
     async with context.sessions() as db:
-        owner = await find_project(db, project)
-        if reports_to is not None:
-            await find_agent(db, reports_to)
-        agent = Agent(
-            project_id=owner.id,
+        agent = await work.add_agent(
+            db,
+            context.clock,
+            adapters=cli_adapters().adapter_keys(),
+            project=project,
             role=role,
             title=title,
-            reports_to=reports_to,
             adapter=adapter,
-            config=config or {},
-            budget_micros=budget,
+            reports_to=reports_to,
+            config=config,
+            budget=budget,
             status=status,
-            created_at=now,
-            updated_at=now,
         )
-        db.add(agent)
         await db.commit()
     return agent
 
@@ -187,7 +147,7 @@ def agent_approve(agent_id: Annotated[int, typer.Argument(help="The agent's id."
 
     async def body(context: Context) -> Agent:
         async with context.sessions() as db:
-            agent = await find_agent(db, agent_id)
+            agent = await work.find_agent(db, agent_id)
             if agent.status is not AgentStatus.PENDING_APPROVAL:
                 raise CliError(f"agent {agent_id} is {agent.status}, not pending approval")
             agent.status = AgentStatus.ACTIVE
@@ -199,16 +159,6 @@ def agent_approve(agent_id: Annotated[int, typer.Argument(help="The agent's id."
     typer.echo(f"agent {agent.id} {agent.title}: {agent.status}")
 
 
-def assignment(task: Task, agent_id: int) -> Wakeup:
-    return Wakeup(
-        agent_id=agent_id,
-        source=WakeupSource.ASSIGNMENT,
-        idempotency_key=f"assignment:task:{task.id}:agent:{agent_id}",
-        task_id=task.id,
-        reason="assigned by the operator",
-    )
-
-
 async def create_task(
     context: Context,
     *,
@@ -218,25 +168,16 @@ async def create_task(
     assignee: int | None = None,
     priority: int = 0,
 ) -> Task:
-    clock: Clock = context.clock
-    now = clock.now()
     async with context.sessions() as db:
-        owner = await find_project(db, project)
-        if assignee is not None and (await find_agent(db, assignee)).project_id != owner.id:
-            raise CliError(f"agent {assignee} does not belong to project {owner.name!r}")
-        task = Task(
-            project_id=owner.id,
+        task = await work.add_task(
+            db,
+            context.clock,
+            project=project,
             title=title,
             description=description,
-            assignee_id=assignee,
+            assignee=assignee,
             priority=priority,
-            created_at=now,
-            updated_at=now,
         )
-        db.add(task)
-        await db.flush()
-        if assignee is not None:
-            await enqueue(db, assignment(task, assignee), clock)
         await db.commit()
     return task
 
