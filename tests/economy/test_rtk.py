@@ -10,14 +10,19 @@ from claude_agent_sdk import HookMatcher
 
 from labhq.economy.rtk import RTK_MISSING, SHELL_TOOL, rewrite_command, rtk_hook
 
-# A stand-in for `rtk rewrite`: filters `pytest` and `git` commands, declines the rest.
+# A stand-in for `rtk rewrite`: filters `pytest` and `git` commands, declines the rest. Like
+# the real binary when no permission rule matches, it exits 3 after printing a rewrite.
 STUB_RTK = """#!/bin/sh
 [ "$1" = rewrite ] || exit 2
 case "$2" in
-  pytest*|git*) printf 'rtk %s\\n' "$2" ;;
+  pytest*|git*) printf 'rtk %s\\n' "$2"; exit 3 ;;
   *) exit 1 ;;
 esac
 """
+
+
+def exiting_stub(code: int, output: str = "rtk pytest") -> str:
+    return f"#!/bin/sh\nprintf '%s\\n' '{output}'\nexit {code}\n"
 
 
 def install_stub(directory: Path, script: str = STUB_RTK) -> Path:
@@ -102,6 +107,22 @@ async def test_other_tools_are_left_alone(stub_on_path: Path) -> None:
 async def test_an_empty_command_is_left_alone(stub_on_path: Path) -> None:
     (matcher,) = rtk_hook().matchers
     assert await call_hook(matcher, bash_input("   ")) == {}
+
+
+@pytest.mark.parametrize("code", [0, 3])
+async def test_a_rewrite_counts_whether_rtk_allows_it_or_leaves_the_prompt(
+    tmp_path: Path, code: int
+) -> None:
+    binary = install_stub(tmp_path / "bin", exiting_stub(code))
+    assert await rewrite_command(binary, "pytest") == "rtk pytest"
+
+
+@pytest.mark.parametrize("code", [1, 2])
+async def test_no_filter_or_a_deny_rule_runs_the_command_unchanged(
+    tmp_path: Path, code: int
+) -> None:
+    binary = install_stub(tmp_path / "bin", exiting_stub(code))
+    assert await rewrite_command(binary, "pytest") is None
 
 
 async def test_an_echoed_command_is_not_a_rewrite(tmp_path: Path) -> None:

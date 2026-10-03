@@ -1,6 +1,6 @@
 # Σχέδιο έργου: `labhq` — self-hosted project orchestrator
 
-Ημερομηνία: 2026-10-02 · Κατάσταση: σε εκτέλεση, Φάση 1 · Όνομα: `labhq`
+Ημερομηνία: 2026-10-02 · Κατάσταση: Φάση 1 ολοκληρώθηκε, επόμενη η Φάση 2 · Όνομα: `labhq`
 
 ## 1. Σκοπός
 
@@ -346,6 +346,8 @@ docker compose up
 
 ### Φάση 1 — Engine
 
+Κατάσταση: ολοκληρώθηκε (2026-10-03), tag `v0.1.0-alpha.1`. Και οι τέσσερις χειροκίνητοι έλεγχοι πέρασαν με πραγματικό login (`docs/checks/`). Το A/B του `rtk` βρήκε δύο bugs που τα tests δεν έπιαναν· διορθώθηκαν πριν το tag.
+
 Περιεχόμενο: data model + migrations, scheduler, runs, Claude adapter, worktrees, budgets, approvals, CLI, collector υγείας για το τοπικό μηχάνημα και rule engine, ύφος εξόδου ανά αποδέκτη, `rtk` hook.
 
 Demo: ένα project, ένας manager, ένας worker. Task → worktree branch με commit → κόστος καταγραμμένο → push απαιτεί έγκριση.
@@ -506,4 +508,4 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 
 ## 14. Επόμενο βήμα
 
-Ξεκίνα το κύμα 0 της Φάσης 1: τα issues Foundation και CI guards σε δύο παράλληλα cloud sessions. Το κύμα 1 ξεκινά μόλις γίνει merge το Foundation.
+Σπάσε τη Φάση 2 (Call Center) σε issues με την ίδια μορφή και τα ίδια labels με τη Φάση 1. Παράλληλα μπορούν να ξεκινήσουν τα #25 (tmux adapter) και #27 (ανάληψη agent), που δεν είναι κριτήρια καμίας φάσης.

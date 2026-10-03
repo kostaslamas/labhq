@@ -73,12 +73,19 @@ Report the median drop as a percentage of A.
 
 ## Result
 
-Not yet run. The owner fills this in.
+Recorded runs, newest last. The 2026-10-03 run gave each of the six runs its own scratch
+data directory and a fresh clone of the same scratch project (300 passing tests under
+`pytest -v`, 25 commits), instead of one database and a reset worktree; the state each run
+starts from is the same. A had `rtk` removed from `PATH` and recorded the `rtk_missing`
+warning; B had `rtk` 0.51.0 on `PATH` and recorded none. Both fixes on this branch were
+needed first: without them B ran unfiltered.
 
 | Date | labhq commit | Claude Code | rtk | Model | Pair | A total_input | B total_input | Drop | Answers agree |
 |---|---|---|---|---|---|---|---|---|---|
-| | | | | | 1 | | | | |
-| | | | | | 2 | | | | |
-| | | | | | 3 | | | | |
+| 2026-10-03 | `419e80d` | 2.1.288 | 0.51.0 | `claude-haiku-4-5-20251001` | 1 (A then B) | 110650 | 60877 | 45.0% | yes: 300 passed, `chore: step 05` |
+| 2026-10-03 | `419e80d` | 2.1.288 | 0.51.0 | `claude-haiku-4-5-20251001` | 2 (B then A) | 93477 | 75394 | 19.3% | yes |
+| 2026-10-03 | `419e80d` | 2.1.288 | 0.51.0 | `claude-haiku-4-5-20251001` | 3 (A then B) | 108847 | 74955 | 31.1% | yes |
 
-Median drop: . Verdict (keep the hook on by default or not): .
+Median drop: 31.1%. Tool output that reached the model fell from about 28,700 characters per
+A run to about 1,500 per B run, and cost fell from 44,666–68,557 to 23,309–25,803 micros.
+Verdict: keep the hook on by default.

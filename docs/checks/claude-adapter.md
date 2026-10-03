@@ -46,4 +46,4 @@ Record every run here: date, `claude --version`, `claude-agent-sdk` version, bil
 
 | Date | Claude Code | SDK | Billing | Result | Total cost | Run by |
 |---|---|---|---|---|---|---|
-| _not run yet_ | | | | | | owner |
+| 2026-10-03 | 2.1.288 | 0.2.163 | subscription | PASS completes ($0.0331), PASS interrupt ($0.0010), PASS resume ($0.0987) | $0.1327 | owner's machine |

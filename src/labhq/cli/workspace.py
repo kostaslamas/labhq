@@ -26,6 +26,7 @@ from labhq.worktrees import Worktree, Worktrees, default_root
 log = logging.getLogger(__name__)
 
 PRE_TOOL_USE = "PreToolUse"
+WARNING_EVENT = "warning"
 
 
 def project_worktrees(settings: Settings, project: Project) -> Worktrees:
@@ -69,7 +70,7 @@ class WorkspaceRunService(RunService):
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
             cwd = await self._task_worktree(task_id)
-        return await super().start(
+        active = await super().start(
             agent_id=agent_id,
             task_id=task_id,
             prompt=prompt,
@@ -77,6 +78,10 @@ class WorkspaceRunService(RunService):
             hooks=hooks if hooks is not None else run_hooks(self._rtk),
             run_id=run_id,
         )
+        # A log line scrolls away; the run's own events are where a lost saving stays visible.
+        for warning in self._rtk.warnings:
+            await active.note(WARNING_EVENT, warning.as_event_payload())
+        return active
 
     async def _task_worktree(self, task_id: int) -> Path:
         async with self._workspace_sessions() as db:

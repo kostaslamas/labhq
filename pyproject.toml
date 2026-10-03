@@ -1,6 +1,6 @@
 [project]
 name = "labhq"
-version = "0.1.0.dev0"
+version = "0.1.0a1"
 description = "Self-hosted project orchestrator for one person, many projects and a team of AI agents"
 readme = "README.md"
 license = "MIT"
