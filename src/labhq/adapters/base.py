@@ -38,6 +38,10 @@ class RunRequest:
     tools: Sequence[AgentTool] = ()
     # The run this request belongs to; adapters that name external resources use it.
     run_id: int | None = None
+    # Engine tools (labhq.agenttools) bound to the run's agent, served next to its own tools.
+    agent_tools: Sequence[AgentTool] = ()
+    # The role instruction and output style (labhq.prompts), after the adapter's own prompt.
+    system_prompt_append: str | None = None
 
 
 @dataclass(frozen=True)

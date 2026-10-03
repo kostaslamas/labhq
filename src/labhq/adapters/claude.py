@@ -9,7 +9,7 @@ import os
 import shutil
 from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Protocol, cast
+from typing import Any, Literal, Protocol, cast
 
 from claude_agent_sdk import (
     AssistantMessage,
@@ -19,13 +19,14 @@ from claude_agent_sdk import (
     SdkMcpTool,
     create_sdk_mcp_server,
 )
-from claude_agent_sdk.types import McpServerConfig, PermissionMode
+from claude_agent_sdk.types import McpServerConfig, PermissionMode, SystemPromptPreset
 from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict
 
 from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, AgentTool, RunRequest
 from labhq.adapters.claude_env import child_environment
 from labhq.adapters.claude_messages import to_event, to_result
+from labhq.guards.readonly import READ_ONLY_MODE, read_only_matcher, read_only_permissions
 
 
 class SDKClient(Protocol):
@@ -53,8 +54,9 @@ class ClaudeAgentConfig(BaseModel):
 
     model_config = ConfigDict(extra="ignore", frozen=True)
 
-    # Agents work unattended inside their worktree by default (plan §5, rule 1).
-    permission_mode: PermissionMode = "bypassPermissions"
+    # Agents work unattended inside their worktree by default (plan §5, rule 1); agents that
+    # touch machines run read-only instead (plan §5, rule 2).
+    permission_mode: PermissionMode | Literal["read_only"] = "bypassPermissions"
     model: str | None = None
     max_turns: int | None = None
     # `[]` runs with no tools at all, as the usage extractor does (ADR 0003).
@@ -86,19 +88,54 @@ def _sdk_tool(spec: AgentTool) -> SdkMcpTool[Any]:
     )
 
 
-def tool_options(tools: Sequence[AgentTool]) -> dict[str, Any]:
-    """Options that give the run exactly `tools`, served in this process, and nothing else."""
-    if not tools:
+def served_name(spec: AgentTool) -> str:
+    return f"mcp__{TOOL_SERVER}__{spec.name}"
+
+
+def tool_options(tools: Sequence[AgentTool], added: Sequence[AgentTool] = ()) -> dict[str, Any]:
+    """Options that serve `tools` and `added` in this process.
+
+    `tools` replace the built-in tools; `added` join them.
+    """
+    served = [*tools, *added]
+    if not served:
         return {}
-    server = create_sdk_mcp_server(TOOL_SERVER, tools=[_sdk_tool(spec) for spec in tools])
+    server = create_sdk_mcp_server(TOOL_SERVER, tools=[_sdk_tool(spec) for spec in served])
     servers: dict[str, McpServerConfig] = {TOOL_SERVER: server}
-    return {
-        # An empty list removes every built-in tool: no shell, no file reads or writes.
-        "tools": [],
+    options: dict[str, Any] = {
         "mcp_servers": servers,
         # Only this server: no MCP configuration from the machine joins in.
         "strict_mcp_config": True,
-        "allowed_tools": [f"mcp__{TOOL_SERVER}__{spec.name}" for spec in tools],
+        "allowed_tools": [served_name(spec) for spec in served],
+    }
+    if tools:
+        # An empty list removes every built-in tool: no shell, no file reads or writes.
+        options["tools"] = []
+    return options
+
+
+def system_prompt(append: str | None) -> SystemPromptPreset | None:
+    # None keeps the adapter's previous behaviour; an append rides on Claude Code's preset.
+    if append is None:
+        return None
+    return {"type": "preset", "preset": "claude_code", "append": append}
+
+
+def read_only_options(request: RunRequest) -> dict[str, Any]:
+    """Two layers: a Bash hook that classifies commands, and `can_use_tool` for the rest.
+
+    `bypassPermissions` would skip `can_use_tool`, so the mode is `default`. Only read-only
+    engine tools are served, and only they are pre-approved.
+    """
+    hooks: dict[str, list[Any]] = {key: list(value) for key, value in (request.hooks or {}).items()}
+    hooks.setdefault("PreToolUse", []).append(read_only_matcher())
+    tools = [spec for spec in request.tools if spec.read_only]
+    added = [spec for spec in request.agent_tools if spec.read_only]
+    return {
+        "permission_mode": "default",
+        "hooks": hooks,
+        "can_use_tool": read_only_permissions(served_name(spec) for spec in [*tools, *added]),
+        **tool_options(tools, added),
     }
 
 
@@ -119,19 +156,26 @@ class ClaudeAdapter:
 
     def options_for(self, request: RunRequest) -> ClaudeAgentOptions:
         config = ClaudeAgentConfig.model_validate(dict(request.config))
+        if config.permission_mode == READ_ONLY_MODE:
+            mode_options = read_only_options(request)
+        else:
+            mode_options = {
+                "permission_mode": config.permission_mode,
+                "hooks": cast(Any, dict(request.hooks)) if request.hooks else None,
+                **tool_options(request.tools, request.agent_tools),
+            }
         return ClaudeAgentOptions(
             cli_path=self._cli_path,
             # No user, project or local settings: their hooks and rules must not leak in.
             setting_sources=[],
             cwd=request.cwd,
-            permission_mode=config.permission_mode,
             model=config.model,
             max_turns=config.max_turns,
             resume=request.resume_session_id,
-            hooks=cast(Any, dict(request.hooks)) if request.hooks else None,
+            system_prompt=system_prompt(request.system_prompt_append),
             env=child_environment(self._environ),
             # A run's own tools replace the configured set; otherwise the config decides.
-            **{"tools": config.tools, **tool_options(request.tools)},
+            **{"tools": config.tools, **mode_options},
         )
 
     async def start(self, request: RunRequest) -> None:
