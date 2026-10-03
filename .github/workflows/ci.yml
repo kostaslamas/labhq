@@ -67,7 +67,7 @@ jobs:
           inspector=(npx -y @modelcontextprotocol/inspector@2.9.0 --cli "$url" --transport http
             --header "Authorization: Bearer $token")
           "${inspector[@]}" --method tools/list | tee "$work/list.json"
-          for tool in brief inbox health decide order answer; do
+          for tool in brief inbox health decide order answer ask_ceo get_reply; do
             grep -q "\"name\": \"$tool\"" "$work/list.json"
           done
           "${inspector[@]}" --method tools/call --tool-name health | tee "$work/health.json"
