@@ -43,6 +43,7 @@ dependencies = [
     "psutil>=6.1",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
+    "pywebpush>=2.5.0",
     "segno>=1.6.6",
     "sqlalchemy[asyncio]>=2.0.36",
     "typer>=0.15",
@@ -110,6 +111,11 @@ known-first-party = ["labhq", "tools"]
 files = ["src"]
 strict = true
 plugins = ["pydantic.mypy"]
+
+# The Web Push libraries ship no type information.
+[[tool.mypy.overrides]]
+module = ["py_vapid", "pywebpush"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
