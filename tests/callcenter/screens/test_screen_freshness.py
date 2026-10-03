@@ -2,12 +2,15 @@
 
 from datetime import timedelta
 
+import pytest
 from sqlalchemy import update
 
 from labhq.callcenter.status import status_freshness
 from labhq.db.enums import RunStatus
 from labhq.db.models import Run, RunEvent
 from tests.callcenter.screens.conftest import Office
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 
 async def test_a_capture_reads_the_managers_pane_and_sends_it_nothing(office: Office) -> None:

@@ -1,8 +1,12 @@
 """`read_screen`: read-only, by agent name or task, text only."""
 
+import pytest
+
 from labhq.callcenter.calls import CallTools, NoInterrupter
 from labhq.db.models import Agent
 from tests.callcenter.screens.conftest import Office
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 
 def _tools(office: Office, *, screens: bool = True) -> CallTools:

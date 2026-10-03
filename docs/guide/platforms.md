@@ -71,6 +71,10 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
+| `tests/callcenter/screens/test_call_center_reads.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/callcenter/screens/test_calls_in_tmux.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/callcenter/screens/test_read_screen.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/callcenter/screens/test_screen_freshness.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/cli/test_wiring.py::test_a_run_without_rtk_records_the_warning_in_its_events` | the rtk stub is a POSIX shell script |
 | `tests/economy/test_graphify.py::test_a_build_writes_under_the_data_directory_and_never_into_the_repository` | the graphify stub is a POSIX shell script |
 | `tests/economy/test_graphify.py::test_the_refresh_loop_rebuilds_at_its_interval_and_after_head_moves` | the graphify stub is a POSIX shell script |

@@ -18,6 +18,8 @@ from labhq.callcenter.settings import CallCenterSettings
 from labhq.db.models import Delivery, WakeupRequest
 from tests.callcenter.screens.conftest import SUMMARY, Office
 
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
+
 WINDOW = CallCenterSettings(call_window_seconds=300, ticket_expiry_seconds=3600)
 
 
