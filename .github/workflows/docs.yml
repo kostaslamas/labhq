@@ -1,0 +1,74 @@
+name: Docs
+
+# The launch docs (#80): links and anchors resolve, the configuration page matches the
+# settings classes, the README keeps its sections and billing text, and the README's
+# `uv tool install` runs here against the built wheel.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guards:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Install
+        run: uv sync --frozen
+
+      - name: Links and anchors in README.md and docs/, and the guide index
+        run: uv run --frozen python -m tools.doc_links
+
+      - name: docs/guide/configuration.md matches the settings classes
+        run: uv run --frozen python -m tools.settings_doc --check
+
+      - name: README sections, install commands, demo slot and billing text
+        run: uv run --frozen python -m tools.readme_check
+
+  uv-tool-install:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Build the wheel
+        env:
+          # The install is what is checked here, not the UI; #68 checks the UI in the wheel.
+          LABHQ_SKIP_WEB_BUILD: "1"
+        run: uv build --wheel
+
+      - name: uv tool install, then labhq from PATH
+        run: |
+          set -euo pipefail
+          wheel="$(ls "${PWD}"/dist/*.whl)"
+          uv tool install --python 3.12 "${wheel}"
+          bin="$(uv tool dir --bin)"
+          export PATH="${bin}:${PATH}"
+          cd "${RUNNER_TEMP}"
+          test "$(command -v labhq)" = "${bin}/labhq"
+          labhq --version
+          export LABHQ_DATA_DIR="${RUNNER_TEMP}/data"
+          labhq init
