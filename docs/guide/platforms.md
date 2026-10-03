@@ -62,8 +62,12 @@ and CI fails when it does not match them.
 | Test | Limitation |
 |---|---|
 | `tests/adapters/test_codex_contract.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/test_codex_usage.py::test_an_invented_codex_reading_is_recorded_as_failed_never_zero` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/test_codex_usage.py::test_the_usage_screen_of_a_codex_run_is_recorded_as_readings` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_contract.py::test_adapter_honours_the_contract` | the tmux adapter does not run on native Windows (ADR 0003) |
-| `tests/adapters/tmux/test_tmux_environment.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_environment.py::test_a_variable_only_in_the_clients_environment_stays_out_of_the_session` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_environment.py::test_a_worker_sees_no_credentials_even_when_the_caller_has_them` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |

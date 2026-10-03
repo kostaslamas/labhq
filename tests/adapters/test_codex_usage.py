@@ -115,6 +115,7 @@ async def collect(codex_world: World, tmp_path: Path, answer: dict[str, Any]) ->
         return list(await db.scalars(select(UsageReading).order_by(UsageReading.id)))
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_the_usage_screen_of_a_codex_run_is_recorded_as_readings(
     codex_world: World, tmp_path: Path
 ) -> None:
@@ -126,6 +127,7 @@ async def test_the_usage_screen_of_a_codex_run_is_recorded_as_readings(
     ]
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_an_invented_codex_reading_is_recorded_as_failed_never_zero(
     codex_world: World, tmp_path: Path
 ) -> None:
