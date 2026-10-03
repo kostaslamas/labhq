@@ -19,6 +19,7 @@ from labhq.approvals.registry import Registry
 from labhq.clock import Clock
 from labhq.db.enums import ApprovalStatus
 from labhq.db.models import Approval
+from labhq.notify.outbox import enqueue
 
 
 class ApprovalError(RuntimeError):
@@ -78,8 +79,22 @@ class ApprovalService:
         )
         async with self._sessions() as db:
             db.add(approval)
+            await db.flush()
+            await self._announce(db, approval)
             await db.commit()
         return approval
+
+    async def _announce(self, db: AsyncSession, approval: Approval) -> None:
+        # Same transaction as the approval, so a committed approval always has its notification.
+        await enqueue(
+            db,
+            kind="approval_requested",
+            subject=f"approval:{approval.id}",
+            title=f"Approval needed: {approval.type}",
+            body=f"A{approval.id}: {approval.type} ({approval.risk_class}) is waiting for you.",
+            idempotency_key=f"approval:{approval.id}",
+            now=self._clock.now(),
+        )
 
     async def get(self, approval_id: int) -> Approval:
         async with self._sessions() as db:
