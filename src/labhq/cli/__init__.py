@@ -4,6 +4,7 @@ from typing import Annotated
 
 import typer
 
+import labhq.roles  # noqa: F401  (registers the role instructions and tools)
 from labhq import __version__
 from labhq.cli.adopt import adopt_app
 from labhq.cli.approvals import approvals_app

@@ -1,0 +1,87 @@
+"""The CEO's tools and the manager's team proposal leave approvals pending (plan §10)."""
+
+from labhq.db.enums import AgentStatus, ApprovalStatus, RiskClass
+from labhq.db.models import Agent, Project
+from labhq.hierarchy import CREATE_AGENT, CREATE_TEAM
+from tests.roles.conftest import Org
+
+NEW_PROJECT = "blog"
+
+
+async def add_project(org: Org, name: str) -> None:
+    now = org.clock.now()
+    async with org.sessions() as db:
+        db.add(Project(name=name, repo_path=f"/srv/{name}", created_at=now, updated_at=now))
+        await db.commit()
+
+
+async def test_assign_manager_leaves_a_pending_light_approval(org: Org) -> None:
+    await add_project(org, NEW_PROJECT)
+
+    answer = await org.call("assign_manager", org.ceo, project=NEW_PROJECT)
+
+    [approval] = await org.approvals()
+    assert (approval.type, approval.risk_class) == (CREATE_AGENT, RiskClass.LIGHT)
+    assert approval.status is ApprovalStatus.PENDING
+    assert approval.requested_by_agent_id == org.ceo
+    manager = await org.get(Agent, approval.payload["agent_id"])
+    assert (manager.role, manager.reports_to) == ("manager", org.ceo)
+    assert manager.status is AgentStatus.PENDING_APPROVAL
+    assert f"A{approval.id}" in answer
+
+
+async def test_assign_manager_refuses_a_project_that_has_one(org: Org) -> None:
+    answer = await org.call("assign_manager", org.ceo, project="site")
+    assert answer.startswith("Refused:")
+    assert "already has manager" in answer
+    assert await org.approvals() == []
+
+
+async def test_list_projects_names_each_projects_manager(org: Org) -> None:
+    answer = await org.call("list_projects", org.ceo)
+    assert f"site (id {org.site}, active): manager agent {org.manager} (active)" in answer
+    assert f"shop (id {org.shop}, active): manager agent {org.shop_manager}" in answer
+
+
+async def test_propose_team_leaves_a_pending_heavy_create_team_approval(org: Org) -> None:
+    before = len(await org.all(Agent))
+    members = [
+        {"key": "qa", "role": "lead", "title": "QA lead", "adapter": "fake"},
+        {"key": "t1", "role": "worker", "title": "Tester", "adapter": "fake", "reports_to": "qa"},
+    ]
+
+    answer = await org.call("propose_team", org.manager, members=members)
+
+    [approval] = await org.approvals()
+    assert (approval.type, approval.risk_class) == (CREATE_TEAM, RiskClass.HEAVY)
+    assert approval.status is ApprovalStatus.PENDING
+    assert approval.payload["manager_id"] == org.manager
+    assert len(await org.all(Agent)) == before
+    assert "no agent exists until the owner approves" in answer
+
+
+async def test_propose_team_proposes_for_the_caller_whatever_it_passes(org: Org) -> None:
+    member = {"key": "x", "role": "lead", "title": "Lead", "adapter": "fake"}
+    answer = await org.call(
+        "propose_team", org.manager, members=[member], manager_id=org.shop_manager
+    )
+    assert "Invalid arguments" in answer
+    assert await org.approvals() == []
+
+
+async def test_a_bad_proposal_is_refused_with_its_reason(org: Org) -> None:
+    member = {"key": "w", "role": "worker", "title": "Dev", "adapter": "fake"}
+    answer = await org.call("propose_team", org.manager, members=[member])
+    assert answer.startswith("Invalid arguments") or answer.startswith("Refused:")
+    assert "reports to" in answer
+    assert await org.approvals() == []
+
+
+def test_each_role_sees_its_own_org_tools(org: Org) -> None:
+    def names(role: str) -> set[str]:
+        return {spec.name for spec in org.tools.for_agent(role, {})}
+
+    assert names("ceo") == {"list_projects", "assign_manager"}
+    assert names("manager") == {"propose_team", "create_task", "assign_task"}
+    assert names("lead") == {"create_task", "assign_task"}
+    assert names("worker") == set()
