@@ -27,6 +27,8 @@ class ParsedScript:
     nested: list[str] = field(default_factory=list)
     # Here-document bodies; read leniently because most of them are file contents.
     documents: list[str] = field(default_factory=list)
+    # (operator, target) of every redirection; the read-only classifier denies writes.
+    redirections: list[tuple[str, str]] = field(default_factory=list)
 
 
 def parse(script: str, *, lenient: bool = False) -> ParsedScript:
@@ -80,10 +82,13 @@ def _collect(tokens: list[str], parsed: ParsedScript) -> None:
         # A redirection keeps the command going; drop its fd number and its target.
         if current and current[-1].isdigit():
             current.pop()
+        target = ""
         if index < len(tokens) and not _is_operator(tokens[index]):
+            target = tokens[index]
             if token == "<<<":
-                parsed.nested.append(tokens[index])
+                parsed.nested.append(target)
             index += 1
+        parsed.redirections.append((token, target))
     if current:
         parsed.commands.append(current)
 

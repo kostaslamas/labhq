@@ -24,11 +24,15 @@ from labhq.adapters import (
     RunRequest,
 )
 from labhq.adapters import default_registry as builtin_adapters
+from labhq.agenttools import AgentToolRegistry, ToolContext, bind
+from labhq.agenttools import default_registry as builtin_agent_tools
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, AgentTaskSession, CostEvent, Run, RunEvent, Task
 from labhq.memory import AgentMemory, PreparedMemory
 from labhq.money import usd_to_micros
+from labhq.prompts import PromptRegistry
+from labhq.prompts import default_registry as builtin_prompts
 from labhq.runs.status import status_for
 from labhq.settings import Settings
 
@@ -59,11 +63,15 @@ class RunService:
         clock: Clock,
         registry: AdapterRegistry = builtin_adapters,
         memory: AgentMemory | None = None,
+        prompts: PromptRegistry = builtin_prompts,
+        agent_tools: AgentToolRegistry = builtin_agent_tools,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
         self._registry = registry
         self._memory = memory if memory is not None else AgentMemory.from_settings(Settings())
+        self._prompts = prompts
+        self._agent_tools = agent_tools
 
     async def start(
         self,
@@ -97,6 +105,9 @@ class RunService:
             memory = self._memory.prepare(agent, cwd)
             if memory is not None:
                 cwd, prompt = memory.cwd, memory.prompt(prompt)
+            # Before the run turns running: a bad recipient or tool name fails the start.
+            system_prompt_append = self._prompts.assemble(agent, task)
+            agent_tool_specs = self._agent_tools.for_agent(agent.role, agent.config)
             now = self._clock.now()
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = agent.adapter
@@ -104,6 +115,7 @@ class RunService:
             run.session_id_before = resume_session_id or (stored.session_id if stored else None)
             run.started_at = run.heartbeat_at = now
             await db.commit()
+            tool_context = ToolContext(agent.id, run.id, self._sessions, self._clock)
             request = RunRequest(
                 prompt=prompt,
                 cwd=cwd,
@@ -112,6 +124,8 @@ class RunService:
                 hooks=hooks,
                 tools=tools,
                 run_id=run.id,
+                agent_tools=[bind(spec, tool_context) for spec in agent_tool_specs],
+                system_prompt_append=system_prompt_append,
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(
