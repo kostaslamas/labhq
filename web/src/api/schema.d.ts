@@ -4,6 +4,83 @@
  */
 
 export interface paths {
+  '/api/approvals': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Approvals List
+     * @description Pending approvals first, then the settled ones, each group newest first.
+     */
+    get: operations['approvals_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/approvals/{approval_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Approvals Get */
+    get: operations['approvals_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/approvals/{approval_id}/decision': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Approvals Decide
+     * @description Approve or reject. A repeated key answers with the decision it already made.
+     */
+    post: operations['approvals_decide']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/approvals/{approval_id}/step-up': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Approvals Step Up
+     * @description A passkey challenge bound to this approval and this session.
+     */
+    post: operations['approvals_step_up']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/auth/credentials': {
     parameters: {
       query?: never
@@ -227,11 +304,59 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** AgentRef */
+    AgentRef: {
+      /** Id */
+      id: number
+      /** Role */
+      role: string
+      /** Title */
+      title: string
+    }
     /**
      * AgentStatus
      * @enum {string}
      */
     AgentStatus: 'pending_approval' | 'active' | 'paused' | 'retired'
+    /** ApprovalOut */
+    ApprovalOut: {
+      /** Branch */
+      branch: string | null
+      /** Confirmation Kind */
+      confirmation_kind: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Decided At */
+      decided_at: string | null
+      /** Decided By */
+      decided_by: string | null
+      /** Decision Note */
+      decision_note: string | null
+      /** Executed At */
+      executed_at: string | null
+      /** Execution */
+      execution: {
+        [key: string]: unknown
+      } | null
+      /** Id */
+      id: number
+      /** Payload */
+      payload: {
+        [key: string]: unknown
+      }
+      project: components['schemas']['ProjectRef'] | null
+      /** Remote */
+      remote: string | null
+      requester: components['schemas']['AgentRef'] | null
+      risk_class: components['schemas']['RiskClass']
+      status: components['schemas']['ApprovalStatus']
+      task: components['schemas']['TaskRef'] | null
+      /** Type */
+      type: string
+    }
     /**
      * ApprovalStatus
      * @enum {string}
@@ -284,6 +409,20 @@ export interface components {
       rp_id: string
       /** Transports */
       transports: string[]
+    }
+    /** DecisionBody */
+    DecisionBody: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /**
+       * Decision
+       * @enum {string}
+       */
+      decision: 'approve' | 'reject'
+      /** Note */
+      note?: string | null
     }
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
@@ -361,6 +500,20 @@ export interface components {
      * @enum {string}
      */
     NotificationStatus: 'pending' | 'sent' | 'failed'
+    /** Page[ApprovalOut] */
+    Page_ApprovalOut_: {
+      /** Items */
+      items: components['schemas']['ApprovalOut'][]
+      /** Next Cursor */
+      next_cursor: string | null
+    }
+    /** ProjectRef */
+    ProjectRef: {
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+    }
     /**
      * ProjectStatus
      * @enum {string}
@@ -372,6 +525,11 @@ export interface components {
      */
     QuestionStatus: 'pending' | 'answered'
     /**
+     * RiskClass
+     * @enum {string}
+     */
+    RiskClass: 'light' | 'heavy'
+    /**
      * RunStatus
      * @enum {string}
      */
@@ -380,6 +538,13 @@ export interface components {
     StepUpBody: {
       /** Purpose */
       purpose: string
+    }
+    /** TaskRef */
+    TaskRef: {
+      /** Id */
+      id: number
+      /** Title */
+      title: string
     }
     /**
      * TaskStatus
@@ -471,6 +636,144 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
+  approvals_list: {
+    parameters: {
+      query?: {
+        /** @description Only this status. */
+        status?: components['schemas']['ApprovalStatus'] | null
+        /** @description Opaque; from `next_cursor`. */
+        cursor?: string | null
+        /** @description Rows per page. */
+        limit?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Page_ApprovalOut_']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  approvals_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        approval_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApprovalOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  approvals_decide: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description One per user intent; a retry reuses it. */
+        'idempotency-key': string
+      }
+      path: {
+        approval_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DecisionBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ApprovalOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  approvals_step_up: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        approval_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: unknown
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   auth_credentials_list: {
     parameters: {
       query?: never

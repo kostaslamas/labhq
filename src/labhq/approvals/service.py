@@ -111,26 +111,58 @@ class ApprovalService:
             return list(await db.scalars(query))
 
     async def approve(
-        self, approval_id: int, *, decider: str, confirmation: str, note: str | None = None
+        self,
+        approval_id: int,
+        *,
+        decider: str,
+        confirmation: str,
+        note: str | None = None,
+        idempotency_key: str | None = None,
+        within: AsyncSession | None = None,
     ) -> Approval:
-        """Approve, then execute through the action's executor when one is registered."""
+        """Approve, then execute through the action's executor when one is registered.
+
+        `within` is a session holding uncommitted proof of the confirmation (a step-up
+        assertion). It is committed together with the decision, or rolled back with it.
+        """
         approval = await self.get(approval_id)
         kind = self._confirmations.get(confirmation)
         if not kind.can_approve(approval.risk_class):
             raise ConfirmationNotAllowedError(
                 f"{confirmation!r} confirmation cannot approve a {approval.risk_class} action"
             )
-        await self._decide(approval_id, ApprovalStatus.APPROVED, decider, confirmation, note)
+        await self._decide(
+            approval_id,
+            ApprovalStatus.APPROVED,
+            decider,
+            confirmation,
+            note,
+            idempotency_key=idempotency_key,
+            within=within,
+        )
         if approval.type not in self._executors:
             return await self.get(approval_id)
         return await self._execute(approval_id, self._executors.get(approval.type))
 
     async def reject(
-        self, approval_id: int, *, decider: str, confirmation: str, note: str | None = None
+        self,
+        approval_id: int,
+        *,
+        decider: str,
+        confirmation: str,
+        note: str | None = None,
+        idempotency_key: str | None = None,
     ) -> Approval:
         # Any registered kind may refuse: saying no never needs strong confirmation.
         self._confirmations.get(confirmation)
-        await self._decide(approval_id, ApprovalStatus.REJECTED, decider, confirmation, note)
+        await self._decide(
+            approval_id,
+            ApprovalStatus.REJECTED,
+            decider,
+            confirmation,
+            note,
+            idempotency_key=idempotency_key,
+        )
         return await self.get(approval_id)
 
     async def _decide(
@@ -140,6 +172,9 @@ class ApprovalService:
         decider: str,
         confirmation: str,
         note: str | None,
+        *,
+        idempotency_key: str | None = None,
+        within: AsyncSession | None = None,
     ) -> None:
         statement = (
             update(Approval)
@@ -150,11 +185,19 @@ class ApprovalService:
                 decided_at=self._clock.now(),
                 confirmation_kind=confirmation,
                 decision_note=note,
+                decision_key=idempotency_key,
             )
         )
-        async with self._sessions() as db:
-            result = cast(CursorResult[Any], await db.execute(statement))
-            await db.commit()
+        if within is not None:
+            # One transaction with the caller's work, so a spent challenge never outlives a
+            # refused decision and a decision never lacks its proof.
+            result = cast(CursorResult[Any], await within.execute(statement))
+            if result.rowcount == 1:
+                await within.commit()
+        else:
+            async with self._sessions() as db:
+                result = cast(CursorResult[Any], await db.execute(statement))
+                await db.commit()
         if result.rowcount != 1:
             current = await self.get(approval_id)
             raise ApprovalNotPendingError(f"approval {approval_id} is already {current.status}")

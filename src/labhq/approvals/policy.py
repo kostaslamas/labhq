@@ -49,11 +49,13 @@ PHASE_1_ACTIONS: tuple[ActionType, ...] = (
 )
 
 # The local operator at the CLI holds the machine already. The Call Center voice line is
-# light only (plan §5, rule 7). A passkey is the strong confirmation that may approve heavy:
-# the API accepts it only after a step-up assertion (`labhq.auth.verify_step_up`).
+# light only (plan §5, rule 7), and so is a tap in the web UI. A passkey is the strong
+# confirmation that may approve heavy: the API accepts it only after a step-up assertion
+# (`labhq.auth.verify_step_up`).
 PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
     ConfirmationKind("cli", ANY_RISK),
     ConfirmationKind("voice", LIGHT),
+    ConfirmationKind("tap", LIGHT),
     ConfirmationKind("passkey", ANY_RISK),
     # An external approval gate proved a passkey; the gate adapter refuses weaker proofs
     # before it ever asks for this kind (approvals.gates).
