@@ -9,6 +9,8 @@ read the pages below as you need them.
 - [Onboarding](onboarding.md): one command to a working labhq, with no third-party account.
 - [Docker](docker.md): run labhq with `docker compose up`.
 - [Configuration](configuration.md): every setting and its environment variable.
+- [Platforms](platforms.md): Linux, macOS and Windows support, installing `uv` on Windows,
+  and the native Windows limitations.
 
 ## Use it
 
