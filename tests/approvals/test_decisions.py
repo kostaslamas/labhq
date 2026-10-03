@@ -6,7 +6,6 @@ from labhq.approvals import (
     ActionType,
     ApprovalNotFoundError,
     ApprovalNotPendingError,
-    ConfirmationKind,
     ConfirmationNotAllowedError,
     UnknownEntryError,
 )
@@ -17,9 +16,8 @@ PAYLOAD = {"members": ["developer", "qa"], "lead": "manager"}
 
 
 @pytest.fixture
-def voice(world: World) -> str:
-    # The Phase 2 voice client, as it will register: light approvals only (plan §5, rule 7).
-    world.confirmations.register("voice", ConfirmationKind("voice", frozenset({RiskClass.LIGHT})))
+def voice() -> str:
+    # Built in since Phase 2: light approvals only (plan §5, rule 7).
     return "voice"
 
 
