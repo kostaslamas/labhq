@@ -18,8 +18,14 @@ from labhq.money import usd_to_micros
 # Re-exported: callers and tests that build assignments through the CLI module keep working.
 from labhq.work import assignment as assignment
 
-# Migrations ship with the source tree, next to `src/`; `labhq` runs from a checkout.
-MIGRATIONS = Path(__file__).resolve().parents[3] / "migrations"
+
+def _migrations() -> Path:
+    # A wheel carries them inside the package; a checkout keeps them next to `src/`.
+    packaged = Path(__file__).resolve().parents[1] / "migrations"
+    return packaged if packaged.is_dir() else Path(__file__).resolve().parents[3] / "migrations"
+
+
+MIGRATIONS = _migrations()
 
 project_app = typer.Typer(help="Register git repositories as projects.", no_args_is_help=True)
 agent_app = typer.Typer(help="Add agents and approve new ones.", no_args_is_help=True)

@@ -49,6 +49,7 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("mcp", "token"): (("mcp", "token"),),
     ("mcp", "serve"): (("mcp", "serve"),),
     ("serve",): (("serve",),),
+    ("onboard",): (("onboard", "--non-interactive", "--no-serve"),),
 }
 
 
@@ -73,7 +74,7 @@ def test_every_command_exits_non_zero_on_failure(
 ) -> None:
     not_a_repo = tmp_path / "plain-directory"
     not_a_repo.mkdir()
-    if path in {("init",), ("mcp", "token"), ("mcp", "serve"), ("serve",)}:
+    if path in {("init",), ("mcp", "token"), ("mcp", "serve"), ("serve",), ("onboard",)}:
         # A data directory that cannot be created: a file sits where it should be.
         blocked = tmp_path / "blocked"
         blocked.write_text("", encoding="utf-8")
