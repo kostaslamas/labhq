@@ -52,7 +52,12 @@ PHASE_3_TABLES = {
     "chat_outbox",
 }
 # Passkeys and web sessions (issue #62).
-PHASE_4_TABLES = {"passkey_credentials", "web_sessions", "webauthn_challenges"}
+PHASE_4_TABLES = {
+    "passkey_credentials",
+    "push_subscriptions",
+    "web_sessions",
+    "webauthn_challenges",
+}
 ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES | PHASE_4_TABLES
 
 

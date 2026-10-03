@@ -1,7 +1,7 @@
 """Every table. Importing this package registers them all on `Base.metadata`."""
 
 from labhq.db.models.approvals import Approval
-from labhq.db.models.auth import PasskeyCredential, WebauthnChallenge, WebSession
+from labhq.db.models.auth import PasskeyCredential, PushSubscription, WebauthnChallenge, WebSession
 from labhq.db.models.budgets import BudgetWarning
 from labhq.db.models.callcenter import (
     AgentQuestion,
@@ -48,6 +48,7 @@ __all__ = [
     "Notification",
     "PasskeyCredential",
     "Project",
+    "PushSubscription",
     "Run",
     "RunEvent",
     "StatusUpdate",
