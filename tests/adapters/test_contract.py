@@ -6,7 +6,8 @@ login or a local Ollama runs the same checks by hand (docs/checks/claude-adapter
 docs/checks/ollama-adapter.md).
 """
 
-from collections.abc import Callable
+import contextlib
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -15,26 +16,37 @@ from labhq.adapters import AdapterFactory, FakeAdapter, FakeScript, default_regi
 from labhq.adapters.contract import CHECKS, ContractViolationError, check_interrupt
 from tests.adapters.fake_ollama import FakeOllama
 from tests.adapters.stub_sdk import StubScript, stub_claude
+from tests.adapters.tmux.contract_harness import tmux_harness
+
+Harness = Callable[[str, Path, contextlib.ExitStack], AdapterFactory]
 
 
-def _fake(check: str, tmp_path: Path) -> AdapterFactory:
+def _fake(check: str, tmp_path: Path, stack: contextlib.ExitStack) -> AdapterFactory:
     script = FakeScript(wait_for_interrupt=check == "interrupt")
     return lambda: FakeAdapter(script)
 
 
-def _claude(check: str, tmp_path: Path) -> AdapterFactory:
+def _claude(check: str, tmp_path: Path, stack: contextlib.ExitStack) -> AdapterFactory:
     return stub_claude(StubScript(wait_for_interrupt=check == "interrupt"))
 
 
-def _ollama(check: str, tmp_path: Path) -> AdapterFactory:
+def _ollama(check: str, tmp_path: Path, stack: contextlib.ExitStack) -> AdapterFactory:
     return FakeOllama(hold=check == "interrupt").factory(tmp_path / "sessions")
 
 
-HARNESSES: dict[str, Callable[[str, Path], AdapterFactory]] = {
+# The tmux adapter runs the fake agent in a real private tmux server.
+HARNESSES: dict[str, Harness] = {
     "fake": _fake,
     "claude": _claude,
     "ollama": _ollama,
+    "tmux": tmux_harness,
 }
+
+
+@pytest.fixture
+def stack() -> Iterator[contextlib.ExitStack]:
+    with contextlib.ExitStack() as cleanup:
+        yield cleanup
 
 
 def test_every_registered_adapter_has_a_contract_harness() -> None:
@@ -44,8 +56,10 @@ def test_every_registered_adapter_has_a_contract_harness() -> None:
 
 @pytest.mark.parametrize("check", sorted(CHECKS))
 @pytest.mark.parametrize("key", default_registry.adapter_keys())
-async def test_adapter_honours_the_contract(key: str, check: str, tmp_path: Path) -> None:
-    results = await CHECKS[check](HARNESSES[key](check, tmp_path), tmp_path)
+async def test_adapter_honours_the_contract(
+    key: str, check: str, tmp_path: Path, stack: contextlib.ExitStack
+) -> None:
+    results = await CHECKS[check](HARNESSES[key](check, tmp_path, stack), tmp_path)
     assert results
 
 

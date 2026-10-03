@@ -8,6 +8,8 @@ from labhq.db.enums import RunStatus
 STATUS_BY_TERMINAL_REASON: dict[str, RunStatus] = {
     "aborted_streaming": RunStatus.INTERRUPTED,
     "aborted_tools": RunStatus.INTERRUPTED,
+    # The tmux adapter has no terminal reason of its own; labhq sent the interrupt (ADR 0003).
+    "interrupt_sent": RunStatus.INTERRUPTED,
 }
 
 # Then (subtype, is_error). A "success" subtype with `is_error` is a failed API call.
