@@ -60,7 +60,8 @@ How the Call Center agent row is first created, from `LABHQ_CALLCENTER_*` variab
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `LABHQ_CALLCENTER_AGENT_ADAPTER` | `str` | `claude` | The SDK adapter until the tmux adapter lands (ADR 0004, Phase 2 amendment). |
+| `LABHQ_CALLCENTER_AGENT_ADAPTER` | `str` | `tmux` | In tmux, like every agent (ADR 0004); `claude` keeps the SDK path, as on native Windows, where tmux does not run (ADR 0003). |
+| `LABHQ_CALLCENTER_AGENT_KIND` | `str` | `claude-code` | The tmux agent kind; it must be one that can drop its built-in tools. |
 | `LABHQ_CALLCENTER_AGENT_MODEL` | `str \| None` | unset |  |
 | `LABHQ_CALLCENTER_AGENT_BUDGET_MICROS` | `int` | `2000000` | Its own budget, per budget period, so a chatty call cannot eat the workers' money. |
 | `LABHQ_CALLCENTER_AGENT_MAX_TURNS` | `int` | `12` | Reading needs a few tool calls; routing needs one more. |
