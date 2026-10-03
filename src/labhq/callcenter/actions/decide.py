@@ -1,7 +1,5 @@
 """Approve or reject an approval by voice. Plan §5, rule 7: never a heavy approval."""
 
-import re
-
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.approvals import (
@@ -10,6 +8,7 @@ from labhq.approvals import (
     ApprovalService,
     ConfirmationNotAllowedError,
 )
+from labhq.callcenter.answers.refs import approval_ref, parse_ref
 from labhq.clock import Clock
 from labhq.speech import join_sentences, speakable
 
@@ -27,13 +26,13 @@ VERDICTS: dict[str, str] = {
     "no": "reject",
 }
 
-# Private on purpose: the answers package owns the shared parser; a later issue unifies them.
-_APPROVAL_REF = re.compile(r"\s*a\s*-?\s*(\d+)\s*", re.IGNORECASE)
-
 
 def _parse_approval_id(reference: str) -> int | None:
-    match = _APPROVAL_REF.fullmatch(reference)
-    return int(match.group(1)) if match else None
+    try:
+        kind, number = parse_ref(reference)
+    except ValueError:
+        return None
+    return number if kind == "approval" else None
 
 
 async def decide(db: AsyncSession, clock: Clock, reference: str, verdict: str) -> str:
@@ -46,7 +45,7 @@ async def decide(db: AsyncSession, clock: Clock, reference: str, verdict: str) -
     if db.bind is None:
         raise RuntimeError("decide needs a session bound to an engine")
     service = ApprovalService(async_sessionmaker(db.bind, expire_on_commit=False), clock=clock)
-    ref = f"A{approval_id}"
+    ref = approval_ref(approval_id)
     try:
         if action == "approve":
             await service.approve(approval_id, decider=DECIDER, confirmation=CONFIRMATION)
