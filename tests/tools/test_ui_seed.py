@@ -91,6 +91,7 @@ def test_the_command_prints_the_summary_as_json(
         "approvals",
         "question",
         "incident",
+        "meetings",
     }
     assert set(summary["approvals"]) == {"heavy", "light"}
 
