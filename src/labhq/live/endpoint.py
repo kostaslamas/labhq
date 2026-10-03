@@ -52,11 +52,13 @@ async def authenticate(websocket: WebSocket) -> Owner | None:
         return None
 
 
-async def _send_changes(websocket: WebSocket, subscription: Subscription, heartbeat: float) -> None:
+async def _send_changes(websocket: WebSocket, subscription: Subscription, heartbeat: float) -> bool:
+    """Send until the broker ends the subscription (True) or the client is gone (False)."""
     try:
         await _send_loop(websocket, subscription, heartbeat)
     except WebSocketDisconnect:
-        return
+        return False
+    return True
 
 
 async def _send_loop(websocket: WebSocket, subscription: Subscription, heartbeat: float) -> None:
@@ -101,17 +103,16 @@ async def live_socket(websocket: WebSocket) -> None:
     # Subscribed before the handshake completes, so nothing published after it is missed.
     with state.broker.subscribe() as subscription:
         await websocket.accept()
-        sender = asyncio.create_task(
-            _send_changes(websocket, subscription, state.settings.heartbeat_seconds)
-        )
-        reader = asyncio.create_task(_drain(websocket))
-        done, pending = await asyncio.wait({sender, reader}, return_when=asyncio.FIRST_COMPLETED)
-        for task in pending:
-            task.cancel()
-        await asyncio.gather(*pending, return_exceptions=True)
-        for task in done:
-            task.result()
-    if sender in done:
+        # A task group, so a cancellation from the server reaches both halves and is waited for.
+        async with asyncio.TaskGroup() as group:
+            sender = group.create_task(
+                _send_changes(websocket, subscription, state.settings.heartbeat_seconds)
+            )
+            reader = group.create_task(_drain(websocket))
+            # Whichever half ends first (broker closed, client gone) ends the other.
+            sender.add_done_callback(lambda _: reader.cancel())
+            reader.add_done_callback(lambda _: sender.cancel())
+    if not sender.cancelled() and sender.result():
         await websocket.close(code=status.WS_1001_GOING_AWAY)
 
 
