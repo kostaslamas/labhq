@@ -28,7 +28,8 @@ authenticated MCP call through the public address; if that call fails, the comma
 tunnel and exits non-zero rather than leave a server nobody can reach.
 
 The catch: the `*.trycloudflare.com` address is new every time the tunnel starts, so you
-paste a new connector URL after each restart. Install `cloudflared` from Cloudflare (onboarding
+paste a new connector URL after each restart. A passkey is bound to the host it was enrolled
+on, so one enrolled for a quick tunnel dies with it; see [Passkeys](passkeys.md). Install `cloudflared` from Cloudflare (onboarding
 prints the command for your platform).
 
 ## Tailscale Funnel

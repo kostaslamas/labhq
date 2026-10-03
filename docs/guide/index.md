@@ -18,6 +18,8 @@ read the pages below as you need them.
   the Call Center will and will not do.
 - [Exposure](exposure.md): a public URL for the connector: quick tunnel, Tailscale Funnel or
   your own domain.
+- [Passkeys](passkeys.md): sign in to the web UI, approve from your phone, and why a passkey
+  belongs to one address.
 - [Notifications](notifications.md): ntfy and Telegram.
 - [Discord](discord.md): meetings mirrored to your own Discord server.
 - [Slack](slack.md): meetings mirrored to Slack.
