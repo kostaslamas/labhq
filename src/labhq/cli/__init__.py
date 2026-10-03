@@ -11,6 +11,7 @@ from labhq.cli.health import health
 from labhq.cli.mcp import mcp_app
 from labhq.cli.notify import notify_app
 from labhq.cli.onboard import onboard
+from labhq.cli.org import org_app
 from labhq.cli.running import run
 from labhq.cli.serve import serve
 from labhq.cli.work import agent_app, init, project_app, task_app
@@ -26,6 +27,7 @@ app.add_typer(approvals_app, name="approvals")
 app.command()(health)
 app.add_typer(mcp_app, name="mcp")
 app.add_typer(notify_app, name="notify")
+app.add_typer(org_app, name="org")
 app.command()(demo)
 app.command()(serve)
 app.command()(onboard)

@@ -42,7 +42,7 @@ async def queue(sessions: async_sessionmaker[AsyncSession], clock: FakeClock, ke
 async def test_creating_an_approval_enqueues_one_notification_the_dispatcher_sends(
     world: World, outbound: Outbound, dispatcher_for
 ) -> None:
-    approval = await world.service.request("create_team", {"members": ["a"], "lead": "m"})
+    approval = await world.service.request("merge", {"members": ["a"], "lead": "m"})
 
     rows = await all_rows(world.sessions)
     assert len(rows) == 1
