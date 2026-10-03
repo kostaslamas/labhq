@@ -21,6 +21,7 @@ read the pages below as you need them.
 - [Passkeys](passkeys.md): sign in to the web UI, approve from your phone, and why a passkey
   belongs to one address.
 - [Notifications](notifications.md): ntfy and Telegram.
+- [Approval gates](approval-gates.md): hand heavy approvals to a self-hosted gate with a passkey.
 - [Discord](discord.md): meetings mirrored to your own Discord server.
 - [Slack](slack.md): meetings mirrored to Slack.
 

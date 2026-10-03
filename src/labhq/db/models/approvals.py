@@ -35,4 +35,7 @@ class Approval(Base):
     decision_note: Mapped[str | None] = mapped_column(Text)
     executed_at: Mapped[datetime | None]
     execution: Mapped[dict[str, Any] | None]
+    # Where an external approval gate stands for this approval: its name, the request id it
+    # returned, and why it was left pending. Never a credential.
+    gate: Mapped[dict[str, Any] | None]
     created_at: Mapped[datetime]

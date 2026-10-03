@@ -49,6 +49,8 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
         ("init",),
         ("hosts", "add", "x", "--address", "127.0.0.1:1", "--user", "ro"),
     ),
+    ("gate", "test"): (("gate", "test"),),
+    ("gate", "resend"): (("init",), ("gate", "resend", "999")),
     ("hosts", "list"): (("hosts", "list"),),
     ("hosts", "test"): (("init",), ("hosts", "test", "nope")),
     ("notify", "test"): (("notify", "test"),),

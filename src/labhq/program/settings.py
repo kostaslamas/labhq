@@ -23,6 +23,8 @@ class ProgramSettings(BaseSettings):
     graphify_interval_seconds: float = Field(default=60.0, gt=0)
     # The chat loop runs until its adapter fails; it reconnects after this long.
     chat_interval_seconds: float = Field(default=30.0, gt=0)
+    # How often an external approval gate is polled; unused while no gate is configured.
+    gate_interval_seconds: float = Field(default=5.0, gt=0)
     # Time the server gets to stop before it is cancelled on shutdown.
     shutdown_grace_seconds: float = Field(default=10.0, gt=0)
 
