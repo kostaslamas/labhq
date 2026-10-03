@@ -18,6 +18,7 @@ from labhq.scheduler.termination import (
     ProcessTerminator,
     TerminatorRegistry,
     UnsupportedPlatformError,
+    WindowsTaskkillTerminator,
     default_terminators,
 )
 from labhq.scheduler.wakeups import EnqueueResult, Outcome, Wakeup, enqueue
@@ -41,6 +42,7 @@ __all__ = [
     "UnsupportedPlatformError",
     "Verdict",
     "Wakeup",
+    "WindowsTaskkillTerminator",
     "checkout",
     "default_sources",
     "default_terminators",
