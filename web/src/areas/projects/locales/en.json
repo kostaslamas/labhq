@@ -1,4 +1,50 @@
 {
   "nav": "Projects",
-  "placeholder": "A card per project, with its team, deliverables and budget, will appear here."
+  "loading": "Loading projects…",
+  "loadFailed": "The projects could not be loaded.",
+  "retry": "Try again",
+  "empty": "No projects yet. Register one with the labhq CLI and it appears here.",
+  "back": "All projects",
+  "notFound": "There is no project with that id.",
+  "card": {
+    "openTasks": "Open tasks",
+    "latest": "Latest deliverable",
+    "noDeliverable": "Nothing delivered yet."
+  },
+  "budget": {
+    "label": "Budget used",
+    "of": "of",
+    "noLimit": "no limit",
+    "allow": "Within budget",
+    "warn": "Warning: nearing the limit",
+    "stop": "Stopped: the limit is reached"
+  },
+  "taskStatus": {
+    "backlog": "Backlog",
+    "todo": "To do",
+    "in_progress": "In progress",
+    "in_review": "In review",
+    "blocked": "Blocked",
+    "done": "Done",
+    "cancelled": "Cancelled"
+  },
+  "view": {
+    "budget": "Budget",
+    "policy": "Warns at {warn}% and stops at {stop}% of the limit. Spend counted since {since}.",
+    "tasks": "Tasks",
+    "deliverables": "Deliverables",
+    "team": "Team"
+  },
+  "deliverables": {
+    "empty": "No task is done yet.",
+    "unpublished": "Not published yet.",
+    "more": "Showing the latest {shown} of {total}."
+  },
+  "team": {
+    "empty": "This project has no agents yet.",
+    "expandAll": "Expand all",
+    "collapseAll": "Collapse all",
+    "expand": "Show who reports to {name}",
+    "collapse": "Hide who reports to {name}"
+  }
 }
