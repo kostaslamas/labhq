@@ -9,6 +9,7 @@ from labhq.cli.approvals import approvals_app
 from labhq.cli.demo import demo
 from labhq.cli.health import health
 from labhq.cli.mcp import mcp_app
+from labhq.cli.notify import notify_app
 from labhq.cli.running import run
 from labhq.cli.work import agent_app, init, project_app, task_app
 
@@ -22,6 +23,7 @@ app.command()(run)
 app.add_typer(approvals_app, name="approvals")
 app.command()(health)
 app.add_typer(mcp_app, name="mcp")
+app.add_typer(notify_app, name="notify")
 app.command()(demo)
 
 
