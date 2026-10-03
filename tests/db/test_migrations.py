@@ -41,7 +41,8 @@ PHASE_2_TABLES = {
 }
 # ADR 0003, the tmux adapter.
 TMUX_TABLES = {"usage_readings"}
-ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES
+PHASE_3_TABLES = {"chat_bindings"}
+ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES
 
 
 def _sync_url(async_url: str) -> str:
@@ -54,7 +55,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0004"]
+    assert heads == ["0005"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:
