@@ -15,7 +15,7 @@ Everything was read in openai/codex at main `86a54b05` on 2026-10-03.
 
 | Field | Value | Source |
 |---|---|---|
-| `start` | `codex --dangerously-bypass-approvals-and-sandbox --dangerously-bypass-hook-trust --no-alt-screen -- PROMPT` | `codex-rs/tui/src/cli.rs`, `codex-rs/utils/cli/src/shared_options.rs` |
+| `start` | `codex --yolo --dangerously-bypass-hook-trust --no-alt-screen -- PROMPT` | `codex-rs/tui/src/cli.rs`, `codex-rs/utils/cli/src/shared_options.rs` |
 | `resume` | `codex resume <same flags> -- SESSION_ID PROMPT` | `codex-rs/cli/src/main.rs` (`ResumeCommand`, root `-c` prepended) |
 | `session_id` | read from the `Stop` hook payload, key `session_id` | `codex-rs/hooks/schema/generated/stop.command.input.schema.json` |
 | `interrupt_keys` | `Escape` | TUI footer "esc to interrupt" (`codex-rs/tui` chatwidget snapshots) |

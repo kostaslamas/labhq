@@ -75,6 +75,7 @@ def parse_overrides(pairs: list[str]) -> dict[str, Any]:
 
 FLAGS = {
     "--dangerously-bypass-approvals-and-sandbox": "yolo",
+    "--yolo": "yolo",
     "--dangerously-bypass-hook-trust": "hook_trust",
     "--no-alt-screen": "inline",
 }
