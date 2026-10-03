@@ -4,3 +4,5 @@ playwright-report/
 test-results/
 .lighthouseci/
 package-lock.json
+# Stand-ins for vite build output, kept byte-for-byte.
+scripts/__fixtures__/builds/
