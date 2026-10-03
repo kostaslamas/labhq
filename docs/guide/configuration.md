@@ -168,6 +168,17 @@ Hierarchy switches and caps, read from `LABHQ_*` environment variables.
 | `LABHQ_MAX_TEAM_SIZE` | `int` | `8` | Agents under one manager, leads included. Provisional: plan §13 question 4 is open, so this is a setting and a manager's `config["max_team_size"]` overrides it. |
 | `LABHQ_ORG_ADAPTER` | `str` | `claude` | The adapter the CEO and the managers it assigns run on, unless the caller names one. |
 
+## `labhq.it.settings.ItSettings`
+
+IT department switches, read from `LABHQ_IT_*` environment variables.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_IT_TITLE` | `str` | `IT` |  |
+| `LABHQ_IT_REPORT_TIME` | `time` | `08:00:00` | Plan §2.2: the agent wakes on a deviation and for one daily report, at this local time. |
+| `LABHQ_IT_REPORT_TIMEZONE` | `str` | `UTC` |  |
+| `LABHQ_IT_INCIDENT_LOOKBACK_HOURS` | `float` | `24.0` | An incident opened within this window still wakes the agent if it already resolved, so a short outage between two passes is not lost. |
+
 ## `labhq.live.settings.LiveSettings`
 
 Live-update settings, read from `LABHQ_LIVE_*` environment variables.
