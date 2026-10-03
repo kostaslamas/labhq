@@ -3,7 +3,9 @@
 ## Status
 
 Accepted (2026-10-03). Amended (2026-10-03) after review: `.labhq/` stays out of commits,
-and delivered messages carry only the owner's words.
+and delivered messages carry only the owner's words. Amended (2026-10-03) for Phase 2: the
+per-call agent runs on the SDK adapter until the tmux adapter lands, and status files are
+ingested for every adapter.
 
 ## Date
 
@@ -135,5 +137,11 @@ Center relays.
   interrupt without the owner's request in the same call is refused; every delivery leaves
   a row.
 - Plan §6 gains the invariant that an agent question is answered at most once.
-- The program's database answers and the notifier land with Phase 2. The per-call agent,
-  status files and pane reading need the tmux adapter (ADR 0003) and land with it.
+- The program's database answers and the notifier land with Phase 2. So do the per-call
+  agent and status files, because Phase 2's criteria need `ask_ceo` and agent questions:
+  - The per-call agent runs on the SDK adapter (`claude`) until the tmux adapter (ADR 0003)
+    lands. The adapter is data on its `agents` row, so moving it to `tmux` is configuration,
+    not code. Its tools are served in process to the SDK client, with the same bounds.
+  - Status files work with every adapter, since SDK workers write files too. Until panes
+    can be read, a stale status is reported as stale, with its age.
+  - Pane reading needs the tmux adapter and lands with it.
