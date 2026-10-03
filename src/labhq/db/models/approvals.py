@@ -33,6 +33,8 @@ class Approval(Base):
     decided_at: Mapped[datetime | None]
     confirmation_kind: Mapped[str | None] = mapped_column(String(64))
     decision_note: Mapped[str | None] = mapped_column(Text)
+    # The client's `Idempotency-Key` of the winning decision, so a retry is answered, not decided.
+    decision_key: Mapped[str | None] = mapped_column(String(128))
     executed_at: Mapped[datetime | None]
     execution: Mapped[dict[str, Any] | None]
     # Where an external approval gate stands for this approval: its name, the request id it
