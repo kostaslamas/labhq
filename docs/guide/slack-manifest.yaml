@@ -1,0 +1,27 @@
+# The labhq Slack app. Paste this into https://api.slack.com/apps > Create New App >
+# From an app manifest. It grants exactly what labhq.chat.slack uses (BOT_SCOPES and
+# BOT_EVENTS); tests/chat/test_slack_registry.py keeps the two in step.
+display_information:
+  name: labhq
+  description: Agent meetings mirrored from labhq, a thread per meeting.
+  background_color: "#1f2937"
+features:
+  bot_user:
+    display_name: labhq
+    always_online: false
+oauth_config:
+  scopes:
+    bot:
+      - channels:manage
+      - channels:history
+      - chat:write
+      - chat:write.customize
+settings:
+  event_subscriptions:
+    bot_events:
+      - message.channels
+  interactivity:
+    is_enabled: false
+  org_deploy_enabled: false
+  socket_mode_enabled: true
+  token_rotation_enabled: false

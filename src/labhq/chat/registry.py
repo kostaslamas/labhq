@@ -10,6 +10,8 @@ from labhq.approvals.registry import Registry
 from labhq.chat.base import ChatAdapter
 from labhq.chat.bindings import BindingStore
 from labhq.chat.discord import DiscordAdapter, DiscordSettings
+from labhq.chat.slack import SlackAdapter
+from labhq.chat.slack_settings import SlackSettings
 from labhq.clock import Clock
 
 
@@ -43,8 +45,20 @@ def _discord(context: ChatContext) -> ChatAdapter:
     )
 
 
-# A new chat service is a new row here (Slack in Phase 5), never an edit to a caller.
-REGISTRATIONS = (Registration("discord", _discord_configured, _discord),)
+def _slack(context: ChatContext) -> ChatAdapter:
+    return SlackAdapter(
+        settings=SlackSettings(),
+        store=BindingStore(context.sessions, "slack", clock=context.clock),
+        client=context.client,
+        clock=context.clock,
+    )
+
+
+# A new chat service is a new row here, never an edit to a caller.
+REGISTRATIONS = (
+    Registration("discord", _discord_configured, _discord),
+    Registration("slack", lambda: SlackSettings().configured(), _slack),
+)
 
 
 def configured_chat_adapters(
