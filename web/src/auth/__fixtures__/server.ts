@@ -29,7 +29,8 @@ export function fakeServer(routes: Record<string, Handler>): {
     requests.push(recorded)
     const handler = routes[`${input.method} ${path}`]
     const { status = 200, body = {} } = handler ? handler(recorded) : { status: 404 }
-    return new Response(JSON.stringify(body), {
+    // A 204 has no body, and the Response constructor rejects one.
+    return new Response(status === 204 ? null : JSON.stringify(body), {
       status,
       headers: { 'Content-Type': 'application/json' },
     })
