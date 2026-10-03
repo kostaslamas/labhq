@@ -36,6 +36,8 @@ class RunRequest:
     # A run given its own tools gets only those: no shell, no file tools, nothing built in.
     # The Call Center agent (ADR 0004) is the first caller.
     tools: Sequence[AgentTool] = ()
+    # The run this request belongs to; adapters that name external resources use it.
+    run_id: int | None = None
 
 
 @dataclass(frozen=True)

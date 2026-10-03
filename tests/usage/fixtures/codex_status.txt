@@ -1,0 +1,13 @@
+/status
+
+>_ OpenAI Codex (v0.46.0)
+
+ Model:            gpt-5-codex (reasoning medium, summaries auto)
+ Directory:        /srv/labhq/worktrees/project-1/task-7
+ Approval:         never
+ Sandbox:          danger-full-access
+ Session:          0199a213-81c0-7800-8aa1-bbab2a035a53
+
+ Token usage:      12.4K total  (9.8K input + 2.6K output)
+ 5h limit:         [██████░░░░░░░░░░░░░░] 31% used (resets 17:42)
+ Weekly limit:     [███░░░░░░░░░░░░░░░░░] 14% used (resets 09:00 on 8 Oct)

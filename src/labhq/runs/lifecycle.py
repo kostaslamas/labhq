@@ -76,13 +76,15 @@ class RunService:
         run_id: int | None = None,
         resume_session_id: str | None = None,
         tools: Sequence[AgentTool] = (),
+        config: dict[str, Any] | None = None,
     ) -> "ActiveRun":
         """Start a run. `run_id` adopts a queued run instead of creating one.
 
         The scheduler needs the run id before the adapter starts, to take the task's
         checkout with it; it queues the run, checks out, then hands the id here.
         `resume_session_id` continues a session kept outside `agent_task_sessions`, such as
-        a call's; it wins over the task's stored session.
+        a call's; it wins over the task's stored session. `config` is laid over
+        `agents.config` for this run only, for example a fallback agent kind.
         """
         db = self._sessions()
         try:
@@ -106,9 +108,10 @@ class RunService:
                 prompt=prompt,
                 cwd=cwd,
                 resume_session_id=run.session_id_before,
-                config=dict(agent.config),
+                config={**agent.config, **(config or {})},
                 hooks=hooks,
                 tools=tools,
+                run_id=run.id,
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(
@@ -130,6 +133,7 @@ class RunService:
         hooks: dict[str, Any] | None = None,
         run_id: int | None = None,
         resume_session_id: str | None = None,
+        config: dict[str, Any] | None = None,
     ) -> Run:
         active = await self.start(
             agent_id=agent_id,
@@ -139,6 +143,7 @@ class RunService:
             hooks=hooks,
             run_id=run_id,
             resume_session_id=resume_session_id,
+            config=config,
         )
         return await active.wait()
 

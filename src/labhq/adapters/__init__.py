@@ -16,6 +16,7 @@ from labhq.adapters.claude import ClaudeAdapter, default_cli_path
 from labhq.adapters.fake import FakeAdapter, FakeScript
 from labhq.adapters.ollama import OllamaAdapter
 from labhq.adapters.registry import AdapterFactory, AdapterRegistry, UnknownAdapterError
+from labhq.adapters.tmux import default_tmux_adapter
 from labhq.settings import get_settings
 
 
@@ -27,6 +28,7 @@ default_registry = AdapterRegistry()
 default_registry.register("fake", FakeAdapter)
 default_registry.register("claude", _claude)
 default_registry.register("ollama", OllamaAdapter)
+default_registry.register("tmux", default_tmux_adapter)
 
 __all__ = [
     "Adapter",

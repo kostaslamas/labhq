@@ -1,5 +1,6 @@
 """`init`, `project add`, `agent add|approve` and `task add`: who works on what."""
 
+import json
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Annotated, Any
@@ -63,6 +64,18 @@ def parse_budget(value: str | None) -> int | None:
         raise CliError(f"budget must be a non-negative USD amount, got {value!r}") from error
 
 
+def parse_config(value: str | None) -> dict[str, Any] | None:
+    if value is None:
+        return None
+    try:
+        parsed = json.loads(value)
+    except ValueError as error:
+        raise typer.BadParameter(f"--config is not JSON: {error}") from error
+    if not isinstance(parsed, dict):
+        raise typer.BadParameter("--config must be a JSON object")
+    return parsed
+
+
 async def create_project(context: Context, name: str, repo: Path, budget: int | None) -> Project:
     async with context.sessions() as db:
         project = await work.add_project(db, context.clock, name=name, repo=repo, budget=budget)
@@ -124,7 +137,11 @@ def agent_add(
     project: Annotated[str, typer.Option(help="Project name or id.")],
     role: Annotated[str, typer.Option(help="The agent's role, for example manager or worker.")],
     title: Annotated[str, typer.Option(help="A human-readable title.")],
-    adapter: Annotated[str, typer.Option(help="Adapter key: fake or claude.")] = "fake",
+    adapter: Annotated[str, typer.Option(help="Adapter key: fake, claude or tmux.")] = "fake",
+    config: Annotated[
+        str | None,
+        typer.Option(help='agents.config as JSON, e.g. \'{"agent": "codex"}\' for tmux.'),
+    ] = None,
     reports_to: Annotated[
         int | None, typer.Option(help="Id of the agent this one reports to.")
     ] = None,
@@ -140,6 +157,7 @@ def agent_add(
             title=title,
             adapter=adapter,
             reports_to=reports_to,
+            config=parse_config(config),
             budget=parse_budget(budget_usd),
         )
 

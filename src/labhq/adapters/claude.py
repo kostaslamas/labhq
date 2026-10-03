@@ -57,6 +57,8 @@ class ClaudeAgentConfig(BaseModel):
     permission_mode: PermissionMode = "bypassPermissions"
     model: str | None = None
     max_turns: int | None = None
+    # `[]` runs with no tools at all, as the usage extractor does (ADR 0003).
+    tools: list[str] | None = None
 
 
 def _default_client(options: ClaudeAgentOptions) -> SDKClient:
@@ -128,7 +130,8 @@ class ClaudeAdapter:
             resume=request.resume_session_id,
             hooks=cast(Any, dict(request.hooks)) if request.hooks else None,
             env=child_environment(self._environ),
-            **tool_options(request.tools),
+            # A run's own tools replace the configured set; otherwise the config decides.
+            **{"tools": config.tools, **tool_options(request.tools)},
         )
 
     async def start(self, request: RunRequest) -> None:

@@ -4,11 +4,16 @@ Everything here happens in one transaction: the run is queued, the task checked 
 the wakeup marked dispatched together, or not at all. A wakeup that cannot start yet
 (agent inactive or at its concurrency limit, task held by another run) stays pending
 and is tried again on the next tick. One the budget stops is refused.
+
+An agent kind past labhq's share of its plan window (ADR 0003) also leaves the wakeup
+pending, so the work resumes on the first tick after the window resets, or moves at once
+to the agent's fallback kind when that one is free.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from typing import Any
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -21,6 +26,14 @@ from labhq.scheduler.checkout import checkout
 from labhq.scheduler.reaper import LIVE_STATUSES
 from labhq.scheduler.settings import AgentLimits, SchedulerSettings
 from labhq.scheduler.sources import SourceRegistry
+from labhq.usage import UsageSettings, check_agent
+from labhq.usage.plan import fallback_kind
+
+# Sessions do not move between CLIs; the fallback starts from what the task left behind.
+TAKEOVER_NOTE = (
+    "You take this task over from another agent kind that reached its plan limit. "
+    "Start from .labhq/status.md and the commits on this branch."
+)
 
 
 class Verdict(StrEnum):
@@ -29,6 +42,8 @@ class Verdict(StrEnum):
     AT_CONCURRENCY = "at_concurrency"
     TASK_HELD = "task_held"
     BUDGET_STOP = "budget_stop"
+    # The agent kind is past its plan window share and has no free fallback; retried.
+    PLAN_PAUSED = "plan_paused"
     # Another dispatcher took or refused the wakeup first.
     GONE = "gone"
 
@@ -41,6 +56,8 @@ class Dispatch:
     task_id: int | None = None
     prompt: str = ""
     timeout_seconds: int = 0
+    # Laid over `agents.config` for this run, e.g. the fallback agent kind.
+    config: dict[str, Any] = field(default_factory=dict)
 
 
 async def pending_wakeup_ids(session: AsyncSession) -> list[int]:
@@ -62,6 +79,7 @@ async def dispatch_one(
     sources: SourceRegistry,
     settings: SchedulerSettings,
     budget_settings: BudgetSettings | None,
+    usage_settings: UsageSettings | None = None,
 ) -> Dispatch:
     """Try to queue a run for `wakeup_id`. Commits on success and on refusal."""
     request = await session.get_one(WakeupRequest, wakeup_id, populate_existing=True)
@@ -83,6 +101,12 @@ async def dispatch_one(
         await session.commit()
         return Dispatch(Verdict.BUDGET_STOP)
 
+    overrides = await _plan_overrides(session, agent, clock, usage_settings)
+    if overrides is None:
+        # Commit the owner's notification; the wakeup itself stays pending.
+        await session.commit()
+        return Dispatch(Verdict.PLAN_PAUSED)
+
     run = Run(
         agent_id=agent.id,
         task_id=request.task_id,
@@ -103,14 +127,30 @@ async def dispatch_one(
     # Read after the commit, so wakeups merged up to now are in the brief.
     await session.refresh(request)
     task = await session.get(Task, request.task_id) if request.task_id is not None else None
+    prompt = sources.handler(request.source).prompt(request, task)
     return Dispatch(
         Verdict.QUEUED,
         run_id=run.id,
         agent_id=agent.id,
         task_id=request.task_id,
-        prompt=sources.handler(request.source).prompt(request, task),
+        prompt=f"{prompt}\n{TAKEOVER_NOTE}" if overrides else prompt,
         timeout_seconds=limits.timeout_seconds,
+        config=overrides,
     )
+
+
+async def _plan_overrides(
+    session: AsyncSession, agent: Agent, clock: Clock, settings: UsageSettings | None
+) -> dict[str, Any] | None:
+    """{} to run as configured, the fallback kind to run on instead, or None to wait."""
+    plan = await check_agent(session, agent, clock, settings)
+    if plan.decision is not Decision.STOP:
+        return {}
+    fallback = fallback_kind(agent.config)
+    if fallback is None:
+        return None
+    other = await check_agent(session, agent, clock, settings, kind=fallback)
+    return None if other.decision is Decision.STOP else {"agent": fallback}
 
 
 async def _live_runs(session: AsyncSession, agent_id: int) -> int:

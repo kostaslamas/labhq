@@ -8,10 +8,12 @@ docs/checks/ollama-adapter.md. The prompts are chosen so a real model can satisf
 
 import argparse
 import asyncio
+import json
 import sys
 import tempfile
 from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import Any
 
 from labhq.adapters.base import Adapter, AdapterEvent, AdapterResult, RunRequest
 from labhq.adapters.registry import AdapterFactory
@@ -53,8 +55,13 @@ async def run_once(
         await adapter.close()
 
 
+# `--config` adds keys for adapters that need them, e.g. the tmux adapter's agent kind.
+EXTRA_CONFIG: dict[str, Any] = {}
+
+
 def _request(prompt: str, cwd: Path, resume: str | None = None) -> RunRequest:
-    return RunRequest(prompt=prompt, cwd=cwd, resume_session_id=resume, config=CONTRACT_CONFIG)
+    config = {**CONTRACT_CONFIG, **EXTRA_CONFIG}
+    return RunRequest(prompt=prompt, cwd=cwd, resume_session_id=resume, config=config)
 
 
 async def check_completes(make: AdapterFactory, cwd: Path) -> list[AdapterResult]:
@@ -101,7 +108,7 @@ CHECKS: dict[str, Callable[[AdapterFactory, Path], Awaitable[list[AdapterResult]
 }
 
 
-async def _run_all(key: str, cwd: Path) -> bool:
+async def _run_all(key: str, cwd: Path, names: list[str]) -> bool:
     from labhq.adapters import default_registry
 
     def make() -> Adapter:
@@ -109,7 +116,8 @@ async def _run_all(key: str, cwd: Path) -> bool:
 
     passed = True
     total_micros = 0
-    for name, check in CHECKS.items():
+    for name in names:
+        check = CHECKS[name]
         try:
             results = await check(make, cwd)
         except Exception as error:  # report every check, not only the first failure
@@ -126,10 +134,16 @@ async def _run_all(key: str, cwd: Path) -> bool:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run the adapter contract for real.")
     parser.add_argument("adapter", help="registered adapter key, e.g. claude or ollama")
+    parser.add_argument(
+        "--config", default="{}", help='extra agents.config JSON, e.g. {"agent": "codex"}'
+    )
+    parser.add_argument("--check", action="append", choices=sorted(CHECKS), help="repeatable")
     args = parser.parse_args(argv)
+    EXTRA_CONFIG.update(json.loads(args.config))
     # Sessions are stored per working directory, so every check shares one.
     with tempfile.TemporaryDirectory(prefix="labhq-contract-") as scratch:
-        return 0 if asyncio.run(_run_all(args.adapter, Path(scratch))) else 1
+        names = args.check or list(CHECKS)
+        return 0 if asyncio.run(_run_all(args.adapter, Path(scratch), names)) else 1
 
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from labhq.db.models.callcenter import (
 )
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
 from labhq.db.models.runs import AgentTaskSession, CostEvent, Run, RunEvent, WakeupRequest
+from labhq.db.models.usage import UsageReading
 from labhq.db.models.work import Agent, Comment, Project, Task
 
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     "RunEvent",
     "StatusUpdate",
     "Task",
+    "UsageReading",
     "WakeupRequest",
 ]

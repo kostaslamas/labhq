@@ -13,7 +13,7 @@ from labhq.adapters import (
 
 
 def test_built_in_adapters_are_registered() -> None:
-    assert default_registry.adapter_keys() == ["claude", "fake", "ollama"]
+    assert default_registry.adapter_keys() == ["claude", "fake", "ollama", "tmux"]
     assert isinstance(default_registry.create("fake"), FakeAdapter)
     assert isinstance(default_registry.create("claude"), ClaudeAdapter)
     assert isinstance(default_registry.create("ollama"), OllamaAdapter)
