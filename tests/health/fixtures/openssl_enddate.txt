@@ -1,0 +1,6 @@
+== example.com:443
+notAfter=Oct 12 09:00:00 2026 GMT
+== /etc/ssl/certs/internal.pem
+notAfter=Jan  1 09:00:00 2027 GMT
+== unreachable.example:443
+Could not read certificate from <stdin>
