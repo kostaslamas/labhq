@@ -16,6 +16,8 @@ import { fileURLToPath } from 'node:url'
 
 export const BASE_URL_ENV = 'LABHQ_E2E_BASE_URL'
 export const SEED_ENV = 'LABHQ_E2E_SEED'
+// Where the seeded database lives, so `labhq passkey enroll` can run against it (support/auth.ts).
+export const DATA_DIR_ENV = 'LABHQ_E2E_DATA_DIR'
 
 const HOST = '127.0.0.1'
 const STARTUP_TIMEOUT_MS = 60_000
@@ -139,6 +141,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     // Workers start after global setup and inherit these.
     process.env[BASE_URL_ENV] = url
     process.env[SEED_ENV] = summary
+    process.env[DATA_DIR_ENV] = dataDir
   } catch (error) {
     await teardown()
     throw error
