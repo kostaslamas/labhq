@@ -1,4 +1,4 @@
-"""Write tools that change state: decide an approval, order a task."""
+"""Write tools that change state: decide an approval, order a task or a merge."""
 
 import uuid
 
@@ -15,12 +15,18 @@ async def decide_tool(reference: str, verdict: str) -> str:
 
 
 async def order_tool(
-    project: str, text: str, assignee: int | None = None, request_id: str | None = None
+    project: str,
+    text: str = "",
+    assignee: int | None = None,
+    request_id: str | None = None,
+    merge: int | None = None,
 ) -> str:
     # A retry that repeats the request id creates nothing; without one, every call is new.
     key = request_id or f"mcp-{uuid.uuid4().hex}"
     async with tool_session() as db:
-        return await order(db, CLOCK, project=project, text=text, request_id=key, assignee=assignee)
+        return await order(
+            db, CLOCK, project=project, text=text, request_id=key, assignee=assignee, merge=merge
+        )
 
 
 default_registry.register(
@@ -41,7 +47,9 @@ default_registry.register(
         "Create a task in a project and wake its assignee. project is the project name, "
         "text is the owner's instruction in a sentence or two, assignee is an optional "
         "agent id, request_id is an optional key that makes a retry create nothing twice. "
-        "The answer names the task with a reference like T3.",
+        "The answer names the task with a reference like T3. To merge a finished task into "
+        "main instead, set merge to its task id and leave text empty: that only requests the "
+        "merge, which the owner approves with the passkey.",
         ToolAnnotations(readOnlyHint=False, destructiveHint=False),
         order_tool,
     )

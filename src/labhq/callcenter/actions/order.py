@@ -1,4 +1,7 @@
-"""Create a task by voice and wake its assignee, once per request id.
+"""Create a task by voice and wake its assignee, once per request id; or ask for a merge.
+
+A merge order only requests the heavy `merge` approval: the owner approves it with a
+passkey and the engine merges, never this call (plan §5, rule 7).
 
 Idempotency needs no schema change. The wakeup key already dedupes per task, but a retry
 arrives before anyone knows the task id, so the request id is stored as a marker line at the
@@ -12,10 +15,11 @@ import re
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labhq.callcenter.answers.refs import approval_ref
 from labhq.clock import Clock
 from labhq.db.models import Project, Task
 from labhq.speech import join_sentences, speakable
-from labhq.work import WorkError, add_task, find_project
+from labhq.work import WorkError, add_task, find_project, request_merge
 
 MARKER_PREFIX = "voice-request:"
 TITLE_LIMIT = 80
@@ -46,6 +50,24 @@ def _confirmation(task: Task, project: Project) -> str:
     return speakable(join_sentences(parts))
 
 
+async def _order_merge(db: AsyncSession, clock: Clock, project: str, task_id: int) -> str:
+    # A retry finds the same pending approval, so the request id needs no marker here.
+    try:
+        owner = await find_project(db, project)
+        task = await db.get(Task, task_id)
+        if task is None or task.project_id != owner.id:
+            raise WorkError(f"there is no task T{task_id} in {owner.name}")
+        approval = await request_merge(db, clock, task.id)
+    except WorkError as error:
+        await db.rollback()
+        return speakable(f"I could not request the merge. {error}.")
+    target = approval.payload["target"]
+    return speakable(
+        f"Merging T{task.id} into {target} needs your approval, "
+        f"so confirm {approval_ref(approval.id)} with your passkey."
+    )
+
+
 async def order(
     db: AsyncSession,
     clock: Clock,
@@ -54,7 +76,11 @@ async def order(
     text: str,
     request_id: str,
     assignee: int | None = None,
+    merge: int | None = None,
 ) -> str:
+    """Create a task from `text`, or with `merge` set to a task id, request its merge."""
+    if merge is not None:
+        return await _order_merge(db, clock, project, merge)
     if not text.strip():
         return speakable("I did not hear what the task should be.")
     if not _REQUEST_ID.fullmatch(request_id):
