@@ -30,6 +30,7 @@ def serve(
     # Imported here: `labhq.program` and `labhq.api` import `labhq.cli`, whose package init
     # imports this module.
     from labhq.api import create_server_app
+    from labhq.api.settings import get_api_settings, ui_absent_reason
     from labhq.program import (
         Program,
         ProgramError,
@@ -55,8 +56,12 @@ def serve(
             attach_interrupter(SchedulerInterrupter(services.engine.scheduler))
             # No access log: the secret path would land in it.
             mcp_app = build_app(default_registry, secret)
+            api_settings = get_api_settings()
             config = uvicorn.Config(
-                create_server_app(context, mcp_app), host=host, port=port, access_log=False
+                create_server_app(context, mcp_app, settings=api_settings),
+                host=host,
+                port=port,
+                access_log=False,
             )
             program = Program(
                 services,
@@ -66,6 +71,8 @@ def serve(
                 settings=get_program_settings(),
             )
             typer.echo(f"Connector URL: http://{host}:{port}/mcp/{secret}")
+            if absent := ui_absent_reason(api_settings):
+                typer.echo(absent, err=True)
             try:
                 await program.run()
             except ProgramError as error:
