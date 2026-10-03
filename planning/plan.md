@@ -405,6 +405,21 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ένας custom connector του Claude συνδέεται στον MCP με σταθερό credential ή secret path, χωρίς Cloudflare Access (demo).
 - Tag `v0.2.0-alpha.1`.
 
+Εκτέλεση: issues #31–#40 στο milestone «Phase 2: Call Center (MCP)», με την ίδια μορφή και τα ίδια labels με τη Φάση 1. Ο Call Center agent τρέχει με τον SDK adapter μέχρι να έρθει ο tmux adapter (τροποποίηση του ADR 0004).
+
+| Κύμα | Issue | Περιεχόμενο |
+|---|---|---|
+| 0 | #31 Foundation | Πίνακες του ADR 0004 και outbox ειδοποιήσεων, εξαρτήσεις (`mcp`, `httpx`, `uvicorn`), `labhq.speech`, `labhq.work` |
+| 1 | #32 Notifier | ntfy (default) και Telegram, outbox που στέλνει μία φορά, ειδοποίηση για έγκριση και για ερώτηση agent |
+| 1 | #33 MCP server | Stateless HTTP με JSON, bearer ή secret path, registry από tools |
+| 1 | #34 Program answers | `brief`, `inbox`, `health` από τη βάση, σε προφορικό κείμενο, <2 s |
+| 1 | #35 Decide and order | Light εγκρίσεις από φωνή, heavy μόνο ζητούνται· νέο task με ανάθεση |
+| 1 | #36 Agent questions | `.labhq/status.md`, ερωτήσεις προς τον χρήστη, απάντηση μία φορά, αυτούσια παράδοση |
+| 2 | #37 Exposure | Cloudflare quick tunnel με `--config /dev/null`, URL του connector |
+| 2 | #38 Call Center tools | Τα tools στο MCP με annotations, έλεγχος φωνής, MCP inspector στο CI |
+| 3 | #39 ask_ceo and get_reply | Agent ανά κλήση, tickets <2 s, resume μέσα στο παράθυρο, `deliver`/`interrupt` με όρια |
+| — | #40 Owner tasks | ntfy στο κινητό, connector, δοκιμή φωνής με βίντεο, tag |
+
 ### Φάση 3 — Hierarchy & meetings
 
 Περιεχόμενο: CEO → managers → leads → workers, δημιουργία ομάδας με έγκριση, standup/planning/review με πρακτικά → tasks, Discord adapter για τις συσκέψεις, τμήμα IT/Infra (κανόνες από agent, tickets, SSH), `graphify` index ανά project, Call Center agent ανά κλήση με status αρχεία και ανάγνωση οθόνης (§3.5).
@@ -508,4 +523,4 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 
 ## 14. Επόμενο βήμα
 
-Σπάσε τη Φάση 2 (Call Center) σε issues με την ίδια μορφή και τα ίδια labels με τη Φάση 1. Παράλληλα μπορούν να ξεκινήσουν τα #25 (tmux adapter) και #27 (ανάληψη agent), που δεν είναι κριτήρια καμίας φάσης.
+Ξεκίνα το κύμα 0 της Φάσης 2: το #31 (Foundation). Τα πέντε issues του κύματος 1 (#32–#36) ξεκινούν παράλληλα μόλις γίνει merge. Τα #25 (tmux adapter) και #27 (ανάληψη agent) μπορούν να τρέξουν δίπλα, χωρίς να είναι κριτήρια καμίας φάσης.
