@@ -5,6 +5,13 @@ registration in `default_actions` (and `default_executors` when the engine can r
 """
 
 from labhq.approvals.executors import Executor, Payload, default_executors
+from labhq.approvals.merge import (
+    MERGE_ACTION,
+    MergeError,
+    MergePayload,
+    merge_branch,
+    merge_payload,
+)
 from labhq.approvals.policy import (
     ActionType,
     ConfirmationKind,
@@ -22,6 +29,7 @@ from labhq.approvals.service import (
 )
 
 __all__ = [
+    "MERGE_ACTION",
     "PUSH_ACTION",
     "ActionType",
     "ApprovalError",
@@ -31,6 +39,8 @@ __all__ = [
     "ConfirmationKind",
     "ConfirmationNotAllowedError",
     "Executor",
+    "MergeError",
+    "MergePayload",
     "Payload",
     "PushPayload",
     "Registry",
@@ -38,6 +48,8 @@ __all__ = [
     "default_actions",
     "default_confirmations",
     "default_executors",
+    "merge_branch",
+    "merge_payload",
     "push_branch",
     "push_payload",
 ]
