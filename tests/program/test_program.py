@@ -81,7 +81,7 @@ def context(
 
 @pytest.fixture
 def services(context: Context, outbound: Outbound) -> Services:
-    notify = NotifySettings(ntfy_topic="program-test")
+    notify = NotifySettings(kind="ntfy", ntfy_topic="program-test")
     client = httpx.AsyncClient(transport=httpx.MockTransport(outbound))
     notifier = build_notifier(notify, client, context.settings.data_dir)
     dispatcher = Dispatcher(context.sessions, notifier, clock=context.clock, settings=notify)

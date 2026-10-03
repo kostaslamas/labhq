@@ -155,7 +155,7 @@ async def test_a_new_notifier_kind_is_a_registration_not_a_dispatcher_edit(
             delivered.append(message)
 
     registry: Registry[NotifierFactory] = notifiers.copy()
-    registry.register("dummy", lambda settings, client, data_dir: Dummy())
+    registry.register("dummy", lambda settings, client, data_dir, sessions: Dummy())
     settings = NotifySettings(kind="dummy")
     notifier = build_notifier(settings, httpx.AsyncClient(), tmp_path, registry=registry)
     await queue(sessions, clock, "k1")
