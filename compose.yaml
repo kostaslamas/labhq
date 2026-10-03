@@ -1,0 +1,46 @@
+# labhq with Docker Compose (#69). Copy `.env.example` to `.env`, set PROJECTS_DIR, then
+# `docker compose up -d`. See docs/guide/docker.md.
+
+name: labhq
+
+services:
+  labhq:
+    build:
+      context: .
+      args:
+        UID: ${CONTAINER_UID:-1000}
+        GID: ${CONTAINER_GID:-1000}
+    image: labhq:local
+    # tini reaps the agents' child processes and forwards SIGTERM to `labhq serve`.
+    init: true
+    # Migrations first, then the API, the MCP server, the UI and the scheduler.
+    command: ["sh", "-c", "labhq init && exec labhq serve --host 0.0.0.0 --port 8787"]
+    # Optional settings (notifier, ANTHROPIC_API_KEY) come from `.env`; a variable left out
+    # of it stays unset in the container.
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      LABHQ_DATA_DIR: /data
+    ports:
+      # The host's loopback only: reach it from elsewhere through an exposure, never by
+      # publishing on every interface.
+      - "127.0.0.1:${HOST_PORT:-8787}:8787"
+    volumes:
+      - data:/data
+      # The container user's home: the model login done with `docker compose exec labhq
+      # claude` persists here, written by Claude Code itself.
+      - home:/home/labhq
+      - ${PROJECTS_DIR:?set PROJECTS_DIR in .env to the directory with your repositories}:/projects
+    healthcheck:
+      test: ["CMD", "labhq", "ready", "--port", "8787"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 120s
+      start_interval: 2s
+    restart: unless-stopped
+
+volumes:
+  data:
+  home:

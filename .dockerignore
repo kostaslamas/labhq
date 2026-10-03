@@ -1,0 +1,27 @@
+# The build context holds sources only: no local data, secrets, dependencies or build output.
+.git
+.github
+.env
+.env.*
+!.env.example
+.venv
+**/__pycache__
+**/*.py[cod]
+.ruff_cache
+.mypy_cache
+.pytest_cache
+dist
+build
+*.egg-info
+*.sqlite
+*.sqlite3
+*.db
+projects
+web/node_modules
+web/dist
+web/test-results
+web/playwright-report
+spikes
+planning
+tests
+docs
