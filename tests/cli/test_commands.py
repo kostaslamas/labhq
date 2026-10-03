@@ -1,5 +1,6 @@
 import shutil
-from collections.abc import Iterator
+import stat
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -140,6 +141,12 @@ def test_a_project_runs_by_hand_from_init_to_a_pending_push(cli: Cli, repo: Path
     assert project["budget_micros"] == 5_000_000
 
 
+def _writable_then_retry(function: Callable[[str], object], path: str, _: BaseException) -> None:
+    # Git writes its objects read-only, and Windows refuses to delete a read-only file.
+    Path(path).chmod(stat.S_IWRITE)
+    function(path)
+
+
 def test_run_exits_non_zero_when_a_run_fails(cli: Cli, repo: Path) -> None:
     cli.ok("init")
     cli.ok("project", "add", "gone", "--repo", str(repo))
@@ -147,7 +154,7 @@ def test_run_exits_non_zero_when_a_run_fails(cli: Cli, repo: Path) -> None:
     cli.ok("agent", "approve", "1")
     cli.ok("task", "add", "--project", "gone", "--title", "Lost", "--assignee", "1")
     # The repository disappears, so the task's worktree cannot be made.
-    shutil.rmtree(repo)
+    shutil.rmtree(repo, onexc=_writable_then_retry)
 
     result = cli("run")
 
