@@ -60,6 +60,22 @@ API settings, read from `LABHQ_API_*` environment variables.
 | `LABHQ_API_DEFAULT_PAGE_SIZE` | `int` | `50` |  |
 | `LABHQ_API_MAX_PAGE_SIZE` | `int` | `200` |  |
 
+## `labhq.approvals.gates.settings.GateSettings`
+
+Gate configuration, read from `LABHQ_GATE_*`. Nothing about a particular gate is in code.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_GATE_KIND` | `str` | `http` | The adapter registration to use; the generic HTTP gate is the only built-in. |
+| `LABHQ_GATE_NAME` | `str` | `gate` | Recorded as the decider (`gate:<name>`), so the audit trail says which gate answered. |
+| `LABHQ_GATE_BASE_URL` | `str \| None` | unset |  |
+| `LABHQ_GATE_TOKEN` | `SecretStr \| None` | unset | SecretStr keeps the token out of reprs, tracebacks and validation errors of this object. |
+| `LABHQ_GATE_TOKEN_HEADER` | `str` | `X-Gate-Token` |  |
+| `LABHQ_GATE_REQUEST_PATH` | `str` | `/internal/request` |  |
+| `LABHQ_GATE_STATUS_PATH` | `str` | `/internal/status/{id}` |  |
+| `LABHQ_GATE_TIMEOUT_SECONDS` | `float` | `10.0` |  |
+| `LABHQ_GATE_PASSKEY_PROOFS` | `str` | `passkey,face_id,webauthn` | Comma-separated `via` values that count as a passkey proof. `password` is not one. |
+
 ## `labhq.auth.settings.AuthSettings`
 
 Auth settings, read from `LABHQ_AUTH_*` environment variables and `LABHQ_PUBLIC_URL`.
@@ -289,6 +305,7 @@ How often each background duty of the always-on program runs, from `LABHQ_PROGRA
 | `LABHQ_PROGRAM_HEALTH_INTERVAL_SECONDS` | `float` | `300.0` | Plan §2.2: the collector samples every host "every few minutes". |
 | `LABHQ_PROGRAM_GRAPHIFY_INTERVAL_SECONDS` | `float` | `60.0` | How often project graphify indexes are checked; a new project waits at most this long. |
 | `LABHQ_PROGRAM_CHAT_INTERVAL_SECONDS` | `float` | `30.0` | The chat loop runs until its adapter fails; it reconnects after this long. |
+| `LABHQ_PROGRAM_GATE_INTERVAL_SECONDS` | `float` | `5.0` | How often an external approval gate is polled; unused while no gate is configured. |
 | `LABHQ_PROGRAM_SHUTDOWN_GRACE_SECONDS` | `float` | `10.0` | Time the server gets to stop before it is cancelled on shutdown. |
 
 ## `labhq.scheduler.settings.SchedulerSettings`
