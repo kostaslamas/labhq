@@ -1,0 +1,15 @@
+{
+  "shell": {
+    "nav_label": "Main navigation",
+    "switch_language": "Ελληνικά",
+    "switch_language_label": "Switch the interface to Greek"
+  },
+  "status": {
+    "done": "Done",
+    "working": "Working",
+    "waiting_on_you": "Waiting on you",
+    "blocked": "Blocked",
+    "failed": "Failed",
+    "idle": "Idle"
+  }
+}
