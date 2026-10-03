@@ -1,8 +1,9 @@
 """The behaviour every chat adapter must show, as checks that run against a harness.
 
-CI runs these against the fake and against the Discord adapter with its REST API mocked and
-its gateway fed from fixtures. The Phase 5 Slack adapter brings a harness and runs the same
-checks. A harness wraps one adapter together with a scripted remote side.
+CI runs these against the fake, against the Discord adapter with its REST API mocked and its
+gateway fed from fixtures, and against the Slack adapter with its Web API mocked and its
+Socket Mode events fed from fixtures. A harness wraps one adapter together with a scripted
+remote side.
 """
 
 from collections.abc import Awaitable, Callable
@@ -50,10 +51,13 @@ class ChatHarness(Protocol):
         ...
 
 
-def long_message() -> str:
+def long_message(limit: int = 2000) -> str:
+    """A message that splits into at least three parts at `limit` (4500 characters at 2000)."""
+    length = LONG_MESSAGE_LENGTH * limit // 2000
     sentence = "Decision {n}: the scheduler keeps one run per agent. "
-    lines = ["".join(sentence.format(n=f"{line}.{n}") for n in range(4)) for line in range(40)]
-    return "\n".join(lines)[:LONG_MESSAGE_LENGTH]
+    count = length // 200 + 1
+    lines = ["".join(sentence.format(n=f"{line}.{n}") for n in range(4)) for line in range(count)]
+    return "\n".join(lines)[:length]
 
 
 async def check_channel_survives_restart(harness: ChatHarness) -> None:
@@ -90,7 +94,8 @@ async def check_posts_as_persona(harness: ChatHarness) -> None:
 async def check_long_message_is_split_in_order(harness: ChatHarness) -> None:
     adapter = await harness.make()
     thread = await adapter.open_thread(await adapter.ensure_channel("demo", "Demo"), "Minutes")
-    text = long_message()
+    # Scaled to the adapter's limit: a fixed length only splits three ways under Discord's.
+    text = long_message(adapter.max_message_length)
     refs = await adapter.post(thread, ALICE, text)
     parts = [body for _, body in harness.posts(thread)]
     require(len(refs) == len(parts) >= 3, f"{len(text)} characters arrived as {len(parts)}")
