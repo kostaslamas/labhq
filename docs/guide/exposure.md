@@ -18,8 +18,11 @@ itself, so no exposure needs Cloudflare Access or another identity provider in f
 The default, because it needs no account. `labhq onboard` opens one, and so does:
 
 ```sh
-labhq mcp serve --expose quick-tunnel
+labhq serve --expose quick-tunnel
 ```
+
+`labhq mcp serve --expose quick-tunnel` does the same for the MCP server alone, without the
+scheduler, the notifier and the timers.
 
 labhq runs `cloudflared tunnel --config /dev/null --url http://127.0.0.1:<port>`. The empty
 config keeps your own `~/.cloudflared/config.yml` out, so the quick tunnel can never attach

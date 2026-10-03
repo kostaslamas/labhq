@@ -71,6 +71,16 @@ sqlite3 "$LABHQ_DATA_DIR/labhq.sqlite3" \
   'select agent_kind, source, unit, "window", value, error from usage_readings order by id desc limit 5'
 ```
 
+A fresh Claude Code directory first asks "Is this a project you created or one you trust?".
+labhq answers it with the key `1` only when the run's directory, resolved, lies strictly under
+the data directory (the Call Center's `callcenter` directory, task worktrees); for any other
+directory the run fails with that reason and no key is sent. Check the answer against the real
+binary: start a Call Center run with `LABHQ_CALLCENTER_AGENT_ADAPTER=tmux` in a data directory
+you have never trusted, watch it with `tmux -L labhq attach -t run-<id>`, and confirm the dialog
+is answered and the run goes on. If the binary's selector does not take `1`, change
+`accept_keys` of the `trust-folder` entry in `src/labhq/adapters/tmux/agents.py`. A run whose
+screen does not change for `no_progress_seconds` (agent config, default 300) also fails.
+
 Watch a run live with `tmux -L labhq attach -t run-<run id>` (detach with `C-b d`).
 
 When a CLI's screen changes, replace its fixture under `tests/usage/fixtures/` with a fresh
