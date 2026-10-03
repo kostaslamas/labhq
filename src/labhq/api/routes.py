@@ -16,6 +16,7 @@ from labhq.api.vocabulary import vocabulary_router
 from labhq.auth.routes import public_router as auth_public_router
 from labhq.auth.routes import router as auth_router
 from labhq.live.endpoint import live_router
+from labhq.notify.routes import router as push_router
 
 
 @dataclass(frozen=True)
@@ -60,3 +61,4 @@ default_routers.register(live_router, public=True)  # Authenticates its own hand
 default_routers.register(auth_public_router, public=True)  # Sign-in cannot need a session.
 default_routers.register(auth_router)
 default_routers.register(approvals_router)
+default_routers.register(push_router)
