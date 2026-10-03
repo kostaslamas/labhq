@@ -1,6 +1,7 @@
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -19,6 +20,7 @@ from labhq.meetings import (
     MeetingSettings,
     default_kinds,
 )
+from labhq.memory import AgentMemory
 from labhq.runs import RunService
 
 MINUTES_MARKER = "Write its minutes."
@@ -130,7 +132,9 @@ async def _agent(db: AsyncSession, now: datetime, project: Project, role: str, t
 
 
 @pytest.fixture
-async def world(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) -> World:
+async def world(
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, tmp_path: Path
+) -> World:
     ticking = TickingClock(clock.now())
     stage = Stage()
     registry = default_registry.copy()
@@ -152,7 +156,13 @@ async def world(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) ->
     runner = MeetingRunner(
         sessions,
         clock=ticking,
-        runs=RunService(sessions, clock=ticking, registry=registry),
+        # Managers and leads keep memory; it must not reach the developer's data directory.
+        runs=RunService(
+            sessions,
+            clock=ticking,
+            registry=registry,
+            memory=AgentMemory(tmp_path / "agents"),
+        ),
         kinds=kinds,
         listeners=listeners,
         settings=settings,

@@ -52,7 +52,10 @@ async def test_the_manager_facilitates_and_speaks_first(world: World) -> None:
 
     meeting = await world.meeting(meeting_id)
     assert meeting.facilitator_agent_id == world.manager_id
-    assert world.stage.turn_prompts()[0].startswith("You are Manager (manager)")
+    # A manager's run opens with its memory, so the turn line need not come first.
+    first_turn = world.stage.turn_prompts()[0]
+    assert "You are Manager (manager)" in first_turn
+    assert "You are Backend lead (lead)" in world.stage.turn_prompts()[1]
 
 
 async def test_an_action_item_assignee_is_woken_as_for_any_assignment(world: World) -> None:
