@@ -80,6 +80,15 @@ and CI fails when it does not match them.
 | `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |
 | `tests/mcp/test_server.py::test_token_file_is_0600_and_stable` | POSIX file permission bits |
 | `tests/notify/test_channels.py::test_the_generated_topic_is_random_and_kept` | POSIX file permission bits |
+| `tests/onboard/test_failures.py::test_a_notification_ntfy_rejects_fails_on_the_notifications_step` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_failures.py::test_a_tunnel_that_does_not_answer_fails_on_the_public_url_step` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_a_second_run_keeps_token_topic_and_data_and_checks_again` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_first_run_reaches_a_verified_system_without_any_account` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_the_model_notice_appears_on_the_first_run_only` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_the_qr_code_encodes_exactly_the_printed_connector_url` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_without_no_serve_the_program_takes_over_the_port_behind_the_same_tunnel` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_model.py::test_a_logged_in_claude_verifies` | the fake claude is a shebang script |
+| `tests/onboard/test_model.py::test_only_the_logged_in_answer_counts` | the fake claude is a shebang script |
 | `tests/program/test_sigterm.py::test_a_stop_signal_ends_labhq_serve_with_exit_code_zero` | POSIX stop signals |
 | `tests/scheduler/test_termination.py::test_a_process_that_is_already_gone_reports_false` | POSIX process groups and signals |
 | `tests/scheduler/test_termination.py::test_posix_signals_the_whole_process_group` | POSIX process groups and signals |

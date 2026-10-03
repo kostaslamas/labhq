@@ -15,6 +15,7 @@ READY = "labhq is ready."
 COMMAND = importlib.import_module("labhq.cli.onboard")
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_a_tunnel_that_does_not_answer_fails_on_the_public_url_step(
     tunnel: Tunnel, ntfy: FakeNtfy, tmp_path: Path
 ) -> None:
@@ -33,6 +34,7 @@ def test_a_tunnel_that_does_not_answer_fails_on_the_public_url_step(
         os.kill(pid, 0)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_a_notification_ntfy_rejects_fails_on_the_notifications_step(
     tunnel: Tunnel, cli: Cli, monkeypatch: pytest.MonkeyPatch
 ) -> None:

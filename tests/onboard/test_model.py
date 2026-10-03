@@ -44,7 +44,11 @@ def context(tmp_path: Path, **overrides: object) -> tuple[OnboardContext, list[s
 @pytest.mark.parametrize(
     ("answer", "expected"),
     [
-        ('{"loggedIn": true, "authMethod": "x"}', True),
+        pytest.param(
+            '{"loggedIn": true, "authMethod": "x"}',
+            True,
+            marks=pytest.mark.posix_only("the fake claude is a shebang script"),
+        ),
         ('{"loggedIn": false}', False),
         ("not json", False),
         ('["loggedIn"]', False),
@@ -63,6 +67,7 @@ def test_an_api_key_is_enough_without_running_claude(tmp_path: Path) -> None:
     assert "API billing" in detection.detail
 
 
+@pytest.mark.posix_only("the fake claude is a shebang script")
 def test_a_logged_in_claude_verifies(tmp_path: Path) -> None:
     binary = fake_claude(tmp_path, '{"loggedIn": true}')
     probe, _ = context(tmp_path, which={"claude": binary}.get)
