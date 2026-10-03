@@ -1,6 +1,7 @@
 {
   "shell": {
     "nav_label": "Κύρια πλοήγηση",
+    "passkeys": "Κλειδιά",
     "switch_language": "English",
     "switch_language_label": "Αλλαγή της γλώσσας σε αγγλικά"
   },

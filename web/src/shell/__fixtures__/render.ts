@@ -6,7 +6,12 @@ import { createLabhqApp, type AppOptions } from '../app'
 
 // Mounts the real app, as main.ts does, on a memory history.
 export async function renderApp(path: string, options: AppOptions = {}) {
-  const built = createLabhqApp({ history: createMemoryHistory(), locale: 'en', ...options })
+  const built = createLabhqApp({
+    history: createMemoryHistory(),
+    locale: 'en',
+    auth: false,
+    ...options,
+  })
   await built.router.push(path)
   await built.router.isReady()
   const root = document.createElement('div')

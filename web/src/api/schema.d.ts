@@ -4,6 +4,185 @@
  */
 
 export interface paths {
+  '/api/auth/credentials': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Auth Credentials List */
+    get: operations['auth_credentials_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/credentials/{credential_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Auth Credentials Revoke */
+    delete: operations['auth_credentials_revoke']
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/enroll/options': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth Enroll Options */
+    post: operations['auth_enroll_options']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/enroll/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth Enroll Verify */
+    post: operations['auth_enroll_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/enrollment-links': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Auth Enrollment Links Create
+     * @description A one-time link for another passkey, with a QR code to open it on a phone.
+     */
+    post: operations['auth_enrollment_links_create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/login/options': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth Login Options */
+    post: operations['auth_login_options']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/login/verify': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth Login Verify */
+    post: operations['auth_login_verify']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/logout': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Auth Logout */
+    post: operations['auth_logout']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Auth Status
+     * @description Whether this browser is signed in, without a 401 for the login page to special-case.
+     */
+    get: operations['auth_status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/auth/step-up/options': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Auth Step Up Options
+     * @description Challenge for one purpose, such as `approval:42`; the approval endpoint checks the answer.
+     */
+    post: operations['auth_step_up_options']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/health': {
     parameters: {
       query?: never
@@ -59,6 +238,20 @@ export interface components {
      */
     ApprovalStatus:
       'pending' | 'approved' | 'rejected' | 'executed' | 'execution_failed' | 'cancelled'
+    /** AssertionBody */
+    AssertionBody: {
+      /** Credential */
+      credential: {
+        [key: string]: unknown
+      }
+    }
+    /** AuthStatus */
+    AuthStatus: {
+      /** Authenticated */
+      authenticated: boolean
+      /** Enrolled */
+      enrolled: boolean
+    }
     /**
      * CallRequestStatus
      * @enum {string}
@@ -69,6 +262,69 @@ export interface components {
      * @enum {string}
      */
     CallStatus: 'open' | 'closed'
+    /**
+     * Credential
+     * @description What the UI may know about a passkey. The public key stays on the server.
+     */
+    Credential: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Last Used At */
+      last_used_at: string | null
+      /** Name */
+      name: string
+      /** Revoked */
+      revoked: boolean
+      /** Rp Id */
+      rp_id: string
+      /** Transports */
+      transports: string[]
+    }
+    /** EnrollOptionsBody */
+    EnrollOptionsBody: {
+      /** Token */
+      token: string
+    }
+    /** EnrollVerifyBody */
+    EnrollVerifyBody: {
+      /** Credential */
+      credential: {
+        [key: string]: unknown
+      }
+      /**
+       * Name
+       * @default Passkey
+       */
+      name: string
+      /** Token */
+      token: string
+    }
+    /** EnrollmentLink */
+    EnrollmentLink: {
+      /**
+       * Expires At
+       * Format: date-time
+       */
+      expires_at: string
+      /** Qr */
+      qr: string
+      /** Url */
+      url: string
+    }
+    /** EnrollmentLinkBody */
+    EnrollmentLinkBody: {
+      /**
+       * Target
+       * @default public
+       * @enum {string}
+       */
+      target: 'public' | 'here'
+    }
     /** ErrorBody */
     ErrorBody: {
       /** Code */
@@ -120,6 +376,11 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** StepUpBody */
+    StepUpBody: {
+      /** Purpose */
+      purpose: string
+    }
     /**
      * TaskStatus
      * @enum {string}
@@ -210,6 +471,324 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
+  auth_credentials_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Credential'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_credentials_revoke: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        credential_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Credential']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_enroll_options: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnrollOptionsBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: unknown
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_enroll_verify: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnrollVerifyBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Credential']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_enrollment_links_create: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnrollmentLinkBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['EnrollmentLink']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_login_options: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: unknown
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_login_verify: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssertionBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthStatus']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_logout: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthStatus']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_status: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AuthStatus']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  auth_step_up_options: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['StepUpBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': {
+            [key: string]: unknown
+          }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   health_get: {
     parameters: {
       query?: never

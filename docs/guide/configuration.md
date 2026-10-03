@@ -60,6 +60,20 @@ API settings, read from `LABHQ_API_*` environment variables.
 | `LABHQ_API_DEFAULT_PAGE_SIZE` | `int` | `50` |  |
 | `LABHQ_API_MAX_PAGE_SIZE` | `int` | `200` |  |
 
+## `labhq.auth.settings.AuthSettings`
+
+Auth settings, read from `LABHQ_AUTH_*` environment variables and `LABHQ_PUBLIC_URL`.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_PUBLIC_URL` | `str \| None` | unset | The stable URL the owner approves from on a phone. A passkey is bound to its host, so this is enrolled once separately from `localhost`. |
+| `LABHQ_AUTH_LOCAL_HOSTS` | `tuple[str, ...]` | `["localhost"]` | Hosts that count as "this machine" on any port; their passkeys never work elsewhere. |
+| `LABHQ_AUTH_ENROLLMENT_TTL_SECONDS` | `int` | `600` | How long an enrollment link from `labhq passkey enroll` stays valid; it works once. |
+| `LABHQ_AUTH_CHALLENGE_TTL_SECONDS` | `int` | `120` | The step-up window: how long an issued challenge may wait for its assertion. |
+| `LABHQ_AUTH_SESSION_IDLE_SECONDS` | `int` | `28800` | A session ends after this long without a request. |
+| `LABHQ_AUTH_SESSION_ABSOLUTE_SECONDS` | `int` | `2592000` | A session ends this long after sign-in, however active it is. |
+| `LABHQ_AUTH_SESSION_COOKIE` | `str` | `labhq_session` | Name of the HttpOnly session cookie. |
+
 ## `labhq.budgets.settings.BudgetSettings`
 
 Budget thresholds and period, read from `LABHQ_BUDGET_*` environment variables.

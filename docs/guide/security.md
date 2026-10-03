@@ -79,9 +79,10 @@ Every action is either light or heavy (plan §5):
 - A voice client can never approve a heavy action, not even when an agent asks it to. The
   Call Center's `decide` tool leaves a heavy approval pending and tells you how to confirm it.
 - Strong confirmation is a passkey: the notification for a heavy approval opens an approval
-  page on your phone that asks for your biometrics. Passkeys in the web UI are being finished;
-  until they land, heavy approvals are decided at the command line with
-  `labhq approvals approve <id>`, by whoever holds the machine.
+  page on your phone that asks for your biometrics. A signed-in session is not enough; the
+  server accepts the decision only with a fresh passkey assertion for that one approval. See
+  [Passkeys](passkeys.md). At the command line, `labhq approvals approve <id>` still decides
+  for whoever holds the machine.
 - New agents wait for your approval before they run (`LABHQ_APPROVE_NEW_AGENTS`, on by
   default).
 - Every decision is recorded with its payload, risk class, who decided and when.

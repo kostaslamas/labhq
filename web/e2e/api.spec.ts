@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 import type { components } from '../src/api/schema'
+import { test as signedIn } from './support/auth.ts'
 import { seedSummary } from './support/server.ts'
 
 type Health = components['schemas']['Health']
@@ -28,7 +29,7 @@ test('protected routes answer with the error envelope without a session', async 
   expect(body.error.code).toBe('unauthorized')
 })
 
-test('the built UI is served by labhq itself', async ({ page }) => {
+signedIn('the built UI is served by labhq itself', async ({ signedInPage: page }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/today$/)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Today')

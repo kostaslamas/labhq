@@ -16,6 +16,7 @@ from labhq.cli.meetings import meetings_app
 from labhq.cli.notify import notify_app
 from labhq.cli.onboard import onboard
 from labhq.cli.org import org_app
+from labhq.cli.passkey import passkey_app
 from labhq.cli.ready import ready
 from labhq.cli.rules import rules_app
 from labhq.cli.running import run
@@ -36,6 +37,7 @@ app.add_typer(hosts_app, name="hosts")
 app.add_typer(mcp_app, name="mcp")
 app.add_typer(notify_app, name="notify")
 app.add_typer(org_app, name="org")
+app.add_typer(passkey_app, name="passkey")
 app.add_typer(rules_app, name="rules")
 app.add_typer(meetings_app, name="meetings")
 app.add_typer(it_app, name="it")

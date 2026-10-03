@@ -1,6 +1,7 @@
 {
   "shell": {
     "nav_label": "Main navigation",
+    "passkeys": "Passkeys",
     "switch_language": "Ελληνικά",
     "switch_language_label": "Switch the interface to Greek"
   },

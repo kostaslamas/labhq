@@ -11,6 +11,33 @@
         "title": "ApprovalStatus",
         "type": "string"
       },
+      "AssertionBody": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          }
+        },
+        "required": ["credential"],
+        "title": "AssertionBody",
+        "type": "object"
+      },
+      "AuthStatus": {
+        "properties": {
+          "authenticated": {
+            "title": "Authenticated",
+            "type": "boolean"
+          },
+          "enrolled": {
+            "title": "Enrolled",
+            "type": "boolean"
+          }
+        },
+        "required": ["authenticated", "enrolled"],
+        "title": "AuthStatus",
+        "type": "object"
+      },
       "CallRequestStatus": {
         "enum": ["pending", "answered", "failed", "expired"],
         "title": "CallRequestStatus",
@@ -20,6 +47,123 @@
         "enum": ["open", "closed"],
         "title": "CallStatus",
         "type": "string"
+      },
+      "Credential": {
+        "description": "What the UI may know about a passkey. The public key stays on the server.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revoked": {
+            "title": "Revoked",
+            "type": "boolean"
+          },
+          "rp_id": {
+            "title": "Rp Id",
+            "type": "string"
+          },
+          "transports": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Transports",
+            "type": "array"
+          }
+        },
+        "required": ["id", "name", "rp_id", "transports", "created_at", "last_used_at", "revoked"],
+        "title": "Credential",
+        "type": "object"
+      },
+      "EnrollOptionsBody": {
+        "properties": {
+          "token": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": ["token"],
+        "title": "EnrollOptionsBody",
+        "type": "object"
+      },
+      "EnrollVerifyBody": {
+        "properties": {
+          "credential": {
+            "additionalProperties": true,
+            "title": "Credential",
+            "type": "object"
+          },
+          "name": {
+            "default": "Passkey",
+            "maxLength": 200,
+            "title": "Name",
+            "type": "string"
+          },
+          "token": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": ["token", "credential"],
+        "title": "EnrollVerifyBody",
+        "type": "object"
+      },
+      "EnrollmentLink": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "qr": {
+            "title": "Qr",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": ["url", "expires_at", "qr"],
+        "title": "EnrollmentLink",
+        "type": "object"
+      },
+      "EnrollmentLinkBody": {
+        "properties": {
+          "target": {
+            "default": "public",
+            "enum": ["public", "here"],
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "title": "EnrollmentLinkBody",
+        "type": "object"
       },
       "ErrorBody": {
         "properties": {
@@ -91,6 +235,18 @@
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
         "title": "RunStatus",
         "type": "string"
+      },
+      "StepUpBody": {
+        "properties": {
+          "purpose": {
+            "maxLength": 64,
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": ["purpose"],
+        "title": "StepUpBody",
+        "type": "object"
       },
       "TaskStatus": {
         "enum": ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"],
@@ -236,6 +392,370 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/auth/credentials": {
+      "get": {
+        "operationId": "auth_credentials_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Credential"
+                  },
+                  "title": "Response Auth Credentials List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Credentials List",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/credentials/{credential_id}": {
+      "delete": {
+        "operationId": "auth_credentials_revoke",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "credential_id",
+            "required": true,
+            "schema": {
+              "title": "Credential Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credential"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Credentials Revoke",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/enroll/options": {
+      "post": {
+        "operationId": "auth_enroll_options",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollOptionsBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Auth Enroll Options",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Enroll Options",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/enroll/verify": {
+      "post": {
+        "operationId": "auth_enroll_verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollVerifyBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credential"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Enroll Verify",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/enrollment-links": {
+      "post": {
+        "description": "A one-time link for another passkey, with a QR code to open it on a phone.",
+        "operationId": "auth_enrollment_links_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrollmentLinkBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollmentLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Enrollment Links Create",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/login/options": {
+      "post": {
+        "operationId": "auth_login_options",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Auth Login Options",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Login Options",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/login/verify": {
+      "post": {
+        "operationId": "auth_login_verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssertionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Login Verify",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "operationId": "auth_logout",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Logout",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/status": {
+      "get": {
+        "description": "Whether this browser is signed in, without a 401 for the login page to special-case.",
+        "operationId": "auth_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Status",
+        "tags": ["auth"]
+      }
+    },
+    "/api/auth/step-up/options": {
+      "post": {
+        "description": "Challenge for one purpose, such as `approval:42`; the approval endpoint checks the answer.",
+        "operationId": "auth_step_up_options",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StepUpBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Auth Step Up Options",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Auth Step Up Options",
+        "tags": ["auth"]
+      }
+    },
     "/api/health": {
       "get": {
         "description": "Answer without a session, so a probe or the UI can tell the server is up.",

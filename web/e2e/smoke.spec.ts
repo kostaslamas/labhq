@@ -1,4 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import { expect, test } from './support/auth.ts'
 
 const areas = [
   { path: '/today', en: 'Today', el: 'Σήμερα' },
@@ -14,7 +16,7 @@ async function hasNoHorizontalScroll(page: Page): Promise<boolean> {
 }
 
 test('the sidebar has four items and each opens its area without horizontal scroll', async ({
-  page,
+  signedInPage: page,
 }) => {
   await page.goto('/')
   await expect(page).toHaveURL(/\/today$/)
@@ -29,7 +31,7 @@ test('the sidebar has four items and each opens its area without horizontal scro
   }
 })
 
-test('switching language changes the shell strings', async ({ page }) => {
+test('switching language changes the shell strings', async ({ signedInPage: page }) => {
   await page.goto('/today')
   await page.getByTestId('switch-language').click()
   await expect(page.locator('html')).toHaveAttribute('lang', 'el')
@@ -41,7 +43,7 @@ test('switching language changes the shell strings', async ({ page }) => {
 })
 
 test('the built app requests nothing outside its own origin and uses bundled fonts', async ({
-  page,
+  signedInPage: page,
   baseURL,
 }) => {
   const requests: string[] = []
