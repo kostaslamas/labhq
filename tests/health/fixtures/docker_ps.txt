@@ -1,0 +1,3 @@
+web	running
+worker	exited
+db	running

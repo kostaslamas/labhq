@@ -43,6 +43,12 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("approvals", "approve"): (("init",), ("approvals", "approve", "42")),
     ("approvals", "reject"): (("init",), ("approvals", "reject", "42")),
     ("health",): (("health",),),
+    ("hosts", "add"): (
+        ("init",),
+        ("hosts", "add", "x", "--address", "127.0.0.1:1", "--user", "ro"),
+    ),
+    ("hosts", "list"): (("hosts", "list"),),
+    ("hosts", "test"): (("init",), ("hosts", "test", "nope")),
     ("notify", "test"): (("notify", "test"),),
     ("notify", "flush"): (("notify", "flush"),),
     ("org", "ceo"): (("org", "ceo"),),

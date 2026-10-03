@@ -1,0 +1,5 @@
+Filesystem     1024-blocks      Used Available Capacity Mounted on
+/dev/sda1         10000000   9100000    900000      91% /
+tmpfs              4000000         0   4000000       0% /dev/shm
+/dev/sdb1         20000000   5000000  15000000      25% /srv/data dir
+overlay           10000000   9000000   1000000      90% /var/lib/docker/overlay2/x/merged
