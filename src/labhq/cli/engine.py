@@ -14,8 +14,27 @@ from labhq.cli.workspace import WorkspaceRunService
 from labhq.db.enums import RunStatus
 from labhq.db.models import Approval, Run
 from labhq.scheduler import Scheduler, SchedulerSettings, TickReport, get_scheduler_settings
+from labhq.usage import UsageSettings, get_usage_settings
+from labhq.usage.collect import UsageCollector
+from labhq.usage.extractors import ExtractorRegistry, ModelExtractor
 
 FAKE_ADAPTER = "fake"
+
+
+def usage_extractors(
+    context: Context, runs: WorkspaceRunService, settings: UsageSettings
+) -> ExtractorRegistry:
+    registry = ExtractorRegistry()
+    registry.register(
+        "model",
+        ModelExtractor(
+            runs,
+            context.sessions,
+            settings.usage_extractor_agent_id,
+            captured_at=lambda: context.clock.now().isoformat(),
+        ),
+    )
+    return registry
 
 
 def cli_adapters() -> AdapterRegistry:
@@ -51,8 +70,10 @@ class Engine:
         context: Context,
         registry: AdapterRegistry | None = None,
         settings: SchedulerSettings | None = None,
+        extractors: ExtractorRegistry | None = None,
     ) -> None:
         self._context = context
+        usage_settings = get_usage_settings()
         scheduler_settings = settings or get_scheduler_settings()
         self._tick_seconds = scheduler_settings.tick_seconds
         self.runs = WorkspaceRunService(
@@ -62,7 +83,17 @@ class Engine:
             settings=context.settings,
         )
         self.scheduler = Scheduler(
-            context.sessions, clock=context.clock, runs=self.runs, settings=scheduler_settings
+            context.sessions,
+            clock=context.clock,
+            runs=self.runs,
+            settings=scheduler_settings,
+            usage_settings=usage_settings,
+        )
+        self.usage = UsageCollector(
+            context.sessions,
+            clock=context.clock,
+            extractors=extractors or usage_extractors(context, self.runs, usage_settings),
+            settings=usage_settings,
         )
         self.approvals = ApprovalService(context.sessions, clock=context.clock)
 
@@ -104,6 +135,8 @@ class Engine:
         async with self._context.sessions() as db:
             runs = await db.scalars(select(Run).where(Run.id.in_(finished)).order_by(Run.id))
             report.runs += list(runs)
+        # Before anything else reads the finished runs: a limit notice holds new runs.
+        await self.usage.collect(finished)
         await ingest_statuses(
             self._context.sessions, self._context.clock, self._context.settings, finished
         )
