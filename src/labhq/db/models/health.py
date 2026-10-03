@@ -17,6 +17,8 @@ class Host(Base):
     name: Mapped[str] = mapped_column(String(255), unique=True)
     address: Mapped[str | None] = mapped_column(String(255))
     ssh_user: Mapped[str | None] = mapped_column(String(64))
+    # Runs approved interventions; without one, the engine refuses to touch the host.
+    intervention_user: Mapped[str | None] = mapped_column(String(64))
     # The machine labhq runs on; the collector creates this row on first run.
     is_local: Mapped[bool] = mapped_column(default=False)
     status: Mapped[HostStatus] = mapped_column(
