@@ -3,12 +3,16 @@
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+import pytest
+
 from labhq.adapters import AdapterEvent
 from labhq.adapters.tmux import TmuxAdapter, split_session
 from labhq.db.enums import RunStatus
 from tests.adapters.tmux.conftest import AdapterMaker, agent_config
 from tests.runs.conftest import World
 from tests.runs.helpers import events_of, stored_run, task_sessions, use_adapter
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 
 def screen_text(events: list[AdapterEvent] | list[object]) -> str:

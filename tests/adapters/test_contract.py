@@ -55,7 +55,20 @@ def test_every_registered_adapter_has_a_contract_harness() -> None:
 
 
 @pytest.mark.parametrize("check", sorted(CHECKS))
-@pytest.mark.parametrize("key", default_registry.adapter_keys())
+@pytest.mark.parametrize(
+    "key",
+    [
+        pytest.param(
+            key,
+            marks=pytest.mark.posix_only(
+                "the tmux adapter does not run on native Windows (ADR 0003)"
+            ),
+        )
+        if key == "tmux"
+        else key
+        for key in default_registry.adapter_keys()
+    ],
+)
 async def test_adapter_honours_the_contract(
     key: str, check: str, tmp_path: Path, stack: contextlib.ExitStack
 ) -> None:

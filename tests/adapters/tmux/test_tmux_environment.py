@@ -11,6 +11,8 @@ from labhq.adapters.contract import run_once
 from labhq.adapters.tmux import TmuxServer
 from tests.adapters.tmux.conftest import AdapterMaker, agent_config
 
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
+
 SECRETS = {
     "SSH_AUTH_SOCK": "/tmp/agent.sock",
     "GH_TOKEN": "gh-secret",

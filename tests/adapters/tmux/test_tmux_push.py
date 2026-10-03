@@ -11,6 +11,8 @@ from labhq.worktrees.git import run_git
 from tests.adapters.tmux.conftest import AdapterMaker, agent_config
 from tests.worktrees.gitrepo import commit_file
 
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
+
 
 @pytest.fixture
 def worktree(repo: Path, tmp_path: Path) -> Worktree:

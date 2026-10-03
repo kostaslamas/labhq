@@ -61,6 +61,10 @@ and CI fails when it does not match them.
 
 | Test | Limitation |
 |---|---|
+| `tests/adapters/test_contract.py::test_adapter_honours_the_contract` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_environment.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
 | `tests/cli/test_wiring.py::test_a_run_without_rtk_records_the_warning_in_its_events` | the rtk stub is a POSIX shell script |
 | `tests/economy/test_rtk.py::test_a_rewrite_counts_whether_rtk_allows_it_or_leaves_the_prompt` | the rtk stub is a POSIX shell script |
