@@ -18,14 +18,26 @@ _SCOPE = (
     "commands, paths, identifiers or error text."
 )
 
+# Not prose style: it tells a working agent where to report, so the owner is not interrupted.
+STATUS_INSTRUCTION = (
+    "Keep .labhq/status.md current (summary, done, next, blockers, refs) and put every "
+    "question for the owner under its questions field, one per line; never wait on a reply."
+)
+
 AGENT_STYLE = (
     "Output style: terse. Your reader is another agent. Lead with the result. Fragments are "
-    "fine; no greetings, filler, hedging or restating the request. " + _SCOPE
+    "fine; no greetings, filler, hedging or restating the request. "
+    + _SCOPE
+    + " "
+    + STATUS_INSTRUCTION
 )
 
 USER_STYLE = (
     "Output style: natural. Your reader is the person who owns this project. Write clear, "
-    "complete sentences in plain words and lead with what matters to them. " + _SCOPE
+    "complete sentences in plain words and lead with what matters to them. "
+    + _SCOPE
+    + " "
+    + STATUS_INSTRUCTION
 )
 
 
