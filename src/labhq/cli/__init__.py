@@ -10,6 +10,7 @@ from labhq.cli.demo import demo
 from labhq.cli.health import health
 from labhq.cli.hosts import hosts_app
 from labhq.cli.mcp import mcp_app
+from labhq.cli.meetings import meetings_app
 from labhq.cli.notify import notify_app
 from labhq.cli.onboard import onboard
 from labhq.cli.org import org_app
@@ -33,6 +34,7 @@ app.add_typer(mcp_app, name="mcp")
 app.add_typer(notify_app, name="notify")
 app.add_typer(org_app, name="org")
 app.add_typer(rules_app, name="rules")
+app.add_typer(meetings_app, name="meetings")
 app.command()(demo)
 app.command()(serve)
 app.command()(onboard)

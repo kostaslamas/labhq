@@ -114,7 +114,9 @@ async def test_a_server_that_dies_is_an_error_not_a_silent_exit(
     services: Services, stepped: SteppedClock
 ) -> None:
     server = FakeServer(fail_after_start=True)
-    program = program_for(services, default_loops, server, stepped)
+    # No loops: the server dies at once, and cancelling a loop's first database pass leaves
+    # an aiosqlite thread that reports to this test's event loop after it has closed.
+    program = program_for(services, LoopRegistry(), server, stepped)
 
     with pytest.raises(ProgramError, match="stopped unexpectedly"):
         await program.run(handle_signals=False)
