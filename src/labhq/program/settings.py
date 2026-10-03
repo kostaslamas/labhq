@@ -19,6 +19,8 @@ class ProgramSettings(BaseSettings):
     live_interval_seconds: float = Field(default=1.0, gt=0)
     # Plan §2.2: the collector samples every host "every few minutes".
     health_interval_seconds: float = Field(default=300.0, gt=0)
+    # How often project graphify indexes are checked; a new project waits at most this long.
+    graphify_interval_seconds: float = Field(default=60.0, gt=0)
     # Time the server gets to stop before it is cancelled on shutdown.
     shutdown_grace_seconds: float = Field(default=10.0, gt=0)
 
