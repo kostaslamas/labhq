@@ -48,9 +48,12 @@ PHASE_1_ACTIONS: tuple[ActionType, ...] = (
     ActionType("host_intervention", RiskClass.HEAVY),
 )
 
-# The local operator at the CLI holds the machine already. Passkeys join in Phase 4 and a
-# voice client in Phase 2 (light only), each as a new registration.
-PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (ConfirmationKind("cli", ANY_RISK),)
+# The local operator at the CLI holds the machine already. The Call Center voice line is
+# light only (plan §5, rule 7); passkeys join in Phase 4 as a new registration.
+PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
+    ConfirmationKind("cli", ANY_RISK),
+    ConfirmationKind("voice", LIGHT),
+)
 
 default_actions = Registry[ActionType]("action type")
 for _action in PHASE_1_ACTIONS:
