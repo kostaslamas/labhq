@@ -11,6 +11,7 @@ from labhq.cli.health import health
 from labhq.cli.mcp import mcp_app
 from labhq.cli.notify import notify_app
 from labhq.cli.running import run
+from labhq.cli.serve import serve
 from labhq.cli.work import agent_app, init, project_app, task_app
 
 app = typer.Typer(name="labhq", help="Self-hosted project orchestrator.", no_args_is_help=True)
@@ -25,6 +26,7 @@ app.command()(health)
 app.add_typer(mcp_app, name="mcp")
 app.add_typer(notify_app, name="notify")
 app.command()(demo)
+app.command()(serve)
 
 
 def _print_version(value: bool) -> None:
