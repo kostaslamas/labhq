@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-10-03).
+Accepted (2026-10-03). Amended (2026-10-03) after review: `.labhq/` stays out of commits,
+and delivered messages carry only the owner's words.
 
 ## Date
 
@@ -50,6 +51,14 @@ Every working agent keeps `.labhq/status.md` in its worktree up to date, with th
 A file works with every agent, since every agent can write files. The engine ingests each
 change into the database with its time.
 
+Nothing in git keeps `.labhq/` out of commits on its own: a worker's `git add -A` would
+commit `.labhq/status.md` into the project. labhq adds `.labhq/` to `.git/info/exclude` of
+every repository it works in before any agent runs there. That file lives in the
+repository's common git directory, so one entry covers the main checkout and every
+worktree. It covers the status file and the rules file of ADR 0005 alike. The project's
+tracked `.gitignore` is never changed. Exclusion stops accidental staging; a deliberate
+`git add -f` still gets through.
+
 At the end of each turn the engine checks whether the agent updated the file during that
 turn, and asks it to if it did not.
 
@@ -69,8 +78,25 @@ port, so nothing reaches the tunnel. It gets no shell and no file-writing tools.
 each CLI accepts a stdio MCP server, and how to remove its built-in tools, is verified when
 this is built.
 
-Pane text and logs contain repository text, which can carry instructions. With no tool
-that writes code or runs commands, such text has nothing to act on.
+Pane text and logs contain repository text, which can carry instructions. The Call Center
+writes no code and runs no commands, but "deliver a message" and "interrupt" reach working
+agents that run with `bypassPermissions`, so injected text could otherwise be relayed to
+them. The two tools are bounded so that only the owner can speak through them:
+
+1. Every `ask_ceo` request is stored with its call and a request id before the agent sees
+   it.
+2. A delivered message carries the owner's words verbatim: the text of a stored request of
+   the current call, chosen by its request id. The tool takes no free text, so it can never
+   carry text the model composed, read from a pane or found in a log.
+3. The recipient is an agent with a pending question, or an agent the owner named in that
+   request; the engine checks the name against the stored text and refuses any other
+   recipient.
+4. Interrupt happens only when the owner asks for it explicitly in the same call, at most
+   once per request. Pane text, logs or a status file never trigger it.
+5. Every delivery is recorded with its call, request id, recipient, text, whether it
+   interrupted, and time.
+
+An answer to an agent's question (below) is a delivery and follows the same rules.
 
 ### Questions from agents reach the owner at once
 
@@ -98,10 +124,16 @@ Center relays.
 - Plan §2 gains the Call Center next to the CEO, as a reader and router. Plan §3 changes
   "talk to the CEO" to "talk to the Call Center"; tool names stay as they are until Phase 2
   locks the list.
-- New tables: status updates, questions from agents, and calls (session id, last activity,
-  window). Each is an Alembic migration.
+- New tables: status updates, questions from agents, calls (session id, last activity,
+  window), call requests (call, request id, text) and deliveries. Each is an Alembic
+  migration.
 - The Call Center has its own agent row and its own budget. Every call costs at least one
-  model turn plus one usage reading (ADR 0003).
+  model turn plus one usage reading (ADR 0003); the reading is a model call only for a CLI
+  whose usage is read from the screen.
+- Tests: `git add -A` in a worktree does not stage `.labhq/status.md`; a delivery naming a
+  request id from another call, or a recipient neither named nor asking, is refused; an
+  interrupt without the owner's request in the same call is refused; every delivery leaves
+  a row.
 - Plan §6 gains the invariant that an agent question is answered at most once.
 - The program's database answers and the notifier land with Phase 2. The per-call agent,
   status files and pane reading need the tmux adapter (ADR 0003) and land with it.

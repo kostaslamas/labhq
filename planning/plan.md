@@ -30,7 +30,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 ```
 
 - Το Call Center στέκεται δίπλα στον CEO, όχι πάνω του: απαντά για την κατάσταση, προωθεί ερωτήσεις και απαντήσεις, αλλά δεν αναθέτει, δεν αποφασίζει και δεν εγκρίνει (§3.5, ADR 0004).
-- Κάθε agent κρατά ενημερωμένο το `.labhq/status.md` στο worktree του, με τα πεδία του handoff (`summary`, `done`, `next`, `blockers`, `refs`) και `questions`. Η μηχανή περνά κάθε αλλαγή στη βάση.
+- Κάθε agent κρατά ενημερωμένο το `.labhq/status.md` στο worktree του, με τα πεδία του handoff (`summary`, `done`, `next`, `blockers`, `refs`) και `questions`. Η μηχανή περνά κάθε αλλαγή στη βάση. Το labhq βάζει το `.labhq/` στο `.git/info/exclude` κάθε repo όπου δουλεύει (ένα αρχείο για όλα τα worktrees του), ώστε ένα `git add -A` να μην κάνει commit τα status και rules αρχεία (ADR 0004).
 - Ο CEO αναλαμβάνει και agent που ήδη τρέχει ένα project, ως manager του (ADR 0005): στο τέλος του γύρου η αρχική διεργασία κλείνει και η συζήτηση συνεχίζει στον ιδιωτικό tmux, στον ίδιο φάκελο. Ο manager μαθαίνει τους κανόνες του labhq· η μηχανή τους ελέγχει, δεν τον εμπιστεύεται.
 
 - Ο Orchestrator αναθέτει Manager ανά project.
@@ -111,7 +111,8 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 - Ο agent απαντά από το status των agents όταν είναι φρέσκο, δηλαδή νεότερο από την τελευταία δραστηριότητά τους (`run_events` ή αλλαγή οθόνης). Όταν είναι μπαγιάτικο, διαβάζει την οθόνη τους με `capture-pane`. Δεν στέλνει ποτέ πλήκτρα σε agent που δουλεύει.
 - Τα εσωτερικά tools του (ανάγνωση βάσης, status, events, οθόνης· παράδοση μηνύματος· interrupt) έρχονται από stdio MCP server που ξεκινά το ίδιο το CLI. Δεν ανοίγει θύρα, δεν έχει shell, δεν γράφει αρχεία.
 - Οι ερωτήσεις των agents (`questions` στο status) γίνονται γραμμές στη βάση και φτάνουν στον χρήστη αμέσως από τον notifier, χωρίς agent. Η απάντηση του χρήστη πηγαίνει στον agent που ρώτησε, βάσει id, το πολύ μία φορά.
-- Παράδοση μηνύματος σε agent: στο τέλος του γύρου του, ως wakeup. Αν ο χρήστης το ζητήσει, interrupt και παράδοση αμέσως.
+- Παράδοση μηνύματος σε agent: στο τέλος του γύρου του, ως wakeup. Αν ο χρήστης το ζητήσει ρητά στην ίδια κλήση, interrupt και παράδοση αμέσως.
+- Το κείμενο της οθόνης και των logs μπορεί να κουβαλά εντολές, και οι agents που δουλεύουν τρέχουν σε `bypassPermissions`. Γι' αυτό ένα μήνυμα που παραδίδεται είναι αυτούσια τα λόγια του χρήστη από την τρέχουσα κλήση, αποθηκευμένα με την κλήση και το id του αιτήματος, ποτέ κείμενο που συνέθεσε το μοντέλο. Παραλήπτης είναι agent με εκκρεμή ερώτηση ή agent που ονόμασε ο χρήστης. Κάθε παράδοση καταγράφεται (ADR 0004).
 
 ## 4. Τεχνολογίες
 
@@ -172,7 +173,7 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 3. Προαιρετικό αυστηρό mode (`strict`): κάθε tool εκτός allowlist περνά από έγκριση μέσω `can_use_tool`. Το Claude Code εγκρίνει μόνο του όσες εντολές θεωρεί read-only, οπότε το strict mode συμπληρώνεται με PreToolUse hook.
 4. Η έγκριση νέων agents είναι on by default.
 5. Οι agents δεν κάνουν push ή merge μόνοι τους: PreToolUse hook που αναλύει την εντολή (όχι απλή αναζήτηση κειμένου, που παρακάμπτεται π.χ. με `git -c x=y push`) απορρίπτει `git push`, `gh pr merge` και παρόμοια, το push URL του worktree είναι απενεργοποιημένο, και κανένα git credential δεν υπάρχει στο περιβάλλον του worker. Η Φάση 0 επιβεβαίωσε ότι το hook ισχύει και σε `bypassPermissions`.
-6. Προαιρετικό sandbox (bubblewrap σε Linux) ή ξεχωριστός OS user, για πραγματική απομόνωση: σε `bypassPermissions` ο agent έχει πρόσβαση σε ό,τι έχει ο χρήστης του server.
+6. Προαιρετικό sandbox (bubblewrap σε Linux) ή ξεχωριστός OS user, για πραγματική απομόνωση: σε `bypassPermissions` ο agent έχει πρόσβαση σε ό,τι έχει ο χρήστης του server. Συνιστάται για κάθε agent που αναλήφθηκε ενώ έτρεχε (ADR 0005): στο main checkout του χρήστη τα επίπεδα του κανόνα 5 αποθαρρύνουν το push αλλά δεν το εγγυώνται (π.χ. `env -u GIT_CONFIG_COUNT git push`, κλειδί SSH από τον δίσκο, script που παρακάμπτει το hook).
 7. Ένας voice client δεν μπορεί ποτέ να εκδώσει heavy approval, ούτε αν το ζητήσει ο ίδιος ο agent.
 8. Κάθε έγκριση καταγράφεται με payload, κλάση ρίσκου, αποφασίζοντα και χρόνο.
 
@@ -197,10 +198,12 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 | `health_samples` | `host_id`, `metric`, `value`, `sampled_at` |
 | `health_rules` | `type`, `params`, `action` (`notify` ή `ticket`), `reason`, `created_by`, `enabled` |
 | `incidents` | `rule_id`, `host_id`, `status`, `task_id` (το ticket) |
-| `usage_readings` | μετρήσεις usage από την οθόνη σε μονάδες εκτός USD: `agent_id`, `run_id`, `unit`, `value`, `resets_at` (ADR 0003) |
+| `usage_readings` | μετρήσεις usage σε μονάδες εκτός USD, από το statusline JSON του Claude Code ή από την οθόνη: `agent_id`, `run_id`, `unit`, `window`, `value`, `resets_at` (ADR 0003) |
 | `status_updates` | το `.labhq/status.md` κάθε agent ανά αλλαγή, με χρόνο (ADR 0004) |
 | `agent_questions` | ερωτήσεις agents προς τον χρήστη: `agent_id`, `task_id`, `status`, `answer` (ADR 0004) |
 | `calls` | κλήσεις του Call Center: `session_id`, `last_activity_at`, `status` (ADR 0004) |
+| `call_requests` | κάθε `ask_ceo` μιας κλήσης: `call_id`, `request_id`, `text` (ADR 0004) |
+| `deliveries` | κάθε μήνυμα του Call Center προς agent: `call_id`, `request_id`, `recipient`, `text`, `interrupted`, χρόνος (ADR 0004) |
 
 Αναλλοίωτα:
 
@@ -221,7 +224,7 @@ Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, vue-router, vue-i1
 4. Προειδοποίηση στο 80% του budget, σκληρό σταμάτημα στο 100%.
 5. Stale-run reaper: runs χωρίς heartbeat μέσα σε όριο κλείνουν ως `failed`.
 6. Timeouts ανά run, ρυθμιζόμενα στο `agents.config`.
-7. Σε συνδρομή, το όριο του plan είναι το budget (ADR 0003): όταν η οθόνη ενός CLI δείχνει μήνυμα ορίου, κανένα νέο run γι' αυτό το είδος agent μέχρι το reset, με ειδοποίηση στον χρήστη. Αν το `agents.config` ορίζει εναλλακτικό είδος agent, το task συνεχίζει εκεί από το status και τα commits.
+7. Σε συνδρομή, οι agents του labhq χρησιμοποιούν μέρος κάθε παραθύρου του plan (ADR 0003): για κάθε παράθυρο που αναφέρουν οι μετρήσεις (πεντάωρο και εβδομαδιαίο), προειδοποίηση στο 50% και κανένα νέο run γι' αυτό το είδος agent από το 70% μέχρι το reset του παραθύρου, ώστε το 30% να μένει για τη δική σου χρήση. Τα δύο όρια είναι ρυθμίσεις. Οι γύροι που τρέχουν δεν κόβονται. Αν παρ' όλα αυτά η οθόνη ενός CLI δείξει μήνυμα ορίου, κανένα νέο run μέχρι το reset, με ειδοποίηση στον χρήστη. Αν το `agents.config` ορίζει εναλλακτικό είδος agent, το task συνεχίζει εκεί από το status και τα commits.
 
 Η τερματική διαδικασία (kill) κρύβεται πίσω από interface ανά πλατφόρμα (§9).
 
@@ -279,6 +282,7 @@ Dark-first, Oxanium + IBM Plex Mono, indigo/purple accent, glass.
 
 - Ο τερματισμός διεργασιών κρύβεται πίσω από interface ανά πλατφόρμα. Στα Windows δεν υπάρχουν SIGTERM ή process groups, οπότε χρησιμοποιούμε π.χ. `taskkill /T`.
 - tmux μόνο για τον `tmux` adapter (ADR 0003). Στα native Windows τρέχει μόνο ο SDK adapter.
+- Ο ιδιωτικός tmux server ξεκινά με το allowlisted περιβάλλον και κενό `update-environment` πριν από κάθε session· κάθε session παίρνει τις μεταβλητές του ρητά με `new-session -e`. Αλλιώς το tmux αντιγράφει από τον client μεταβλητές όπως το `SSH_AUTH_SOCK`.
 
 Εγκατάσταση:
 
@@ -420,6 +424,7 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 - Ο manager ενός project απαντά από το `graphify` index αντί να διαβάζει αρχεία, με μετρημένη διαφορά tokens (A/B στο `cost_events`).
 - Ο Call Center απαντά για ένα project από φρέσκο status χωρίς να στείλει τίποτα στον manager· με μπαγιάτικο status διαβάζει την οθόνη του (test).
 - Δύο ταυτόχρονες κλήσεις εξυπηρετούνται από δύο agents· μια ερώτηση μέσα στο παράθυρο της κλήσης κάνει resume το ίδιο session (test).
+- Ο Call Center παραδίδει σε agent μόνο αυτούσια λόγια του χρήστη από την τρέχουσα κλήση, σε agent με εκκρεμή ερώτηση ή που ονόμασε ο χρήστης· interrupt μόνο με ρητό αίτημα στην ίδια κλήση· κάθε παράδοση καταγράφεται (test).
 - Tag `v0.3.0-alpha.1`.
 
 ### Φάση 4 — UI
@@ -483,8 +488,8 @@ Demo: ένα project, ένας manager, ένας worker. Task → worktree branc
 | Οι συζητήσεις περνούν από τρίτο SaaS (Discord, Slack) | Κώδικας και αποφάσεις σε servers τρίτων | Προαιρετικό κανάλι, self-hosted επιλογές (Mattermost, Matrix), η βάση μας μένει η πηγή της αλήθειας |
 | Agents του IT με πρόσβαση στα μηχανήματα (τοπικά και μέσω SSH) | Λάθος εντολή ρίχνει υπηρεσία ή μηχάνημα | `strict` mode, μόνο ανάγνωση, χρήστης SSH μόνο για ανάγνωση, διορθώσεις μόνο ως ticket με biometrics |
 | Εταιρικά φίλτρα μπλοκάρουν domains υπηρεσιών tunnel | Δεν ανοίγουν login, εγκρίσεις και UI από εταιρικό δίκτυο | Δικό σου domain (Cloudflare Tunnel, Pangolin, Caddy) για καθημερινή χρήση· η φωνή δεν περνά από το εταιρικό δίκτυο |
-| Ανάγνωση οθόνης στον `tmux` adapter (τέλος γύρου, usage, όριο) | Μια αλλαγή στη μορφή ενός CLI σπάει την ανίχνευση ή δίνει λάθος νούμερα | Fixtures οθόνης ανά agent στα tests, extractor με έλεγχο σχήματος και αυτούσιων αριθμών, αποτυχημένη μέτρηση ποτέ ως μηδέν |
-| Ένας agent που αναλήφθηκε ενώ έτρεχε δουλεύει στο main checkout, όχι σε worktree | Push με κλειδί SSH από τον δίσκο, αλλαγές στο checkout του χρήστη | Push απενεργοποιημένο μέσω `GIT_CONFIG_COUNT` στο περιβάλλον του, parsed-command hook, ειδοποίηση για κάθε αλλαγή στο checkout μετά την ανάληψη (ADR 0005) |
+| Ανάγνωση οθόνης στον `tmux` adapter (τέλος γύρου, usage, όριο) | Μια αλλαγή στη μορφή ενός CLI σπάει την ανίχνευση ή δίνει λάθος νούμερα | Για το Claude Code, usage από το `rate_limits` του statusline JSON χωρίς οθόνη· για τα υπόλοιπα, fixtures οθόνης ανά agent στα tests, extractor με έλεγχο σχήματος και αυτούσιων αριθμών, αποτυχημένη μέτρηση ποτέ ως μηδέν |
+| Ένας agent που αναλήφθηκε ενώ έτρεχε δουλεύει στο main checkout, όχι σε worktree | Push με κλειδί SSH από τον δίσκο, αλλαγές στο checkout του χρήστη | Push απενεργοποιημένο μέσω `GIT_CONFIG_COUNT` στο περιβάλλον του και parsed-command hook, που αποθαρρύνουν αλλά δεν εγγυώνται· sandbox ή ξεχωριστός OS user ως συνιστώμενη ρύθμιση, ο μόνος τρόπος που αποκλείει το push (§5, κανόνας 6)· ειδοποίηση για κάθε αλλαγή στο checkout μετά την ανάληψη (ADR 0005) |
 | Λακωνικό ύφος ή συμπίεση χαλάει την ποιότητα | Λάθη και κακές αποφάσεις των agents | A/B με έλεγχο ποιότητας, ύφος μόνο στο κείμενο και όχι στη σκέψη, `headroom` προαιρετικό |
 
 ### Σημείωση billing

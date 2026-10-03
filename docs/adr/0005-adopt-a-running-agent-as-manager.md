@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted (2026-10-03).
+Accepted (2026-10-03). Amended (2026-10-03) after review: the push layers of an adopted
+agent deter but do not guarantee.
 
 ## Date
 
@@ -54,13 +55,31 @@ discover the old session id; it records the id from the resumed run on, as for a
 Adoption ends a process the owner started, so it needs the owner's confirmation. It is a
 light action: the conversation is kept.
 
-### Push stays disabled without touching the owner's repository
+### Push is deterred without touching the owner's repository
 
 The adopted manager's environment disables pushing through `GIT_CONFIG_COUNT` entries
 (each remote's push URL and an empty `pushInsteadOf` prefix pointing at the disabled URL),
 on top of `worker_environment`. The settings apply to the agent's processes only; the
-repository's own config is unchanged. With the parsed-command hook where the CLI supports
-it, the adopted agent again has two layers.
+repository's own config is unchanged. The parsed-command hook is added where the CLI
+supports it.
+
+For an adopted agent these layers deter a push; they do not guarantee that none happens.
+It runs as the owner, in the owner's main checkout:
+
+- `env -u GIT_CONFIG_COUNT git push` drops the environment entries, and the repository's
+  own push URL applies again.
+- On an SSH remote, a key file without a passphrase on disk works without `SSH_AUTH_SOCK`
+  (for example through `GIT_SSH_COMMAND` or `ssh -i`).
+- The parsed-command hook sees only the command the CLI hands it: a script that runs
+  `git push` evades it, and some CLIs have no hook at all.
+
+Only a separate OS user or a sandbox (plan §5, rule 6) prevents a push, because only they
+take the owner's keys, agent socket and credential helpers out of the agent's reach. labhq
+recommends one of them for every adopted agent, and the adoption confirmation says so when
+neither is configured. A sandbox fits adoption best: it can keep the owner's conversation
+store and checkout writable while hiding `~/.ssh`, the agent socket and credential helpers.
+A separate OS user cannot continue a conversation stored under the owner's home, so it
+suits agents labhq starts itself.
 
 ### The manager learns the rules; the engine does not trust it to
 
@@ -79,12 +98,14 @@ They reach the agent in three ways, chosen per agent entry (`rules_injection`):
    `continue` (to verify for each CLI). This survives compaction.
 2. Otherwise sent as the first message after the move, and again after every compaction or
    new session.
-3. Always written to `.labhq/rules.md`, listed in `.git/info/exclude` so it never reaches a
-   commit. The owner's `CLAUDE.md` and other tracked files are never changed.
+3. Always written to `.labhq/rules.md`. `.labhq/` is listed in `.git/info/exclude` (ADR
+   0004), so neither the rules nor the status file is staged by `git add -A`. The owner's
+   `CLAUDE.md` and other tracked files are never changed.
 
 The engine checks, it does not trust: a turn without a status update gets a request to
-update; a change in the main checkout after the move notifies the owner; push and merge
-fail regardless.
+update; a change in the main checkout after the move notifies the owner; a push is deterred
+by the layers above and prevented only under a separate OS user or a sandbox. Merge into
+`main` stays a heavy action the engine executes after approval (plan §5).
 
 ### Uncommitted work stays where it is
 
@@ -96,7 +117,9 @@ the first task.
 
 - The agent registry of ADR 0003 gains `continue` and `rules_injection`.
 - `labhq.worktrees` gains an environment variant for agents outside a worktree, disabling
-  push through `GIT_CONFIG_COUNT`.
+  push through `GIT_CONFIG_COUNT`. Its tests and docs call it a deterrent, not a guarantee.
+- The docs recommend a sandbox or a separate OS user for adopted agents, and the adoption
+  confirmation warns when neither is configured.
 - Discovery reads process lists and working directories only, never session stores.
 - Adoption lands after the tmux adapter (#25), as its own issue.
 - Until the move completes, the original process keeps the owner's full environment and
