@@ -44,6 +44,37 @@ jobs:
       - name: Tests
         run: uv run --frozen pytest
 
+      # The job fails on any non-zero exit: a server that does not start, a list that misses
+      # a tool, or a call whose answer is the spoken failure sentence.
+      - name: MCP inspector
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          export LABHQ_DATA_DIR="$work/data"
+          export MCP_CATALOG_PATH="$work/catalog.json"
+          uv run --frozen labhq init
+          token="$(uv run --frozen labhq mcp token)"
+          port="$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')"
+          uv run --frozen labhq mcp serve --port "$port" >"$work/serve.log" 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 50); do
+            curl -s -o /dev/null "http://127.0.0.1:$port/" && break
+            kill -0 "$server" || { cat "$work/serve.log"; exit 1; }
+            sleep 0.2
+          done
+          url="http://127.0.0.1:$port/mcp"
+          inspector=(npx -y @modelcontextprotocol/inspector@2.9.0 --cli "$url" --transport http
+            --header "Authorization: Bearer $token")
+          "${inspector[@]}" --method tools/list | tee "$work/list.json"
+          for tool in brief inbox health decide order answer; do
+            grep -q "\"name\": \"$tool\"" "$work/list.json"
+          done
+          "${inspector[@]}" --method tools/call --tool-name health | tee "$work/health.json"
+          # The server turns a tool failure into a spoken sorry, so check the answer is not one.
+          ! grep -q "Sorry, that did not work" "$work/health.json"
+          grep -q "No machines are registered yet" "$work/health.json"
+
       - name: File size
         run: uv run --frozen python -m tools.file_size
 
