@@ -98,6 +98,27 @@ Tests mirror the source tree under `tests/`.
 
 New CLI commands register in `src/labhq/cli/__init__.py` with a one-line edit each.
 
+## Module ownership in Phase 3
+
+Migrations: each Phase 3 issue that changes the schema adds its own
+`migrations/versions/NNNN_<slug>.py` with the next free number at merge time, and re-parents
+it onto `main`'s head when another one landed first.
+
+| Path | Owner issue |
+|---|---|
+| `src/labhq/prompts/`, `src/labhq/agenttools/`, `src/labhq/guards/readonly.py`, request building in `src/labhq/runs/lifecycle.py` and the run options in `src/labhq/adapters/{base,claude,fake}.py` | #70 Agent runtime |
+| `src/labhq/memory/` | #71 Agent memory |
+| `src/labhq/hierarchy/`, `src/labhq/cli/org.py` | #72 Hierarchy |
+| `src/labhq/meetings/` (except `channels/`), `src/labhq/db/models/meetings.py`, `migrations/versions/*_add_meetings.py`, meeting values in `src/labhq/db/enums.py` | #73 Meetings |
+| `src/labhq/chat/`, `src/labhq/db/models/chat.py`, `migrations/versions/*_add_chat_bindings.py`, `docs/checks/discord.md` | #74 Chat channels and Discord |
+| `src/labhq/health/{rules,manage,tickets,incidents}.py`, `src/labhq/health/rule_types/`, `src/labhq/cli/rules.py` | #75 IT rules and tickets |
+| `src/labhq/health/{collector,monitor,ssh,intervention}.py`, `src/labhq/health/collectors/`, `src/labhq/cli/hosts.py`, `migrations/versions/*_add_host_intervention_user.py`, `docs/checks/ssh-host.md` | #76 SSH hosts |
+| `src/labhq/callcenter/answers/minutes.py`, `src/labhq/mcp/tools/meetings.py`, `src/labhq/cli/meetings.py`, `docs/checks/meeting-minutes-voice.md` | #79 Meeting minutes |
+| `src/labhq/roles/`, `src/labhq/it/` | #81 Agents at work |
+| `src/labhq/economy/graphify.py`, `docs/checks/graphify-ab.md` | #82 graphify index |
+| `src/labhq/callcenter/screens/`, `src/labhq/mcp/internal.py` | #83 Call Center over tmux |
+| `src/labhq/meetings/channels/`, `docs/checks/standup-discord.md` | #84 Meeting channels |
+
 ## Module ownership in Phase 4
 
 | Path | Owner issue |
