@@ -280,6 +280,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/health/rules': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Rules List
+     * @description Every rule with its reason, creator and latest result.
+     */
+    get: operations['rules_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/health/rules/{rule_id}/enabled': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Rules Set Enabled
+     * @description Enable or disable a rule, recorded with the signed-in owner as `by`.
+     */
+    post: operations['rules_set_enabled']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/vocabulary': {
     parameters: {
       query?: never
@@ -424,6 +464,11 @@ export interface components {
       /** Note */
       note?: string | null
     }
+    /** EnabledBody */
+    EnabledBody: {
+      /** Enabled */
+      enabled: boolean
+    }
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
       /** Token */
@@ -481,6 +526,11 @@ export interface components {
       version: string
     }
     /**
+     * HealthRuleAction
+     * @enum {string}
+     */
+    HealthRuleAction: 'notify' | 'ticket'
+    /**
      * HostStatus
      * @enum {string}
      */
@@ -490,6 +540,26 @@ export interface components {
      * @enum {string}
      */
     IncidentStatus: 'open' | 'resolved'
+    /**
+     * LatestResult
+     * @description The rule's most recent incident, open or resolved: what it last observed.
+     */
+    LatestResult: {
+      /** Details */
+      details: {
+        [key: string]: unknown
+      }
+      /** Incident Id */
+      incident_id: number
+      /**
+       * Opened At
+       * Format: date-time
+       */
+      opened_at: string
+      /** Resolved At */
+      resolved_at: string | null
+      status: components['schemas']['IncidentStatus']
+    }
     /**
      * MeetingStatus
      * @enum {string}
@@ -529,6 +599,39 @@ export interface components {
      * @enum {string}
      */
     RiskClass: 'light' | 'heavy'
+    /** Rule */
+    Rule: {
+      action: components['schemas']['HealthRuleAction']
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Created By */
+      created_by: string
+      /** Enabled */
+      enabled: boolean
+      /** Host */
+      host: string | null
+      /** Id */
+      id: number
+      latest: components['schemas']['LatestResult'] | null
+      /** Name */
+      name: string
+      /** Params */
+      params: {
+        [key: string]: unknown
+      }
+      /** Reason */
+      reason: string
+      /** Type */
+      type: string
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string
+    }
     /**
      * RunStatus
      * @enum {string}
@@ -1108,6 +1211,70 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Health']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  rules_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Rule'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  rules_set_enabled: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        rule_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['EnabledBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Rule']
         }
       }
       /** @description Error */

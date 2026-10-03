@@ -321,6 +321,17 @@
         "title": "DecisionBody",
         "type": "object"
       },
+      "EnabledBody": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": ["enabled"],
+        "title": "EnabledBody",
+        "type": "object"
+      },
       "EnrollOptionsBody": {
         "properties": {
           "token": {
@@ -426,6 +437,11 @@
         "title": "Health",
         "type": "object"
       },
+      "HealthRuleAction": {
+        "enum": ["notify", "ticket"],
+        "title": "HealthRuleAction",
+        "type": "string"
+      },
       "HostStatus": {
         "enum": ["unknown", "up", "degraded", "down"],
         "title": "HostStatus",
@@ -435,6 +451,43 @@
         "enum": ["open", "resolved"],
         "title": "IncidentStatus",
         "type": "string"
+      },
+      "LatestResult": {
+        "description": "The rule's most recent incident, open or resolved: what it last observed.",
+        "properties": {
+          "details": {
+            "additionalProperties": true,
+            "title": "Details",
+            "type": "object"
+          },
+          "incident_id": {
+            "title": "Incident Id",
+            "type": "integer"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          }
+        },
+        "required": ["incident_id", "status", "opened_at", "resolved_at", "details"],
+        "title": "LatestResult",
+        "type": "object"
       },
       "MeetingStatus": {
         "enum": ["requested", "running", "ended", "failed", "cancelled"],
@@ -500,6 +553,89 @@
         "enum": ["light", "heavy"],
         "title": "RiskClass",
         "type": "string"
+      },
+      "Rule": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/HealthRuleAction"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LatestResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "params",
+          "action",
+          "host",
+          "reason",
+          "created_by",
+          "enabled",
+          "created_at",
+          "updated_at",
+          "latest"
+        ],
+        "title": "Rule",
+        "type": "object"
       },
       "RunStatus": {
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
@@ -1303,6 +1439,91 @@
         },
         "summary": "Health Get",
         "tags": ["health"]
+      }
+    },
+    "/api/health/rules": {
+      "get": {
+        "description": "Every rule with its reason, creator and latest result.",
+        "operationId": "rules_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Rule"
+                  },
+                  "title": "Response Rules List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rules List",
+        "tags": ["rules"]
+      }
+    },
+    "/api/health/rules/{rule_id}/enabled": {
+      "post": {
+        "description": "Enable or disable a rule, recorded with the signed-in owner as `by`.",
+        "operationId": "rules_set_enabled",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "rule_id",
+            "required": true,
+            "schema": {
+              "title": "Rule Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnabledBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Rule"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rules Set Enabled",
+        "tags": ["rules"]
       }
     },
     "/api/vocabulary": {
