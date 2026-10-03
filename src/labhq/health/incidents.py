@@ -1,7 +1,12 @@
-"""Turns rule evaluations into incidents: one open incident per rule and host at most."""
+"""Turns rule evaluations into incidents: one open incident per rule and host at most.
+
+A transition then runs what the rule's action asks for: `notify` queues one notification when
+the incident opens, `ticket` opens one task and comments on it on recovery. Repeats while the
+state holds are no transition, so they create nothing.
+"""
 
 import logging
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -9,8 +14,10 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# Imported for its registrations: the rule types beyond `threshold`.
+import labhq.health.rule_types  # noqa: F401
 from labhq.clock import Clock
-from labhq.db.enums import IncidentStatus
+from labhq.db.enums import HealthRuleAction, IncidentStatus
 from labhq.db.models import HealthRule, Host, Incident
 from labhq.health.rules import (
     Evaluation,
@@ -19,6 +26,8 @@ from labhq.health.rules import (
     UnknownRuleTypeError,
     registry,
 )
+from labhq.health.tickets import comment_recovery, open_ticket
+from labhq.notify.outbox import enqueue
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +44,31 @@ class IncidentChange:
     transition: Transition
     incident: Incident
     rule: HealthRule
+
+
+Effect = Callable[[AsyncSession, Clock, HealthRule, Host, Incident], Awaitable[object]]
+
+
+async def notify_opened(
+    db: AsyncSession, clock: Clock, rule: HealthRule, host: Host, incident: Incident
+) -> object:
+    return await enqueue(
+        db,
+        kind="incident_opened",
+        subject=f"incident:{incident.id}",
+        title=f"Incident on {host.name}: {rule.name}"[:200],
+        body=f"Rule {rule.id} ({rule.type}) is violated on {host.name}. {rule.reason}",
+        idempotency_key=f"incident:{incident.id}:opened",
+        now=clock.now(),
+    )
+
+
+# What each action does on each transition; a pair absent here does nothing.
+EFFECTS: Mapping[tuple[HealthRuleAction, Transition], Effect] = {
+    (HealthRuleAction.NOTIFY, Transition.OPENED): notify_opened,
+    (HealthRuleAction.TICKET, Transition.OPENED): open_ticket,
+    (HealthRuleAction.TICKET, Transition.RESOLVED): comment_recovery,
+}
 
 
 async def _open_incident(session: AsyncSession, rule: HealthRule, host: Host) -> Incident | None:
@@ -96,6 +130,10 @@ async def evaluate_rules(
                 logger.warning("skipping health rule %s (%s)", rule.id, rule.type, exc_info=True)
                 break
             change = await apply_evaluation(session, clock, rule, host, evaluation)
-            if change is not None:
-                changes.append(change)
+            if change is None:
+                continue
+            effect = EFFECTS.get((rule.action, change.transition))
+            if effect is not None:
+                await effect(session, clock, rule, host, change.incident)
+            changes.append(change)
     return changes

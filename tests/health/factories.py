@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.clock import FakeClock
+from labhq.db.enums import HealthRuleAction
 from labhq.db.models import HealthRule, HealthSample, Host
 
 
@@ -58,12 +59,14 @@ async def add_rule(
     rule_type: str = "threshold",
     enabled: bool = True,
     host: Host | None = None,
+    action: HealthRuleAction = HealthRuleAction.NOTIFY,
 ) -> HealthRule:
     now = clock.now()
     rule = HealthRule(
         type=rule_type,
         name=f"{rule_type} rule",
         params=params,
+        action=action,
         host_id=host.id if host else None,
         reason="Test rule",
         created_by="tests",
