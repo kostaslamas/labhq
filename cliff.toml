@@ -1,0 +1,53 @@
+# git-cliff configuration for CHANGELOG.md (CONTRIBUTING.md §5: generated, never edited).
+# Regenerate with `uv run python -m tools.changelog`; CI fails when the file differs.
+
+[changelog]
+header = """
+# Changelog
+
+Generated from the git history by git-cliff (`uv run python -m tools.changelog`).
+Do not edit by hand: CI regenerates this file and fails on any difference.
+"""
+# Unreleased commits have no version and are left out on purpose: the checked-in file
+# only changes when a tag lands, so it does not drift with every merge to main. Headings
+# carry no date: `--tag` would stamp today and the tagged commit its own day, and the two
+# must render the same file.
+body = """
+{% if version %}
+## {{ version }}
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | striptags | trim }}
+{% for commit in commits %}
+- {% if commit.scope %}**{{ commit.scope }}:** {% endif %}{{ commit.message | split(pat="\n") | first | trim }} ({{ commit.id | truncate(length=7, end="") }})
+{%- endfor %}
+{% endfor -%}
+{% endif -%}
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = true
+filter_unconventional = false
+split_commits = false
+protect_breaking_commits = true
+# `chore(release)` commits carry the regenerated changelog itself; listing them would make
+# the file change after the tag that it describes.
+commit_parsers = [
+  { message = "^Merge ", skip = true },
+  { message = "^chore\\(release\\)", skip = true },
+  { message = "^feat", group = "<!-- 0 -->Features" },
+  { message = "^fix", group = "<!-- 1 -->Fixes" },
+  { message = "^perf", group = "<!-- 2 -->Performance" },
+  { message = "^refactor", group = "<!-- 3 -->Refactoring" },
+  { message = "^docs", group = "<!-- 4 -->Documentation" },
+  { message = "^test", group = "<!-- 5 -->Tests" },
+  { message = "^build", group = "<!-- 6 -->Build" },
+  { message = "^ci", group = "<!-- 7 -->CI" },
+  { message = "^style", group = "<!-- 8 -->Style" },
+  { message = "^chore", group = "<!-- 9 -->Chores" },
+  { message = ".*", group = "<!-- 10 -->Other" },
+]
+tag_pattern = "^v[0-9]"
+topo_order = false
+sort_commits = "oldest"

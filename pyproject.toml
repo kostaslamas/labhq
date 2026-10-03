@@ -6,6 +6,31 @@ readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
 requires-python = ">=3.12"
+authors = [{ name = "labhq contributors" }]
+keywords = [
+    "ai-agents",
+    "claude",
+    "claude-code",
+    "orchestrator",
+    "self-hosted",
+    "homelab",
+    "mcp",
+    "automation",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Systems Administration",
+    "Typing :: Typed",
+]
 dependencies = [
     "aiosqlite>=0.20",
     "alembic>=1.14",
@@ -24,11 +49,19 @@ dependencies = [
     "websockets>=17.1",
 ]
 
+[project.urls]
+Homepage = "https://github.com/kostaslamas/labhq"
+Source = "https://github.com/kostaslamas/labhq"
+Issues = "https://github.com/kostaslamas/labhq/issues"
+Changelog = "https://github.com/kostaslamas/labhq/blob/main/CHANGELOG.md"
+Security = "https://github.com/kostaslamas/labhq/blob/main/SECURITY.md"
+
 [project.scripts]
 labhq = "labhq.cli:app"
 
 [dependency-groups]
 dev = [
+    "git-cliff>=2.14.2",
     "mypy>=1.14",
     "pytest>=8.3",
     "pytest-asyncio>=0.25",
