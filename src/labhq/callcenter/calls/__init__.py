@@ -6,6 +6,7 @@ from labhq.callcenter.calls.bounds import (
     BoundError,
     Interrupter,
     NoInterrupter,
+    SchedulerInterrupter,
     deliver_request,
     interrupt_request,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "Interrupter",
     "NoInterrupter",
     "Reply",
+    "SchedulerInterrupter",
     "Ticket",
     "TicketState",
     "call_center_agent",

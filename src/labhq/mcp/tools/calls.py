@@ -8,7 +8,7 @@ from functools import cache
 
 from mcp.types import ToolAnnotations
 
-from labhq.callcenter.calls import CallCenter, TicketState
+from labhq.callcenter.calls import CallCenter, Interrupter, NoInterrupter, TicketState
 from labhq.callcenter.calls.settings import CallAgentSettings
 from labhq.db import create_engine, session_factory
 from labhq.mcp.tools.registry import ToolSpec, default_registry
@@ -27,6 +27,17 @@ SPOKEN: dict[TicketState, str] = {
 }
 
 
+# `labhq serve` holds the scheduler in this process and attaches it, so interrupt reaches
+# live runs; `labhq mcp serve` alone holds none.
+_interrupter: Interrupter = NoInterrupter()
+
+
+def attach_interrupter(interrupter: Interrupter) -> None:
+    """Call before the first tool call: the Call Center is built once per database."""
+    global _interrupter
+    _interrupter = interrupter
+
+
 @cache
 def _call_center(database_url: str) -> CallCenter:
     settings = Settings()
@@ -36,6 +47,7 @@ def _call_center(database_url: str) -> CallCenter:
         CLOCK,
         workdir=settings.data_dir / CALL_CENTER_DIR,
         agent_settings=CallAgentSettings(),
+        interrupter=_interrupter,
     )
 
 

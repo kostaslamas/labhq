@@ -8,7 +8,7 @@ request. Every refusal is a `BoundError` whose message the agent reads.
 """
 
 import re
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +17,9 @@ from labhq.callcenter.deliveries import deliver
 from labhq.clock import Clock
 from labhq.db.enums import QuestionStatus
 from labhq.db.models import Agent, AgentQuestion, CallRequest, Delivery
+
+if TYPE_CHECKING:
+    from labhq.scheduler import Scheduler
 
 MESSAGE_LABEL = "Message from the owner"
 # The owner's explicit ask, in the stored words; nothing else can trigger an interrupt.
@@ -34,14 +37,24 @@ class Interrupter(Protocol):
 
 
 class NoInterrupter:
-    """For a process that holds no running agents, such as the connector server.
+    """For a process that holds no running agents, such as `labhq mcp serve` alone.
 
-    Runs live in the scheduler's process, and reaching them from outside waits for the tmux
-    adapter (ADR 0003). The message is still delivered when the agent's turn ends.
+    Reaching runs another process holds waits for the tmux adapter (ADR 0003). The message
+    is still delivered when the agent's turn ends.
     """
 
     async def interrupt(self, agent_id: int) -> bool:
         return False
+
+
+class SchedulerInterrupter:
+    """Interrupts runs held by a scheduler in this process, as `labhq serve` runs one."""
+
+    def __init__(self, scheduler: "Scheduler") -> None:
+        self._scheduler = scheduler
+
+    async def interrupt(self, agent_id: int) -> bool:
+        return await self._scheduler.interrupt_agent(agent_id)
 
 
 def names(text: str, agent: Agent) -> bool:
