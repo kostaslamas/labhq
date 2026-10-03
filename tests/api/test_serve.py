@@ -123,6 +123,7 @@ def labhq_process(*args: str, env: dict[str, str]) -> subprocess.Popen[str]:
     )
 
 
+@pytest.mark.posix_only("POSIX stop signals")
 def test_labhq_serve_answers_health_and_mcp_on_one_port(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     env = {**os.environ, "LABHQ_DATA_DIR": str(data_dir), "PYTHONUNBUFFERED": "1"}
