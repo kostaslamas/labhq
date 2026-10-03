@@ -33,16 +33,15 @@ from pydantic import BaseModel, ConfigDict, Field
 from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, RunRequest
 from labhq.adapters.tmux.agents import (
     LAUNCHES,
-    TOOL_LAUNCHES,
     AgentKind,
     AgentKinds,
     LaunchContext,
     SessionIdSource,
-    ToolServer,
     default_python,
 )
 from labhq.adapters.tmux.environment import session_environment
 from labhq.adapters.tmux.server import TmuxServer
+from labhq.adapters.tmux.tools import TOOL_LAUNCHES, ToolServer
 from labhq.adapters.tmux.turns import Watch, quiescent, screen_delta, turn_ended
 from labhq.clock import Clock
 

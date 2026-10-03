@@ -28,7 +28,7 @@ from labhq.adapters.tmux import (
     default_kinds,
 )
 from labhq.adapters.tmux.adapter import session_name, split_session
-from labhq.adapters.tmux.agents import TOOL_LAUNCHES, ToolLaunch, ToolServer
+from labhq.adapters.tmux.tools import TOOL_LAUNCHES, ToolLaunch, ToolServer
 from labhq.callcenter.calls import CallCenter, Ticket, TicketState, call_center_agent
 from labhq.callcenter.calls.settings import CallAgentSettings
 from labhq.callcenter.settings import CallCenterSettings

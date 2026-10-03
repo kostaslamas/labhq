@@ -13,7 +13,7 @@ import pytest
 
 from labhq.adapters import AdapterError, AgentTool, RunRequest
 from labhq.adapters.tmux import TmuxAdapter, TmuxServer, default_kinds
-from labhq.adapters.tmux.agents import MCP_CONFIG_FILE, TOOL_LAUNCHES
+from labhq.adapters.tmux.tools import MCP_CONFIG_FILE, TOOL_LAUNCHES
 from labhq.clock import FakeClock
 
 ENVIRON = {"PATH": "/usr/bin", "LABHQ_DATA_DIR": "/data", "SSH_AUTH_SOCK": "/agent"}

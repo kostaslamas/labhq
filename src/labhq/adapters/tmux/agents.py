@@ -11,13 +11,15 @@ in docs/checks/tmux-adapter.md.
 """
 
 import json
-import os
 import shlex
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+
+from labhq.adapters.tmux.tomlvalue import toml_value
+from labhq.adapters.tmux.tools import TOOL_LAUNCHES
 
 
 class SessionIdSource(StrEnum):
@@ -121,21 +123,6 @@ def claude_settings(context: LaunchContext) -> list[str]:
     return ["--settings", json.dumps(settings)]
 
 
-def toml_value(value: object) -> str:
-    """A TOML inline value, as Codex parses the right side of `-c key=value`."""
-    if isinstance(value, bool):
-        return "true" if value else "false"
-    if isinstance(value, str):
-        # A JSON string without ASCII escapes is a TOML basic string.
-        return json.dumps(value, ensure_ascii=False)
-    if isinstance(value, list):
-        return "[" + ", ".join(toml_value(item) for item in value) + "]"
-    if isinstance(value, dict):
-        pairs = (f"{key} = {toml_value(item)}" for key, item in value.items())
-        return "{" + ", ".join(pairs) + "}"
-    raise TypeError(f"no TOML form for {type(value).__name__}")
-
-
 def _codex_hook(command: str, matcher: str | None = None) -> list[dict[str, object]]:
     group: dict[str, object] = {"hooks": [{"type": "command", "command": command}]}
     return [{"matcher": matcher, **group}] if matcher is not None else [group]
@@ -171,85 +158,6 @@ def codex_config(context: LaunchContext) -> list[str]:
 
 
 LAUNCHES: dict[str, Launch] = {"claude_settings": claude_settings, "codex_config": codex_config}
-
-
-@dataclass(frozen=True)
-class ToolServer:
-    """A stdio MCP server the agent's CLI starts as its child: a `labhq mcp` command."""
-
-    name: str
-    argv: tuple[str, ...]
-    # labhq's own settings (`LABHQ_*`), which the session's environment does not carry.
-    env: Mapping[str, str]
-
-
-# Words that make the CLI start `servers` as children; the path is the run's own directory.
-ToolAttach = Callable[[Path, Sequence[ToolServer]], list[str]]
-
-
-@dataclass(frozen=True)
-class ToolLaunch:
-    attach: ToolAttach
-    # Words that take every built-in tool away (shell, file reads and writes), leaving only
-    # the attached servers' tools. None: the CLI cannot drop them, so it never runs an agent
-    # that must have only its own tools, such as the Call Center (ADR 0004).
-    exclusive: tuple[str, ...] | None
-    source: str
-
-
-MCP_CONFIG_FILE = "mcp.json"
-
-
-def claude_mcp(run_dir: Path, servers: Sequence[ToolServer]) -> list[str]:
-    # A file, not an inline JSON argument: the servers' environment stays out of `ps`.
-    config = {
-        "mcpServers": {
-            server.name: {
-                "type": "stdio",
-                "command": server.argv[0],
-                "args": list(server.argv[1:]),
-                "env": dict(server.env),
-            }
-            for server in servers
-        }
-    }
-    path = run_dir / MCP_CONFIG_FILE
-    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as file:
-        file.write(json.dumps(config))
-    # Only these servers: the owner's own MCP configuration stays out of labhq's runs.
-    return ["--mcp-config", str(path), "--strict-mcp-config"]
-
-
-def codex_mcp(run_dir: Path, servers: Sequence[ToolServer]) -> list[str]:
-    words: list[str] = []
-    for server in servers:
-        table = {"command": server.argv[0], "args": list(server.argv[1:]), "env": dict(server.env)}
-        words += ["-c", f"mcp_servers.{server.name}={toml_value(table)}"]
-    return words
-
-
-TOOL_LAUNCHES: dict[str, ToolLaunch] = {
-    "claude_mcp": ToolLaunch(
-        attach=claude_mcp,
-        exclusive=("--tools", ""),
-        source=(
-            "https://code.claude.com/docs/en/cli-reference (--mcp-config takes files, "
-            '--strict-mcp-config, --tools "" disables every built-in tool and leaves MCP '
-            "tools); claude-agent-sdk 0.2.163 subprocess_cli.py passes `tools=[]` the same "
-            "way; checked 2026-10-03"
-        ),
-    ),
-    "codex_mcp": ToolLaunch(
-        attach=codex_mcp,
-        # `features.shell_tool` turns the shell off, but no documented switch removes
-        # apply_patch, so Codex never runs an agent that must have no file-writing tool.
-        exclusive=None,
-        source=(
-            "openai/codex main: codex-rs/config/src/mcp_types.rs (mcp_servers.<name>.command, "
-            "args, env), codex-rs/features/src/lib.rs (shell_tool); checked 2026-10-03"
-        ),
-    ),
-}
 
 
 class UnknownAgentKindError(LookupError):
