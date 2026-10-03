@@ -37,6 +37,16 @@ jobs:
       - name: Install
         run: uv sync --frozen
 
+      # The tmux adapter tests run a real private tmux server. Native Windows has no tmux
+      # (ADR 0003); its tests are marked posix_only there.
+      - name: Install tmux (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
+      - name: Install tmux (macOS)
+        if: runner.os == 'macOS'
+        run: brew install tmux
+
       - name: Tests
         run: uv run --frozen pytest -ra
 
