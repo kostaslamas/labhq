@@ -109,3 +109,21 @@ class NotificationStatus(StrEnum):
     PENDING = "pending"
     SENT = "sent"
     FAILED = "failed"
+
+
+class MeetingStatus(StrEnum):
+    # Waiting for the light `start_meeting` approval.
+    REQUESTED = "requested"
+    RUNNING = "running"
+    # Over, with or without minutes: a budget stop ends a meeting here too.
+    ENDED = "ended"
+    # The minutes could not be produced or recorded; the transcript stays.
+    FAILED = "failed"
+    # The approval was rejected or cancelled before the meeting started.
+    CANCELLED = "cancelled"
+
+
+class TranscriptSource(StrEnum):
+    AGENT = "agent"
+    OWNER = "owner"
+    SYSTEM = "system"

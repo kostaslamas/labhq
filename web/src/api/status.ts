@@ -50,6 +50,14 @@ export const statusMap: StatusMapping<Vocabulary> = {
     open: 'failed',
     resolved: 'done',
   },
+  meeting_status: {
+    // Requested meetings wait for the owner's start_meeting approval.
+    requested: 'waiting_on_you',
+    running: 'working',
+    ended: 'done',
+    failed: 'failed',
+    cancelled: 'idle',
+  },
   notification_status: {
     pending: 'working',
     sent: 'done',
