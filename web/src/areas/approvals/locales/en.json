@@ -1,4 +1,71 @@
 {
   "nav": "Approvals",
-  "placeholder": "Requests that need your approval will appear here."
+  "title": "Approvals",
+  "empty": "Nothing is waiting for your approval.",
+  "empty_detail": "Select an approval to see what will run.",
+  "load_failed": "The approvals could not be loaded. Check that labhq is running.",
+  "pending_count": "{count} waiting for you",
+  "list_label": "Approvals",
+  "risk": {
+    "light": "Light",
+    "heavy": "Heavy"
+  },
+  "types": {
+    "start_meeting": "Start a meeting",
+    "assign_task": "Assign a task",
+    "change_priority": "Change a priority",
+    "push": "Push a branch",
+    "merge": "Merge a branch",
+    "delete_branch": "Delete a branch",
+    "delete_project": "Delete a project",
+    "create_team": "Create a team",
+    "exceed_budget": "Exceed a budget",
+    "host_intervention": "Intervene on a host"
+  },
+  "fields": {
+    "type": "Action",
+    "risk": "Risk",
+    "project": "Project",
+    "task": "Task",
+    "branch": "Branch",
+    "remote": "Remote",
+    "requester": "Requested by",
+    "requested": "Requested",
+    "payload": "What will run"
+  },
+  "actions": {
+    "approve": "Approve",
+    "approve_heavy": "Approve with passkey",
+    "reject": "Reject",
+    "working": "Working…",
+    "heavy_hint": "This action needs your passkey. Your device asks for your fingerprint, face or PIN.",
+    "light_hint": "One tap approves it."
+  },
+  "decided": {
+    "title": "Decision",
+    "by": "Decided by",
+    "how": "Confirmed with",
+    "at": "Decided",
+    "note": "Note",
+    "result": "Result"
+  },
+  "confirmation": {
+    "tap": "a tap",
+    "passkey": "a passkey",
+    "cli": "the command line",
+    "voice": "voice",
+    "external_gate": "an external gate"
+  },
+  "decider": {
+    "unknown": "Not recorded"
+  },
+  "errors": {
+    "still_pending": "The approval is still pending.",
+    "refused": "labhq did not accept the passkey. The approval is still pending.",
+    "step_up_required": "This approval needs your passkey. It is still pending.",
+    "already_decided": "This approval was already decided. The list is up to date.",
+    "not_allowed": "This kind of confirmation cannot approve this action. It is still pending.",
+    "failed": "The decision was not recorded. The approval is still pending.",
+    "network": "labhq cannot be reached. The approval is still pending."
+  }
 }
