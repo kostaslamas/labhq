@@ -59,6 +59,8 @@ class OnboardContext:
     say: Callable[[str], None]
     # None runs non-interactively: a step that needs the owner fails instead of asking.
     confirm: Callable[[str], bool] | None = None
+    # Optional steps the owner named (`labhq onboard discord`); such a step otherwise stays idle.
+    offered: frozenset[str] = frozenset()
     resources: ExitStack = field(default_factory=ExitStack)
     token: str | None = None
     server: LocalServer | None = None
