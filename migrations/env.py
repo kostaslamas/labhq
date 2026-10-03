@@ -12,6 +12,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 import labhq.db.models  # noqa: F401  (registers every table on the metadata)
 from labhq.db.base import Base, UTCDateTime
+
+# Kept out of `labhq.db.models`: its package imports the meeting engine, which imports those.
+from labhq.meetings.channels.models import ChatPost  # noqa: F401
 from labhq.settings import get_settings
 
 config = context.config
