@@ -86,7 +86,7 @@ Tests mirror the source tree under `tests/`.
 
 | Path | Owner issue |
 |---|---|
-| `pyproject.toml`, `uv.lock`, `migrations/versions/0003_*`, `src/labhq/db/models/callcenter.py`, `src/labhq/db/enums.py` (Phase 2 values), `src/labhq/speech/`, `src/labhq/work/`, `src/labhq/callcenter/settings.py` | #31 Phase 2 foundation |
+| `pyproject.toml`, `uv.lock`, `migrations/versions/0003_*`, `src/labhq/db/models/callcenter.py`, `src/labhq/db/enums.py` (Phase 2 values), `src/labhq/speech/`, `src/labhq/work/`, `src/labhq/callcenter/__init__.py`, `src/labhq/callcenter/store.py`, `src/labhq/callcenter/settings.py` | #31 Phase 2 foundation |
 | `src/labhq/notify/`, `src/labhq/cli/notify.py`, `docs/checks/notifier.md` | #32 Notifier |
 | `src/labhq/mcp/server.py`, `src/labhq/mcp/auth.py`, `src/labhq/mcp/tools/registry.py`, `src/labhq/cli/mcp.py` | #33 MCP server |
 | `src/labhq/callcenter/answers/` | #34 Program answers |

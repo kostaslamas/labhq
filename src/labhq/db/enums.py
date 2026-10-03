@@ -86,3 +86,26 @@ class IncidentStatus(StrEnum):
 class BudgetScope(StrEnum):
     AGENT = "agent"
     PROJECT = "project"
+
+
+class CallStatus(StrEnum):
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class CallRequestStatus(StrEnum):
+    PENDING = "pending"
+    ANSWERED = "answered"
+    FAILED = "failed"
+    EXPIRED = "expired"
+
+
+class QuestionStatus(StrEnum):
+    PENDING = "pending"
+    ANSWERED = "answered"
+
+
+class NotificationStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"

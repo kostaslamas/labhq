@@ -21,6 +21,7 @@ from labhq.approvals import ApprovalError, UnknownEntryError
 from labhq.clock import Clock, SystemClock
 from labhq.db import create_engine, session_factory
 from labhq.settings import Settings
+from labhq.work import WorkError
 from labhq.worktrees import GitError, WorktreeError
 
 FAILURE_EXIT_CODE = 1
@@ -40,6 +41,7 @@ REPORTED_ERRORS: tuple[type[Exception], ...] = (
     UnknownEntryError,
     ValidationError,
     SQLAlchemyError,
+    WorkError,
 )
 
 MISSING_SCHEMA_HINT = "the database has no labhq schema yet; run `labhq init` first"
