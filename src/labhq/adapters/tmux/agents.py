@@ -230,15 +230,14 @@ def default_python() -> str:
     return sys.executable
 
 
-# Screen text from Claude Code's first start in a new directory, captured 2026-10-03. The
-# options are not numbered in the capture; "1" is the documented shortcut of its selectors and
-# is checked in docs/checks/tmux-adapter.md.
+# Claude Code 2.1.288, checked in tmux: the options are not numbered, the cursor starts on
+# "No, exit", Down moves it to "Yes, I trust this folder" and Enter confirms.
 CLAUDE_BLOCKING_SCREENS = (
     BlockingScreen(
         name="trust-folder",
         pattern=r"Is this a project you created or one you trust\?.*Yes, I trust this folder",
         reason="Claude Code asks whether to trust the working directory",
-        accept_keys=("1",),
+        accept_option="Yes, I trust this folder",
     ),
     BlockingScreen(
         name="login",
