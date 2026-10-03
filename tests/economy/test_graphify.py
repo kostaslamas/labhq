@@ -90,6 +90,7 @@ def index_with(data_dir: Path, search_path: Path, refresh_seconds: float = 3600)
     return GraphifyIndex(data_dir, settings, search_path=str(search_path))
 
 
+@pytest.mark.posix_only("the graphify stub is a POSIX shell script")
 async def test_a_build_writes_under_the_data_directory_and_never_into_the_repository(
     repo: Path, stub: Path, data_dir: Path, clock: FakeClock
 ) -> None:
@@ -168,7 +169,15 @@ def built_graph(index: GraphifyIndex, project_id: int) -> Path:
     return graph
 
 
-@pytest.mark.parametrize("switch", [True, False])
+@pytest.mark.parametrize(
+    "switch",
+    [
+        pytest.param(
+            True, marks=pytest.mark.posix_only("the graphify stub is a POSIX shell script")
+        ),
+        False,
+    ],
+)
 async def test_the_switch_decides_whether_a_manager_gets_the_query_instruction(
     sessions: async_sessionmaker[AsyncSession],
     clock: FakeClock,
@@ -224,6 +233,7 @@ async def test_a_missing_binary_turns_the_measure_off_with_one_report(
     assert len(reports) == 1
 
 
+@pytest.mark.posix_only("the graphify stub is a POSIX shell script")
 async def test_the_refresh_loop_rebuilds_at_its_interval_and_after_head_moves(
     sessions: async_sessionmaker[AsyncSession], repo: Path, stub: Path, data_dir: Path
 ) -> None:

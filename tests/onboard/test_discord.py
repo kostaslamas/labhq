@@ -228,6 +228,7 @@ def test_a_wrong_pasted_token_is_asked_again_then_stops(
     assert not (data_dir / "discord" / "bot_token").exists()
 
 
+@pytest.mark.posix_only("POSIX file permission bits")
 def test_the_token_file_is_owner_only_and_the_token_is_never_shown(
     data_dir: Path,
     database_url: str,

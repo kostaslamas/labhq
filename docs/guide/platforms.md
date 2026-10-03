@@ -72,6 +72,9 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
 | `tests/cli/test_wiring.py::test_a_run_without_rtk_records_the_warning_in_its_events` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_graphify.py::test_a_build_writes_under_the_data_directory_and_never_into_the_repository` | the graphify stub is a POSIX shell script |
+| `tests/economy/test_graphify.py::test_the_refresh_loop_rebuilds_at_its_interval_and_after_head_moves` | the graphify stub is a POSIX shell script |
+| `tests/economy/test_graphify.py::test_the_switch_decides_whether_a_manager_gets_the_query_instruction` | the graphify stub is a POSIX shell script |
 | `tests/economy/test_rtk.py::test_a_rewrite_counts_whether_rtk_allows_it_or_leaves_the_prompt` | the rtk stub is a POSIX shell script |
 | `tests/economy/test_rtk.py::test_an_empty_command_is_left_alone` | the rtk stub is a POSIX shell script |
 | `tests/economy/test_rtk.py::test_commands_rtk_declines_run_unchanged` | the rtk stub is a POSIX shell script |
@@ -86,9 +89,11 @@ and CI fails when it does not match them.
 | `tests/expose/test_serve.py::test_failed_proof_stops_the_tunnel_and_raises` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/expose/test_serve.py::test_running_server_answers_json_not_sse_and_the_url_is_announced_once` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/expose/test_serve.py::test_unverified_tunnel_never_announces` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/health/test_local_commands.py::test_the_certificate_script_reads_a_file_on_disk` | the certificate probe is a POSIX shell script |
 | `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |
 | `tests/mcp/test_server.py::test_token_file_is_0600_and_stable` | POSIX file permission bits |
 | `tests/notify/test_channels.py::test_the_generated_topic_is_random_and_kept` | POSIX file permission bits |
+| `tests/onboard/test_discord.py::test_the_token_file_is_owner_only_and_the_token_is_never_shown` | POSIX file permission bits |
 | `tests/onboard/test_failures.py::test_a_notification_ntfy_rejects_fails_on_the_notifications_step` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_failures.py::test_a_tunnel_that_does_not_answer_fails_on_the_public_url_step` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_a_second_run_keeps_token_topic_and_data_and_checks_again` | the fake cloudflared is a /bin/sh wrapper |
