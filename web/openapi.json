@@ -1,6 +1,74 @@
 {
   "components": {
     "schemas": {
+      "ActionItem": {
+        "properties": {
+          "assignee_agent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Agent Id"
+          },
+          "assignee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Name"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          },
+          "task_status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "task_title": {
+            "title": "Task Title",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "decision_id",
+          "assignee_agent_id",
+          "assignee_name",
+          "task_id",
+          "task_title",
+          "task_status"
+        ],
+        "title": "ActionItem",
+        "type": "object"
+      },
       "AgentRef": {
         "properties": {
           "id": {
@@ -247,7 +315,7 @@
             "type": "integer"
           },
           "state": {
-            "$ref": "#/components/schemas/Decision"
+            "$ref": "#/components/schemas/labhq__budgets__decision__Decision"
           },
           "used_percent": {
             "anyOf": [
@@ -342,11 +410,6 @@
         "required": ["id", "name", "rp_id", "transports", "created_at", "last_used_at", "revoked"],
         "title": "Credential",
         "type": "object"
-      },
-      "Decision": {
-        "enum": ["allow", "warn", "stop"],
-        "title": "Decision",
-        "type": "string"
       },
       "DecisionBody": {
         "properties": {
@@ -535,10 +598,249 @@
         "title": "IncidentStatus",
         "type": "string"
       },
+      "JoinBody": {
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "JoinBody",
+        "type": "object"
+      },
+      "MeetingDetail": {
+        "properties": {
+          "action_items": {
+            "items": {
+              "$ref": "#/components/schemas/ActionItem"
+            },
+            "title": "Action Items",
+            "type": "array"
+          },
+          "agenda": {
+            "title": "Agenda",
+            "type": "string"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decisions": {
+            "items": {
+              "$ref": "#/components/schemas/labhq__api__meetings__schemas__Decision"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "end_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Reason"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/Message"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/Participant"
+            },
+            "title": "Participants",
+            "type": "array"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "project_id",
+          "project_name",
+          "status",
+          "created_at",
+          "started_at",
+          "channel",
+          "agenda",
+          "end_reason",
+          "ended_at",
+          "participants",
+          "messages",
+          "decisions",
+          "action_items"
+        ],
+        "title": "MeetingDetail",
+        "type": "object"
+      },
+      "MeetingItem": {
+        "properties": {
+          "channel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "project_id",
+          "project_name",
+          "status",
+          "created_at",
+          "started_at",
+          "channel"
+        ],
+        "title": "MeetingItem",
+        "type": "object"
+      },
       "MeetingStatus": {
         "enum": ["requested", "running", "ended", "failed", "cancelled"],
         "title": "MeetingStatus",
         "type": "string"
+      },
+      "Message": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "source": {
+            "$ref": "#/components/schemas/TranscriptSource"
+          },
+          "speaker": {
+            "title": "Speaker",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["id", "source", "speaker", "agent_id", "text", "created_at"],
+        "title": "Message",
+        "type": "object"
       },
       "NotificationStatus": {
         "enum": ["pending", "sent", "failed"],
@@ -570,6 +872,31 @@
         "title": "Page[ApprovalOut]",
         "type": "object"
       },
+      "Page_MeetingItem_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MeetingItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": ["items", "next_cursor"],
+        "title": "Page[MeetingItem]",
+        "type": "object"
+      },
       "Page_ProjectCard_": {
         "properties": {
           "items": {
@@ -593,6 +920,32 @@
         },
         "required": ["items", "next_cursor"],
         "title": "Page[ProjectCard]",
+        "type": "object"
+      },
+      "Participant": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["id", "agent_id", "name"],
+        "title": "Participant",
         "type": "object"
       },
       "ProjectCard": {
@@ -794,6 +1147,11 @@
         "title": "TeamMember",
         "type": "object"
       },
+      "TranscriptSource": {
+        "enum": ["agent", "owner", "system"],
+        "title": "TranscriptSource",
+        "type": "string"
+      },
       "Vocabulary": {
         "description": "The status values the backend may return, by enum.",
         "properties": {
@@ -940,6 +1298,25 @@
         "title": "ProjectRef",
         "type": "object"
       },
+      "labhq__api__meetings__schemas__Decision": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["id", "position", "text"],
+        "title": "Decision",
+        "type": "object"
+      },
       "labhq__api__projects__schemas__ProjectRef": {
         "properties": {
           "project_id": {
@@ -950,6 +1327,11 @@
         "required": ["project_id"],
         "title": "ProjectRef",
         "type": "object"
+      },
+      "labhq__budgets__decision__Decision": {
+        "enum": ["allow", "warn", "stop"],
+        "title": "Decision",
+        "type": "string"
       }
     }
   },
@@ -1585,6 +1967,169 @@
         },
         "summary": "Health Get",
         "tags": ["health"]
+      }
+    },
+    "/api/meetings": {
+      "get": {
+        "description": "Newest first. The cursor is the last id served, so a new meeting never shifts a page.",
+        "operationId": "meetings_list",
+        "parameters": [
+          {
+            "description": "Opaque; from `next_cursor`.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque; from `next_cursor`.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rows per page.",
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_MeetingItem_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Meetings List",
+        "tags": ["meetings"]
+      }
+    },
+    "/api/meetings/{meeting_id}": {
+      "get": {
+        "description": "The whole meeting from the database alone, so it reads the same with chat disconnected.",
+        "operationId": "meetings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "meeting_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Meeting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeetingDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Meetings Get",
+        "tags": ["meetings"]
+      }
+    },
+    "/api/meetings/{meeting_id}/messages": {
+      "post": {
+        "description": "Say something as the owner; the next turns of the meeting see it.",
+        "operationId": "meetings_join",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "meeting_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Meeting Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Meetings Join",
+        "tags": ["meetings"]
       }
     },
     "/api/projects": {
