@@ -87,3 +87,14 @@ async def test_a_session_from_another_adapter_is_not_resumed(world: World) -> No
 async def test_a_run_without_a_task_stores_no_session(world: World) -> None:
     await world.service.execute(agent_id=world.agent_id, task_id=None, prompt="a")
     assert await task_sessions(world) == []
+
+
+async def test_a_session_kept_outside_tasks_is_resumed_when_given(world: World) -> None:
+    # A Call Center call keeps its session on its own row and runs without a task.
+    run = await world.service.execute(
+        agent_id=world.agent_id, task_id=None, prompt="again", resume_session_id="call-session"
+    )
+
+    assert world.fake.requests[0].resume_session_id == "call-session"
+    assert (await stored_run(world, run.id)).session_id_before == "call-session"
+    assert await task_sessions(world) == []

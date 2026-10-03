@@ -53,4 +53,5 @@ def to_result(message: ResultMessage, model: str | None) -> AdapterResult:
         model=models[0] if models else model,
         num_turns=message.num_turns,
         errors=list(message.errors or []),
+        text=message.result,
     )

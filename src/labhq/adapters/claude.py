@@ -7,15 +7,23 @@ spikes/agent_sdk/RESULTS.md.
 
 import os
 import shutil
-from collections.abc import AsyncIterator, Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any, Protocol, cast
 
-from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, ClaudeSDKClient, ResultMessage
-from claude_agent_sdk.types import PermissionMode
+from claude_agent_sdk import (
+    AssistantMessage,
+    ClaudeAgentOptions,
+    ClaudeSDKClient,
+    ResultMessage,
+    SdkMcpTool,
+    create_sdk_mcp_server,
+)
+from claude_agent_sdk.types import McpServerConfig, PermissionMode
+from mcp.types import ToolAnnotations
 from pydantic import BaseModel, ConfigDict
 
-from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, RunRequest
+from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, AgentTool, RunRequest
 from labhq.adapters.claude_env import child_environment
 from labhq.adapters.claude_messages import to_event, to_result
 
@@ -35,6 +43,9 @@ class SDKClient(Protocol):
 
 
 ClientFactory = Callable[[ClaudeAgentOptions], SDKClient]
+
+# The in-process server that carries a run's own tools; its tools are `mcp__labhq__<name>`.
+TOOL_SERVER = "labhq"
 
 
 class ClaudeAgentConfig(BaseModel):
@@ -58,6 +69,35 @@ def default_cli_path(configured: Path | None) -> Path | None:
         return configured
     found = shutil.which("claude")
     return Path(found) if found else None
+
+
+def _sdk_tool(spec: AgentTool) -> SdkMcpTool[Any]:
+    async def handler(arguments: dict[str, Any]) -> dict[str, Any]:
+        return {"content": [{"type": "text", "text": await spec.handler(arguments)}]}
+
+    return SdkMcpTool(
+        name=spec.name,
+        description=spec.description,
+        input_schema=spec.input_schema,
+        handler=handler,
+        annotations=ToolAnnotations(readOnlyHint=spec.read_only),
+    )
+
+
+def tool_options(tools: Sequence[AgentTool]) -> dict[str, Any]:
+    """Options that give the run exactly `tools`, served in this process, and nothing else."""
+    if not tools:
+        return {}
+    server = create_sdk_mcp_server(TOOL_SERVER, tools=[_sdk_tool(spec) for spec in tools])
+    servers: dict[str, McpServerConfig] = {TOOL_SERVER: server}
+    return {
+        # An empty list removes every built-in tool: no shell, no file reads or writes.
+        "tools": [],
+        "mcp_servers": servers,
+        # Only this server: no MCP configuration from the machine joins in.
+        "strict_mcp_config": True,
+        "allowed_tools": [f"mcp__{TOOL_SERVER}__{spec.name}" for spec in tools],
+    }
 
 
 class ClaudeAdapter:
@@ -88,6 +128,7 @@ class ClaudeAdapter:
             resume=request.resume_session_id,
             hooks=cast(Any, dict(request.hooks)) if request.hooks else None,
             env=child_environment(self._environ),
+            **tool_options(request.tools),
         )
 
     async def start(self, request: RunRequest) -> None:

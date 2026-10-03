@@ -39,6 +39,7 @@ class FakeScript:
     usage: dict[str, Any] = field(default_factory=_default_usage)
     session_id: str = "fake-session-1"
     model: str | None = "fake-model"
+    text: str | None = "OK"
     wait_for_interrupt: bool = False
     fail_with: Exception | None = None
     # Observations, appended by every adapter built on this script.
@@ -101,4 +102,5 @@ class FakeAdapter:
             usage=dict(script.usage),
             model=script.model,
             num_turns=1,
+            text=None if interrupted else script.text,
         )
