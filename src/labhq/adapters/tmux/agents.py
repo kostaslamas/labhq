@@ -42,6 +42,16 @@ class TurnEnd(StrEnum):
     QUIESCENCE = "quiescence"
 
 
+class RulesInjection(StrEnum):
+    """How a manager's rules reach an adopted agent (ADR 0005)."""
+
+    # Words of `rules_words` on every start: survives compaction and new sessions.
+    SYSTEM_PROMPT = "system_prompt"
+    # A message after the move, sent again after every compaction or new session.
+    FIRST_MESSAGE = "first_message"
+    BOTH = "both"
+
+
 class UsageSource(StrEnum):
     # The Claude Code statusline JSON; no model call.
     STATUSLINE = "statusline"
@@ -87,6 +97,23 @@ class AgentKind:
     tool_launch: str | None = None
     # Key of the turn-end signal's payload that carries the turn's final reply, if any.
     reply_key: str | None = None
+    # Adoption (ADR 0005). `continue_` (a keyword otherwise) continues the most recent
+    # conversation in the working directory; None means the agent cannot be adopted.
+    continue_: tuple[str, ...] | None = None
+    rules_injection: RulesInjection = RulesInjection.FIRST_MESSAGE
+    # Added after the program name of `continue_` when the rules go in the system prompt;
+    # `{rules}` is the rules' text and `{rules_file}` the path of `.labhq/rules.md`.
+    rules_words: tuple[str, ...] = ()
+    # A screen line that shows the conversation was compacted, so first-message rules go again.
+    compaction_pattern: str | None = None
+    # Process names discovery matches against the first two words of a command line; empty
+    # means the program of `start`.
+    processes: tuple[str, ...] = ()
+    continue_source: str = ""
+
+    @property
+    def process_names(self) -> tuple[str, ...]:
+        return self.processes or (Path(self.start[0]).name,)
 
 
 def signal_command(context: LaunchContext, channel: str, path: Path) -> list[str]:
@@ -217,6 +244,22 @@ CLAUDE_CODE = AgentKind(
     ),
     tool_launch="claude_mcp",
     reply_key="last_assistant_message",
+    continue_=(
+        "claude",
+        "--dangerously-skip-permissions",
+        "--continue",
+        "--system-prompt-snapshot",
+        "off",
+    ),
+    rules_injection=RulesInjection.SYSTEM_PROMPT,
+    rules_words=("--append-system-prompt", "{rules}"),
+    continue_source=(
+        "https://code.claude.com/docs/en/cli-reference: `--continue` loads the most recent "
+        "conversation in the current directory; `--append-system-prompt` appends to the "
+        "default prompt; a resumed conversation reuses the prompt recorded on its first "
+        "request until compaction, so `--system-prompt-snapshot off` makes the appended "
+        "rules apply at once; checked 2026-10-03"
+    ),
 )
 
 # Paths below are in openai/codex at main 86a54b05, checked 2026-10-03. The contract runs
@@ -265,6 +308,17 @@ CODEX = AgentKind(
         "codex-rs/config/src/hook_config.rs, codex-rs/hooks (Stop, PreToolUse, exit code 2), "
         "codex-rs/tui/src/status (/status); checked 2026-10-03"
     ),
+    # The same interactive flags as `resume`, so its hooks (turn signal, push guard) run too.
+    continue_=("codex", "resume", "--last", *CODEX_FLAGS),
+    # `-c developer_instructions` exists, but whether a resumed thread takes it is unverified.
+    rules_injection=RulesInjection.FIRST_MESSAGE,
+    compaction_pattern=r"multiple compactions",
+    continue_source=(
+        "openai/codex main: codex-rs/cli/src/main.rs (`codex resume --last` continues the "
+        "most recent session, filtered to the current directory unless `--all`), "
+        'codex-rs/core/src/compact.rs (the warning after a compaction: "Long threads and '
+        'multiple compactions ..."); checked 2026-10-03'
+    ),
 )
 
 GEMINI = AgentKind(
@@ -284,6 +338,16 @@ GEMINI = AgentKind(
         "google-gemini/gemini-cli main: packages/cli/src/config/config.ts (--session-id, "
         "--resume, -i/--prompt-interactive, --approval-mode yolo), "
         "docs/cli/session-management.md; checked 2026-10-03"
+    ),
+    continue_=("gemini", "--approval-mode", "yolo", "--resume", "latest"),
+    # GEMINI_SYSTEM_MD replaces the whole system prompt; there is no append.
+    rules_injection=RulesInjection.FIRST_MESSAGE,
+    compaction_pattern=r"Chat history compressed from",
+    continue_source=(
+        "google-gemini/gemini-cli main: packages/cli/src/config/config.ts (`--resume latest`), "
+        "docs/cli/session-management.md (sessions are per project directory), "
+        'packages/cli/src/ui/components/messages/CompressionMessage.tsx ("Chat history '
+        'compressed from N to M tokens."); checked 2026-10-03'
     ),
 )
 
@@ -312,6 +376,21 @@ AIDER = AgentKind(
     source=(
         "Aider-AI/aider main: aider/website/docs/config/options.md (--message, "
         "--restore-chat-history, --yes-always, --no-pretty, --no-fancy-input); checked 2026-10-03"
+    ),
+    continue_=(
+        "aider",
+        "--yes-always",
+        "--no-pretty",
+        "--no-fancy-input",
+        "--restore-chat-history",
+    ),
+    # A read-only file goes with every request, so the rules survive like a system prompt.
+    rules_injection=RulesInjection.SYSTEM_PROMPT,
+    rules_words=("--read", "{rules_file}"),
+    continue_source=(
+        "Aider-AI/aider main: aider/website/docs/config/options.md (--restore-chat-history "
+        "restores the chat of the working directory; --read adds a read-only file to every "
+        "request); checked 2026-10-03"
     ),
 )
 
