@@ -29,6 +29,10 @@ jobs:
       - name: Install
         run: uv sync --frozen
 
+      # The tmux adapter tests run a real private tmux server; without tmux they fail.
+      - name: Install tmux
+        run: sudo apt-get update && sudo apt-get install -y tmux
+
       - name: Format
         run: uv run --frozen ruff format --check .
 
