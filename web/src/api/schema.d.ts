@@ -96,6 +96,11 @@ export interface components {
      */
     IncidentStatus: 'open' | 'resolved'
     /**
+     * MeetingStatus
+     * @enum {string}
+     */
+    MeetingStatus: 'requested' | 'running' | 'ended' | 'failed' | 'cancelled'
+    /**
      * NotificationStatus
      * @enum {string}
      */
@@ -155,6 +160,11 @@ export interface components {
        * @description Every value of `IncidentStatus`.
        */
       incident_status: components['schemas']['IncidentStatus'][]
+      /**
+       * Meeting Status
+       * @description Every value of `MeetingStatus`.
+       */
+      meeting_status: components['schemas']['MeetingStatus'][]
       /**
        * Notification Status
        * @description Every value of `NotificationStatus`.

@@ -67,6 +67,11 @@
         "title": "IncidentStatus",
         "type": "string"
       },
+      "MeetingStatus": {
+        "enum": ["requested", "running", "ended", "failed", "cancelled"],
+        "title": "MeetingStatus",
+        "type": "string"
+      },
       "NotificationStatus": {
         "enum": ["pending", "sent", "failed"],
         "title": "NotificationStatus",
@@ -143,6 +148,14 @@
             "title": "Incident Status",
             "type": "array"
           },
+          "meeting_status": {
+            "description": "Every value of `MeetingStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/MeetingStatus"
+            },
+            "title": "Meeting Status",
+            "type": "array"
+          },
           "notification_status": {
             "description": "Every value of `NotificationStatus`.",
             "items": {
@@ -199,6 +212,7 @@
           "call_status",
           "host_status",
           "incident_status",
+          "meeting_status",
           "notification_status",
           "project_status",
           "question_status",
