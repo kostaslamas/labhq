@@ -43,6 +43,7 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("approvals", "approve"): (("init",), ("approvals", "approve", "42")),
     ("approvals", "reject"): (("init",), ("approvals", "reject", "42")),
     ("health",): (("health",),),
+    ("demo",): (("demo", "--adapter", "nope"),),
 }
 
 
