@@ -80,12 +80,12 @@ def test_a_new_step_is_one_registration_and_runs_in_order(tmp_path: Path) -> Non
 
 def test_a_fake_step_slots_in_between_the_shipped_ones() -> None:
     steps = default_steps.copy()
-    steps.register(FakeStep("discord"), order=45)
+    steps.register(FakeStep("chat"), order=45)
 
     names = [step.name for step in steps]
 
-    assert names.index("notifications") < names.index("discord") < names.index("model login")
-    assert "discord" not in default_steps
+    assert names.index("notifications") < names.index("chat") < names.index("model login")
+    assert "chat" not in default_steps
 
 
 def test_a_name_registered_twice_is_refused() -> None:

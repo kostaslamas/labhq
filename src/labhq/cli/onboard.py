@@ -59,6 +59,10 @@ def _summary(reports: list[StepReport]) -> None:
 
 
 def onboard(
+    offer: Annotated[
+        list[str] | None,
+        typer.Argument(help="Optional steps to set up too, such as `discord`.", show_default=False),
+    ] = None,
     non_interactive: Annotated[
         bool, typer.Option("--non-interactive", help="Never prompt; for CI and scripts.")
     ] = False,
@@ -68,6 +72,9 @@ def onboard(
     port: Annotated[int | None, typer.Option(help="Local port for the MCP server.")] = None,
 ) -> None:
     """Set labhq up, check it end to end, then serve it in the foreground."""
+    unknown = sorted(set(offer or ()) - {step.name for step in default_steps})
+    if unknown:
+        fail(f"no onboarding step named {', '.join(unknown)}")
     settings = load_settings()
     onboarding = OnboardSettings()
     if port is not None:
@@ -81,6 +88,7 @@ def onboard(
         which=shutil.which,
         say=typer.echo,
         confirm=None if non_interactive else (lambda prompt: typer.confirm(prompt)),
+        offered=frozenset(offer or ()),
     )
     with context.resources:
         typer.echo(f"Onboarding labhq in {settings.data_dir}")

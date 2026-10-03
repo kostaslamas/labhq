@@ -2,6 +2,7 @@
 
 from labhq.onboard.connector import ConnectorTokenStep
 from labhq.onboard.database import DatabaseStep
+from labhq.onboard.discord import DiscordStep
 from labhq.onboard.model import ModelLoginStep
 from labhq.onboard.notifications import NotificationsStep
 from labhq.onboard.public_url import PublicUrlStep
@@ -13,3 +14,4 @@ default_steps.register(ConnectorTokenStep(), order=20)
 default_steps.register(PublicUrlStep(), order=30)
 default_steps.register(NotificationsStep(), order=40)
 default_steps.register(ModelLoginStep(), order=50)
+default_steps.register(DiscordStep(), order=60)
