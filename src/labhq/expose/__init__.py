@@ -2,7 +2,7 @@
 
 from labhq.expose.base import Exposure, ExposureAdapter, ExposureError
 from labhq.expose.registry import AdapterFactory, exposures
-from labhq.expose.serve import open_verified, serve_exposed
+from labhq.expose.serve import expose_running, open_verified, serve_exposed
 from labhq.expose.verify import connector_url, verify_connector
 
 __all__ = [
@@ -11,6 +11,7 @@ __all__ = [
     "ExposureAdapter",
     "ExposureError",
     "connector_url",
+    "expose_running",
     "exposures",
     "open_verified",
     "serve_exposed",
