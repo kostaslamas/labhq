@@ -23,9 +23,11 @@ def approval_line(approval: Approval) -> str:
     target = ""
     if "branch" in payload and "commit" in payload:
         target = f" {payload['branch']} @ {str(payload['commit'])[:12]} -> {payload.get('url')}"
+    # An adoption carries the warnings its confirmation must show (ADR 0005).
+    warnings = "".join(f"\n  warning: {warning}" for warning in payload.get("warnings", ()))
     return (
         f"approval {approval.id}: {approval.type} [{approval.risk_class}] {approval.status}"
-        f" (task {approval.task_id}, agent {approval.requested_by_agent_id}){target}"
+        f" (task {approval.task_id}, agent {approval.requested_by_agent_id}){target}{warnings}"
     )
 
 
