@@ -194,7 +194,10 @@ def test_the_command_line_checks_built_artefacts(
     assert "bad.whl: no labhq/web/index.html" in capsys.readouterr().err
 
 
-@pytest.mark.skipif(BUILT_WHEEL is None, reason="LABHQ_BUILT_WHEEL is set by package.yml")
-def test_the_wheel_built_in_ci_contains_the_ui() -> None:
-    assert BUILT_WHEEL is not None
-    assert wheel_problems(wheel_names(Path(BUILT_WHEEL))) == []
+# Collected only where package.yml sets LABHQ_BUILT_WHEEL: a skip fails the session
+# (tests/platforms.py), and package.yml selects this test with -k, so it exits 5 if missing.
+if BUILT_WHEEL is not None:
+
+    def test_the_wheel_built_in_ci_contains_the_ui() -> None:
+        assert BUILT_WHEEL is not None
+        assert wheel_problems(wheel_names(Path(BUILT_WHEEL))) == []
