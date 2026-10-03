@@ -61,6 +61,7 @@ and CI fails when it does not match them.
 
 | Test | Limitation |
 |---|---|
+| `tests/adapters/test_codex_contract.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_contract.py::test_adapter_honours_the_contract` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
