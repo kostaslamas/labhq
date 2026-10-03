@@ -43,18 +43,38 @@ class UnknownRuleTypeError(LookupError):
 class RuleRegistry:
     def __init__(self) -> None:
         self._evaluators: dict[str, Evaluator] = {}
+        self._params: dict[str, type[BaseModel]] = {}
 
-    def register(self, rule_type: str) -> Callable[[Evaluator], Evaluator]:
+    def register(
+        self, rule_type: str, params: type[BaseModel] | None = None
+    ) -> Callable[[Evaluator], Evaluator]:
+        """Register an evaluator; `params` lets rule management validate a rule before it lands."""
+
         def decorator(evaluator: Evaluator) -> Evaluator:
             if rule_type in self._evaluators:
                 raise ValueError(f"rule type already registered: {rule_type}")
             self._evaluators[rule_type] = evaluator
+            if params is not None:
+                self._params[rule_type] = params
             return evaluator
 
         return decorator
 
     def types(self) -> frozenset[str]:
         return frozenset(self._evaluators)
+
+    def validate_params(self, rule_type: str, params: dict[str, Any]) -> dict[str, Any]:
+        """The params as stored: validated by the type's model, defaults filled in.
+
+        Raises `UnknownRuleTypeError` or pydantic's `ValidationError`. A type registered
+        without a model takes its params as given.
+        """
+        if rule_type not in self._evaluators:
+            raise UnknownRuleTypeError(rule_type)
+        model = self._params.get(rule_type)
+        if model is None:
+            return dict(params)
+        return model.model_validate(params).model_dump(mode="json")
 
     async def evaluate(self, context: RuleContext) -> Evaluation:
         try:
@@ -138,7 +158,7 @@ async def _held_throughout(
     return None
 
 
-@registry.register("threshold")
+@registry.register("threshold", ThresholdParams)
 async def evaluate_threshold(context: RuleContext) -> Evaluation:
     params = ThresholdParams.model_validate(context.rule.params)
     violations = {}
