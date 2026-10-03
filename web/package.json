@@ -17,7 +17,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "i18n:check": "node scripts/i18n-check.ts",
-    "dist:check": "node scripts/dist-check.ts"
+    "dist:check": "node scripts/dist-check.ts",
+    "api:generate": "uv run --frozen --project .. python -m labhq.api.openapi > openapi.json && openapi-typescript openapi.json --output src/api/schema.d.ts && prettier --write --log-level warn openapi.json src/api/schema.d.ts"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",
