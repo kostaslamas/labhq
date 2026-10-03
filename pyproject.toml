@@ -10,12 +10,15 @@ dependencies = [
     "aiosqlite>=0.20",
     "alembic>=1.14",
     "claude-agent-sdk>=0.2.163",
+    "httpx>=0.28.1",
+    "mcp>=2.2,<3",
     "platformdirs>=4.3",
     "psutil>=6.1",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
     "sqlalchemy[asyncio]>=2.0.36",
     "typer>=0.15",
+    "uvicorn>=0.54.0",
 ]
 
 [project.scripts]
