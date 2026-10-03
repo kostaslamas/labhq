@@ -23,7 +23,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    # Native Windows runs the suite in about 26 minutes; leave room before the cut-off.
+    timeout-minutes: 60
     env:
       LABHQ_DATA_DIR: ${{ github.workspace }}/.ci-data
     steps:
@@ -47,8 +48,10 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install tmux
 
+      # A test that hangs dumps every thread's stack instead of dying silently at the
+      # job's timeout.
       - name: Tests
-        run: uv run --frozen pytest -ra
+        run: uv run --frozen pytest -ra -o faulthandler_timeout=300
 
       - name: Limitations guide matches the markers
         run: uv run --frozen python -m tools.platform_limits
