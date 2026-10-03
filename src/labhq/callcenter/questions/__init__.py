@@ -6,11 +6,7 @@ from labhq.callcenter.questions.ask import (
     question_fingerprint,
     raise_question,
 )
-from labhq.callcenter.questions.reference import (
-    InvalidReferenceError,
-    format_reference,
-    parse_reference,
-)
+from labhq.callcenter.questions.reference import InvalidReferenceError, format_reference
 
 __all__ = [
     "NOTIFICATION_KIND",
@@ -18,7 +14,6 @@ __all__ = [
     "InvalidReferenceError",
     "answer",
     "format_reference",
-    "parse_reference",
     "question_fingerprint",
     "raise_question",
 ]

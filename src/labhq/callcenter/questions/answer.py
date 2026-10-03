@@ -9,8 +9,9 @@ conditional UPDATE (`answer_question_once`); the loser stores and delivers nothi
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labhq.callcenter.answers.refs import parse_ref
 from labhq.callcenter.deliveries import deliver
-from labhq.callcenter.questions.reference import format_reference, parse_reference
+from labhq.callcenter.questions.reference import InvalidReferenceError, format_reference
 from labhq.callcenter.store import answer_question_once
 from labhq.clock import Clock
 from labhq.db.models import Agent, AgentQuestion, CallRequest
@@ -21,6 +22,16 @@ class AnswerError(LookupError):
     """The reference or request names nothing the caller may use."""
 
 
+def _question_id(reference: str) -> int:
+    try:
+        kind, number = parse_ref(reference)
+    except ValueError as error:
+        raise InvalidReferenceError(f"not a question reference: {reference!r}") from error
+    if kind != "question":
+        raise InvalidReferenceError(f"not a question reference: {reference!r}")
+    return number
+
+
 async def answer(
     db: AsyncSession, clock: Clock, reference: str, *, call_id: int, request_id: str
 ) -> str:
@@ -29,7 +40,7 @@ async def answer(
     Returns a spoken confirmation. Commits: the stored answer, the wakeup and the delivery
     row are one unit, and the winner commits before the loser's update can run.
     """
-    question_id = parse_reference(reference)
+    question_id = _question_id(reference)
     spoken = format_reference(question_id)
     # The request must belong to this call: a request id from another call is refused.
     request = await db.scalar(
