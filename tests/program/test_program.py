@@ -1,4 +1,5 @@
 import asyncio
+import signal
 from pathlib import Path
 
 import httpx
@@ -225,3 +226,22 @@ async def test_a_new_question_in_a_status_file_is_ingested_on_the_timer(
         run = (await db.scalars(select(Run))).one()
     assert question.question == "Which branch?"
     assert run.status is RunStatus.RUNNING
+
+
+async def test_without_loop_signal_handlers_a_stop_signal_still_ends_the_program(
+    services: Services, stepped: SteppedClock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def unsupported(*_: object) -> None:
+        raise NotImplementedError  # as on Windows' proactor event loop
+
+    monkeypatch.setattr(asyncio.get_running_loop(), "add_signal_handler", unsupported)
+    before = signal.getsignal(signal.SIGINT)
+    server = FakeServer()
+    running = asyncio.create_task(program_for(services, LoopRegistry(), server, stepped).run())
+    await server.started.wait()
+
+    signal.raise_signal(signal.SIGINT)
+    await running
+
+    assert server.stopped
+    assert signal.getsignal(signal.SIGINT) is before
