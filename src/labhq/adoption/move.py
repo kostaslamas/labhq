@@ -7,7 +7,10 @@ and listed in the status.
 """
 
 import asyncio
+import contextlib
 import os
+import threading
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -40,6 +43,8 @@ from labhq.hierarchy import HierarchySettings
 from labhq.settings import Settings, get_settings
 from labhq.worktrees.exclude import exclude_state_dir
 
+END_POLL_SECONDS = 0.05
+
 
 def default_server() -> TmuxServer:
     return TmuxServer(socket=get_tmux_settings().socket, state_dir=get_settings().data_dir / "tmux")
@@ -52,19 +57,25 @@ def configured_database_url() -> str:
 
 def end_process(pid: int, started_at: float, timeout: float) -> None:
     """End the original agent: SIGTERM, then SIGKILL; return only once it is gone."""
-    if not is_alive(pid, started_at):
-        return
-    process = psutil.Process(pid)
-    try:
-        process.terminate()
-        process.wait(timeout)
-    except psutil.TimeoutExpired:
-        process.kill()
-        process.wait(timeout)
-    except psutil.NoSuchProcess:
-        return
-    if is_alive(pid, started_at):
-        raise AdoptionError(f"process {pid} did not end; nothing was continued")
+    for signal_process in (psutil.Process.terminate, psutil.Process.kill):
+        if not is_alive(pid, started_at):
+            return
+        with contextlib.suppress(psutil.NoSuchProcess):
+            signal_process(psutil.Process(pid))
+        if _gone_within(pid, started_at, timeout):
+            return
+    raise AdoptionError(f"process {pid} did not end; nothing was continued")
+
+
+def _gone_within(pid: int, started_at: float, timeout: float) -> bool:
+    # Not `Process.wait`: the agent is another process's child (the owner's shell or tmux),
+    # so until that parent reaps it, it lingers as a zombie, which `is_alive` counts as gone.
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if not is_alive(pid, started_at):
+            return True
+        threading.Event().wait(END_POLL_SECONDS)
+    return not is_alive(pid, started_at)
 
 
 @dataclass(frozen=True)
