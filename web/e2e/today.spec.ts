@@ -12,8 +12,9 @@ const WRITE = String.raw`
 import asyncio, json, sys
 from datetime import UTC, datetime
 from labhq.db import create_engine, session_factory
-from labhq.db.enums import ApprovalStatus, RiskClass, TaskStatus
-from labhq.db.models import Approval, Task
+from sqlalchemy import select
+from labhq.db.enums import ApprovalStatus, IncidentStatus, RiskClass, TaskStatus
+from labhq.db.models import Approval, HealthRule, Host, Incident, Task
 from labhq.settings import Settings
 
 action, data_dir, task_id = sys.argv[1], sys.argv[2], int(sys.argv[3])
@@ -34,6 +35,27 @@ async def main():
             db.add(approval)
             await db.flush()
             print(approval.id)
+        elif action == "incident":
+            # The server's collector resolves incidents of enabled rules the host does not
+            # violate, so the seeded one may be gone on a CI machine. Own one that a disabled
+            # rule keeps open, and close the rest so the page is the same everywhere.
+            for open_one in await db.scalars(select(Incident).where(Incident.status == IncidentStatus.OPEN)):
+                open_one.status, open_one.resolved_at = IncidentStatus.RESOLVED, now
+            host = Host(name="spec-host", created_at=now, updated_at=now)
+            db.add(host)
+            await db.flush()
+            rule = HealthRule(type="threshold", name="Spec rule", params={}, host_id=host.id,
+                reason="Seeded by the Today spec.", created_by="e2e", enabled=False,
+                created_at=now, updated_at=now)
+            db.add(rule)
+            await db.flush()
+            incident = Incident(rule_id=rule.id, host_id=host.id, opened_at=now)
+            db.add(incident)
+            await db.flush()
+            print(incident.id)
+        elif action == "resolve":
+            incident = await db.get(Incident, task_id)
+            incident.status, incident.resolved_at = IncidentStatus.RESOLVED, now
         else:
             approval = await db.get(Approval, task_id)
             approval.status = ApprovalStatus.CANCELLED
@@ -43,7 +65,7 @@ async def main():
 asyncio.run(main())
 `
 
-function write(action: 'deliver' | 'ask' | 'cancel', id: number): string {
+function write(action: 'deliver' | 'ask' | 'cancel' | 'incident' | 'resolve', id: number): string {
   const dataDir = process.env[DATA_DIR_ENV]
   if (!dataDir) throw new Error(`${DATA_DIR_ENV} is unset`)
   const result = spawnSync(
@@ -57,11 +79,17 @@ function write(action: 'deliver' | 'ask' | 'cancel', id: number): string {
 
 test.describe.configure({ mode: 'serial' })
 
+let incident = 0
+test.afterAll(() => {
+  if (incident) write('resolve', incident)
+})
+
 test('Today shows what was delivered and what needs you, never agents at work', async ({
   signedInPage: page,
 }) => {
   // The second seeded task has no run; delivering it leaves the first task's spend without output.
   write('deliver', seedSummary().tasks[1]!)
+  incident = Number(write('incident', 0))
   await page.goto('/today')
 
   await expect(page.getByTestId('deliverable')).toHaveCount(1)
