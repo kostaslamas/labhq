@@ -29,13 +29,15 @@ class ExtractorUnavailableError(RuntimeError):
 PROMPT = """You read a terminal screen captured from the {agent_kind} coding agent and report
 its usage. Answer with one JSON object and nothing else:
 
-{{"readings": [{{"unit": "usd" | "percent" | "tokens" | "requests",
+{{"readings": [{{"unit": "usd" | "percent" | "percent_left" | "tokens" | "requests",
                  "value": <number>, "window": <short name or null>,
                  "limit": <number or null>, "resets_at": <ISO 8601 UTC instant or null>}}],
   "limit_notice": <true if the screen says a usage or plan limit is reached>,
   "limit_resets_at": <ISO 8601 UTC instant when that limit resets, or null>}}
 
 Copy every number exactly as the screen shows it; never compute, round or convert one.
+A percentage the screen calls used is "percent"; one it calls left or remaining is
+"percent_left".
 Report only what the screen shows. If it shows no usage, return an empty "readings" list.
 The screen was captured at {captured_at}.
 
