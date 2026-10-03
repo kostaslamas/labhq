@@ -142,14 +142,14 @@ def markdown_files(root: Path) -> list[Path]:
 def _unindexed(root: Path) -> list[str]:
     index = root / GUIDE_INDEX
     if not index.is_file():
-        return [f"{GUIDE_INDEX} is missing"]
+        return [f"{GUIDE_INDEX.as_posix()} is missing"]
     linked = {
         (index.parent / link.target.partition("#")[0]).resolve()
         for link in links(index)
         if not _SCHEME.match(link.target)
     }
     return [
-        f"{page.relative_to(root).as_posix()} is not linked from {GUIDE_INDEX}"
+        f"{page.relative_to(root).as_posix()} is not linked from {GUIDE_INDEX.as_posix()}"
         for page in sorted((root / GUIDE).glob("*.md"))
         if page != index and page.resolve() not in linked
     ]

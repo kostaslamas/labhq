@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import psutil
+import pytest
 
 from labhq.adoption.discovery import is_alive
 from labhq.adoption.move import end_process
@@ -40,6 +41,7 @@ async def test_a_process_that_exits_has_ended_its_turn() -> None:
     assert not seen.alive
 
 
+@pytest.mark.posix_only("POSIX zombie processes and /bin/sh")
 async def test_ending_an_agent_its_parent_never_reaps_returns_once_it_is_a_zombie(
     tmp_path: Path,
 ) -> None:

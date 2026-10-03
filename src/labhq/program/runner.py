@@ -9,7 +9,7 @@ import asyncio
 import contextlib
 import logging
 import signal
-from collections.abc import Awaitable, Iterator
+from collections.abc import Awaitable, Callable, Iterator
 from typing import Protocol
 
 import uvicorn
@@ -121,10 +121,32 @@ class Program:
             yield
             return
         loop = asyncio.get_running_loop()
-        for number in STOP_SIGNALS:
-            loop.add_signal_handler(number, self.request_stop)
+        try:
+            for number in STOP_SIGNALS:
+                loop.add_signal_handler(number, self.request_stop)
+        except NotImplementedError:
+            # Windows' proactor loop has no signal handlers; a plain one (Ctrl+C) hands the
+            # stop to the loop instead.
+            with _plain_signal_handlers(loop, self.request_stop):
+                yield
+            return
         try:
             yield
         finally:
             for number in STOP_SIGNALS:
                 loop.remove_signal_handler(number)
+
+
+@contextlib.contextmanager
+def _plain_signal_handlers(
+    loop: asyncio.AbstractEventLoop, stop: Callable[[], None]
+) -> Iterator[None]:
+    previous = {
+        number: signal.signal(number, lambda *_: loop.call_soon_threadsafe(stop))
+        for number in STOP_SIGNALS
+    }
+    try:
+        yield
+    finally:
+        for number, handler in previous.items():
+            signal.signal(number, handler)

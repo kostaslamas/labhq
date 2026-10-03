@@ -34,6 +34,7 @@ def leaky_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
 
 
 @pytest.mark.usefixtures("leaky_environment")
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_a_worker_sees_no_credentials_even_when_the_caller_has_them(
     make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -62,6 +63,7 @@ def test_the_global_helper_would_answer_outside_the_worker(tmp_path: Path) -> No
     assert "password=leaked" in result.stdout
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 def test_a_variable_only_in_the_clients_environment_stays_out_of_the_session(
     tmux_server: TmuxServer, tmp_path: Path
 ) -> None:
@@ -88,6 +90,7 @@ def test_a_variable_only_in_the_clients_environment_stays_out_of_the_session(
     assert tmux_server.run("show-options", "-gv", "update-environment").strip() == ""
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 def test_the_server_is_private_and_configured_by_labhq(tmux_server: TmuxServer) -> None:
     tmux_server.ensure_started()
 

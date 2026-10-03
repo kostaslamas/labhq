@@ -192,6 +192,7 @@ class RecordingServer(TmuxServer):
         raise TmuxError("recorded; the test runs no Claude Code")
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_the_call_center_in_tmux_has_no_shell_and_no_file_tool(
     sessions: async_sessionmaker[AsyncSession],
     clock: FakeClock,

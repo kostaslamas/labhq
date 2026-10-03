@@ -38,6 +38,7 @@ async def test_ntfy_encodes_a_non_ascii_title(outbound: Outbound, tmp_path: Path
     assert outbound.requests[0].headers["Title"].startswith("=?UTF-8?B?")
 
 
+@pytest.mark.posix_only("POSIX file permission bits")
 def test_the_generated_topic_is_random_and_kept(tmp_path: Path) -> None:
     first = load_or_create_topic(tmp_path)
     assert load_or_create_topic(tmp_path) == first

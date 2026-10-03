@@ -187,6 +187,22 @@ Live-update settings, read from `LABHQ_LIVE_*` environment variables.
 |---|---|---|---|
 | `LABHQ_LIVE_HEARTBEAT_SECONDS` | `float` | `20.0` | Below the 100 s idle timeout of Cloudflare and the 60 s default of nginx and Caddy, so an idle socket is never cut by a proxy; the client treats twice this silence as a dead link. |
 
+## `labhq.meetings.channels.settings.ChannelSettings`
+
+Meeting channel settings, read from `LABHQ_CHANNELS_*` environment variables.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_CHANNELS_ADAPTER` | `str \| None` | unset | Which configured chat adapter mirrors meetings; unset takes the first configured one. |
+| `LABHQ_CHANNELS_INFRA_CHANNEL` | `str` | `infra` | Plan §2.2: incidents reach `#infra`. |
+| `LABHQ_CHANNELS_DRAIN_INTERVAL_SECONDS` | `float` | `2.0` | How often a running chat pass drains the outbox: a post reaches its thread this late. |
+| `LABHQ_CHANNELS_RETRY_BASE_SECONDS` | `float` | `5.0` | Backoff after a failed post: doubles from the base up to the cap, then stays there. |
+| `LABHQ_CHANNELS_RETRY_MAX_SECONDS` | `float` | `300.0` |  |
+| `LABHQ_CHANNELS_BATCH_SIZE` | `int` | `100` | Posts sent per pass, so a long backlog does not hold one pass for minutes. |
+| `LABHQ_CHANNELS_INCIDENT_LOOKBACK_SECONDS` | `float` | `86400.0` | Incidents opened or resolved this long ago are still posted after a restart; older ones are history, not news. |
+| `LABHQ_CHANNELS_AVATAR_URL_TEMPLATE` | `str` | `https://api.dicebear.com/9.x/bottts/png?seed={seed}` | An agent without `config["persona"]["avatar_url"]` gets this, with `{seed}` filled from its id. Empty means no avatar: the chat service shows its default. |
+| `LABHQ_CHANNELS_SYSTEM_NAME` | `str` | `labhq` |  |
+
 ## `labhq.meetings.settings.MeetingSettings`
 
 Meeting settings, read from `LABHQ_MEETINGS_*` environment variables.
@@ -258,6 +274,7 @@ How often each background duty of the always-on program runs, from `LABHQ_PROGRA
 | `LABHQ_PROGRAM_LIVE_INTERVAL_SECONDS` | `float` | `1.0` | How often the change feed reads each live topic's watermark; the UI lags at most this. |
 | `LABHQ_PROGRAM_HEALTH_INTERVAL_SECONDS` | `float` | `300.0` | Plan §2.2: the collector samples every host "every few minutes". |
 | `LABHQ_PROGRAM_GRAPHIFY_INTERVAL_SECONDS` | `float` | `60.0` | How often project graphify indexes are checked; a new project waits at most this long. |
+| `LABHQ_PROGRAM_CHAT_INTERVAL_SECONDS` | `float` | `30.0` | The chat loop runs until its adapter fails; it reconnects after this long. |
 | `LABHQ_PROGRAM_SHUTDOWN_GRACE_SECONDS` | `float` | `10.0` | Time the server gets to stop before it is cancelled on shutdown. |
 
 ## `labhq.scheduler.settings.SchedulerSettings`

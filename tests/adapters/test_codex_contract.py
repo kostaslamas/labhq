@@ -34,6 +34,8 @@ from tests.runs.helpers import events_of, stored_run, task_sessions, use_adapter
 from tests.worktrees.conftest import isolated_git, remote, repo  # noqa: F401  (fixtures)
 from tests.worktrees.gitrepo import commit_file
 
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
+
 
 @pytest.fixture
 def default_tmux(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:

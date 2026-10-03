@@ -4,7 +4,6 @@ The Call Center runs a fake CLI on the `tmux` adapter in a real private server. 
 CLI is given the call's own stdio tool server and no built-in tools.
 """
 
-import fcntl
 import json
 import os
 import shlex
@@ -41,6 +40,8 @@ from tests.callcenter.screens.conftest import (
     SpyServer,
     until,
 )
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 FAKE_CALL_CENTER = Path(__file__).with_name("fake_call_center.py")
 WINDOW = CallCenterSettings(call_window_seconds=300, ticket_expiry_seconds=3600)
@@ -144,6 +145,8 @@ async def line(
     workdir = tmp_path / "callcenter"
     workdir.mkdir()
     gate = (workdir / "line").open("a")
+    import fcntl  # POSIX only; imported here so native Windows can still collect
+
     fcntl.flock(gate, fcntl.LOCK_EX)
     center = CallCenter(
         sessions,  # type: ignore[arg-type]

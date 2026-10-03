@@ -100,7 +100,13 @@ async def test_a_second_run_on_the_task_reuses_its_worktree(context: Context, re
     assert len(report.approvals) == 1
 
 
-@pytest.mark.parametrize("rtk_present", [False, True])
+@pytest.mark.parametrize(
+    "rtk_present",
+    [
+        False,
+        pytest.param(True, marks=pytest.mark.posix_only("the rtk stub is a POSIX shell script")),
+    ],
+)
 async def test_a_run_without_rtk_records_the_warning_in_its_events(
     context: Context, repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rtk_present: bool
 ) -> None:

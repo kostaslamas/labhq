@@ -45,6 +45,7 @@ def write_certificate(path: Path, days: int) -> None:
 
 
 @needs("sh", "openssl")
+@pytest.mark.posix_only("the certificate probe is a POSIX shell script")
 async def test_the_certificate_script_reads_a_file_on_disk(tmp_path: Path) -> None:
     path = tmp_path / "with space.pem"
     write_certificate(path, days=30)

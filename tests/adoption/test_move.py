@@ -13,6 +13,8 @@ from labhq.db.models import Agent, Project
 from labhq.hierarchy import CEO, MANAGER, HierarchyError
 from tests.adoption.conftest import World, adopt, wait_for
 
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
+
 
 async def test_a_request_is_a_pending_light_approval_and_nothing_moves(world: World) -> None:
     original = await world.start_original()

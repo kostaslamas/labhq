@@ -72,6 +72,7 @@ def test_verify_rejects_an_event_stream_answer() -> None:
         verify_connector(PUBLIC, SECRET, client=client, attempts=1)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_failed_proof_stops_the_tunnel_and_raises(fake_cloudflared: Path) -> None:
     def refuse(url: str, secret: str) -> None:
         raise ExposureError("refused")
@@ -88,6 +89,7 @@ def test_verify_against_the_app_accepts_only_the_right_secret() -> None:
             verify_connector(PUBLIC, "wrong", client=client, attempts=1)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_running_server_answers_json_not_sse_and_the_url_is_announced_once(
     fake_cloudflared: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -120,6 +122,7 @@ def test_running_server_answers_json_not_sse_and_the_url_is_announced_once(
     assert SECRET not in captured.out + captured.err
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_unverified_tunnel_never_announces(fake_cloudflared: Path) -> None:
     announced: list[str] = []
 

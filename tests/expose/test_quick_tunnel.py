@@ -15,6 +15,7 @@ def read_log(log: Path) -> tuple[str, int]:
     return argv, int(pid)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_runs_cloudflared_with_empty_config_and_parses_the_url(fake_cloudflared: Path) -> None:
     tunnel = QuickTunnelAdapter().open(8787)
     try:
@@ -25,6 +26,7 @@ def test_runs_cloudflared_with_empty_config_and_parses_the_url(fake_cloudflared:
     assert argv == "tunnel --config /dev/null --url http://127.0.0.1:8787"
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_close_stops_cloudflared_and_is_repeatable(fake_cloudflared: Path) -> None:
     tunnel = QuickTunnelAdapter().open(8787)
     _, pid = read_log(fake_cloudflared)
@@ -56,12 +58,14 @@ def test_missing_cloudflared_fails_with_install_hint(
         QuickTunnelAdapter().open(8787)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_exit_before_url_is_an_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     install_fake(tmp_path, monkeypatch, "#!{python}\nprint('boom')\n")
     with pytest.raises(ExposureError, match="exited before"):
         QuickTunnelAdapter().open(8787)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a shebang script that waits on signal.pause")
 def test_no_url_in_time_is_a_timeout_and_stops_the_process(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -27,6 +27,7 @@ def connector_url(output: str) -> str:
     return url
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_first_run_reaches_a_verified_system_without_any_account(
     tunnel: Tunnel, ntfy: FakeNtfy, cli: Cli, data_dir: Path
 ) -> None:
@@ -48,6 +49,7 @@ def test_first_run_reaches_a_verified_system_without_any_account(
     assert "Later, model login:" in output
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_the_qr_code_encodes_exactly_the_printed_connector_url(
     tunnel: Tunnel, ntfy: FakeNtfy
 ) -> None:
@@ -59,6 +61,7 @@ def test_the_qr_code_encodes_exactly_the_printed_connector_url(
     assert f"Connector URL: {url}\n{render_qr(url)}\n" in output
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_a_second_run_keeps_token_topic_and_data_and_checks_again(
     tunnel: Tunnel, ntfy: FakeNtfy, cli: Cli, data_dir: Path
 ) -> None:
@@ -84,6 +87,7 @@ def test_a_second_run_keeps_token_topic_and_data_and_checks_again(
     assert output.rstrip().endswith(READY)
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_the_model_notice_appears_on_the_first_run_only(
     tunnel: Tunnel, ntfy: FakeNtfy, data_dir: Path
 ) -> None:
@@ -102,6 +106,7 @@ def test_onboard_error_names_the_step() -> None:
     assert str(OnboardError("public URL", "no answer")) == "public URL: no answer"
 
 
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
 def test_without_no_serve_the_program_takes_over_the_port_behind_the_same_tunnel(
     tunnel: Tunnel, ntfy: FakeNtfy, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

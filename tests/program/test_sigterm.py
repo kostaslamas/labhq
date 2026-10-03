@@ -28,6 +28,7 @@ def labhq(*args: str, env: dict[str, str]) -> subprocess.Popen[str]:
 
 
 @pytest.mark.parametrize("stop", [signal.SIGTERM, signal.SIGINT], ids=["sigterm", "sigint"])
+@pytest.mark.posix_only("POSIX stop signals")
 def test_a_stop_signal_ends_labhq_serve_with_exit_code_zero(tmp_path: Path, stop: int) -> None:
     env = {
         **os.environ,
