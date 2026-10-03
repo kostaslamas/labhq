@@ -1,0 +1,25 @@
+{
+  "title": "Health rules",
+  "lead": "Every rule says why it exists. A rule only notifies you or opens a ticket; it never fixes anything.",
+  "loading": "Loading rules…",
+  "empty": "No rules yet. Agents and the CLI add them.",
+  "failed": "That did not work. Try again.",
+  "load_failed": "The rules could not be loaded.",
+  "why": "Why",
+  "added_by": "Added by",
+  "host": "Host",
+  "all_hosts": "every host",
+  "settings": "Settings",
+  "latest": "Latest result",
+  "no_result": "No result yet",
+  "opened": "opened {date}",
+  "resolved": "resolved {date}",
+  "disabled": "Disabled",
+  "disabled_since": "Disabled {date}",
+  "disable": "Disable",
+  "enable": "Enable",
+  "action": {
+    "notify": "Notifies",
+    "ticket": "Opens a ticket"
+  }
+}
