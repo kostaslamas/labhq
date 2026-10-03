@@ -1,0 +1,286 @@
+{
+  "components": {
+    "schemas": {
+      "AgentStatus": {
+        "enum": ["pending_approval", "active", "paused", "retired"],
+        "title": "AgentStatus",
+        "type": "string"
+      },
+      "ApprovalStatus": {
+        "enum": ["pending", "approved", "rejected", "executed", "execution_failed", "cancelled"],
+        "title": "ApprovalStatus",
+        "type": "string"
+      },
+      "CallRequestStatus": {
+        "enum": ["pending", "answered", "failed", "expired"],
+        "title": "CallRequestStatus",
+        "type": "string"
+      },
+      "CallStatus": {
+        "enum": ["open", "closed"],
+        "title": "CallStatus",
+        "type": "string"
+      },
+      "ErrorBody": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": ["code", "message"],
+        "title": "ErrorBody",
+        "type": "object"
+      },
+      "ErrorEnvelope": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBody"
+          }
+        },
+        "required": ["error"],
+        "title": "ErrorEnvelope",
+        "type": "object"
+      },
+      "Health": {
+        "properties": {
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": ["version"],
+        "title": "Health",
+        "type": "object"
+      },
+      "HostStatus": {
+        "enum": ["unknown", "up", "degraded", "down"],
+        "title": "HostStatus",
+        "type": "string"
+      },
+      "IncidentStatus": {
+        "enum": ["open", "resolved"],
+        "title": "IncidentStatus",
+        "type": "string"
+      },
+      "NotificationStatus": {
+        "enum": ["pending", "sent", "failed"],
+        "title": "NotificationStatus",
+        "type": "string"
+      },
+      "ProjectStatus": {
+        "enum": ["active", "paused", "archived"],
+        "title": "ProjectStatus",
+        "type": "string"
+      },
+      "QuestionStatus": {
+        "enum": ["pending", "answered"],
+        "title": "QuestionStatus",
+        "type": "string"
+      },
+      "RunStatus": {
+        "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
+        "title": "RunStatus",
+        "type": "string"
+      },
+      "TaskStatus": {
+        "enum": ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"],
+        "title": "TaskStatus",
+        "type": "string"
+      },
+      "Vocabulary": {
+        "description": "The status values the backend may return, by enum.",
+        "properties": {
+          "agent_status": {
+            "description": "Every value of `AgentStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/AgentStatus"
+            },
+            "title": "Agent Status",
+            "type": "array"
+          },
+          "approval_status": {
+            "description": "Every value of `ApprovalStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/ApprovalStatus"
+            },
+            "title": "Approval Status",
+            "type": "array"
+          },
+          "call_request_status": {
+            "description": "Every value of `CallRequestStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/CallRequestStatus"
+            },
+            "title": "Call Request Status",
+            "type": "array"
+          },
+          "call_status": {
+            "description": "Every value of `CallStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/CallStatus"
+            },
+            "title": "Call Status",
+            "type": "array"
+          },
+          "host_status": {
+            "description": "Every value of `HostStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/HostStatus"
+            },
+            "title": "Host Status",
+            "type": "array"
+          },
+          "incident_status": {
+            "description": "Every value of `IncidentStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/IncidentStatus"
+            },
+            "title": "Incident Status",
+            "type": "array"
+          },
+          "notification_status": {
+            "description": "Every value of `NotificationStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/NotificationStatus"
+            },
+            "title": "Notification Status",
+            "type": "array"
+          },
+          "project_status": {
+            "description": "Every value of `ProjectStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/ProjectStatus"
+            },
+            "title": "Project Status",
+            "type": "array"
+          },
+          "question_status": {
+            "description": "Every value of `QuestionStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/QuestionStatus"
+            },
+            "title": "Question Status",
+            "type": "array"
+          },
+          "run_status": {
+            "description": "Every value of `RunStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/RunStatus"
+            },
+            "title": "Run Status",
+            "type": "array"
+          },
+          "task_status": {
+            "description": "Every value of `TaskStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/TaskStatus"
+            },
+            "title": "Task Status",
+            "type": "array"
+          },
+          "wakeup_status": {
+            "description": "Every value of `WakeupStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/WakeupStatus"
+            },
+            "title": "Wakeup Status",
+            "type": "array"
+          }
+        },
+        "required": [
+          "agent_status",
+          "approval_status",
+          "call_request_status",
+          "call_status",
+          "host_status",
+          "incident_status",
+          "notification_status",
+          "project_status",
+          "question_status",
+          "run_status",
+          "task_status",
+          "wakeup_status"
+        ],
+        "title": "Vocabulary",
+        "type": "object"
+      },
+      "WakeupStatus": {
+        "enum": ["pending", "dispatched", "refused", "cancelled"],
+        "title": "WakeupStatus",
+        "type": "string"
+      }
+    }
+  },
+  "info": {
+    "title": "labhq",
+    "version": "0.1.0a1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/health": {
+      "get": {
+        "description": "Answer without a session, so a probe or the UI can tell the server is up.",
+        "operationId": "health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Health Get",
+        "tags": ["health"]
+      }
+    },
+    "/api/vocabulary": {
+      "get": {
+        "description": "The backend's status values; the UI maps each one onto its own states.",
+        "operationId": "vocabulary_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vocabulary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Vocabulary Get",
+        "tags": ["vocabulary"]
+      }
+    }
+  }
+}

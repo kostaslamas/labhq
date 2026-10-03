@@ -28,8 +28,22 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
 
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
       - name: Install
-        run: npm ci
+        run: |
+          npm ci
+          uv sync --frozen
+
+      # Drift guard: the committed schema and client must be what the current API generates,
+      # so an API change pushed without `npm run api:generate` fails here.
+      - name: API client matches the API
+        run: |
+          npm run api:generate
+          git diff --exit-code -- openapi.json src/api/schema.d.ts
 
       - name: Lint
         run: npm run lint
@@ -52,10 +66,40 @@ jobs:
       - name: Bundle references no external host
         run: npm run dist:check
 
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          npm ci
+          uv sync --frozen
+
+      - name: Build the UI
+        run: npx vite build
+
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
 
-      - name: Smoke test against vite preview
+      # The global setup seeds a temporary database with the fake adapter and runs
+      # `labhq serve` on it with the built UI (e2e/support/server.ts).
+      - name: End-to-end tests against a seeded labhq
         run: npm run test:e2e
 
       - name: Keep the Playwright report on failure

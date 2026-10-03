@@ -11,6 +11,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 import labhq
+from labhq.api.vocabulary import vocabulary_router
 
 
 @dataclass(frozen=True)
@@ -50,3 +51,4 @@ async def health_get() -> Health:
 
 default_routers = RouterRegistry()
 default_routers.register(health_router, public=True)
+default_routers.register(vocabulary_router)
