@@ -31,6 +31,9 @@ jobs:
           python-version: "3.12"
 
       - name: Build the wheel
+        env:
+          # Onboarding needs no web UI; skips the npm build once the UI is packaged (#68).
+          LABHQ_SKIP_WEB_BUILD: "1"
         run: uv build --wheel
 
       - name: Onboard from the wheel against the fakes
