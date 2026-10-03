@@ -1,0 +1,29 @@
+# User guide
+
+labhq is a self-hosted project orchestrator: one person, many projects, and a team of AI
+agents. Start with the [README](../../README.md) for what it is and how to install it, then
+read the pages below as you need them.
+
+## Get started
+
+- [Onboarding](onboarding.md): one command to a working labhq, with no third-party account.
+- [Docker](docker.md): run labhq with `docker compose up`.
+- [Configuration](configuration.md): every setting and its environment variable.
+
+## Use it
+
+- [Call Center](call-center.md): add the connector to Claude or ChatGPT, the tools, and what
+  the Call Center will and will not do.
+- [Exposure](exposure.md): a public URL for the connector: quick tunnel, Tailscale Funnel or
+  your own domain.
+- [Notifications](notifications.md): ntfy and Telegram.
+- [Discord](discord.md): meetings mirrored to your own Discord server.
+- [Slack](slack.md): meetings mirrored to Slack.
+
+## Stay safe
+
+- [Security](security.md): what agents can reach, the push guard, the recommended sandbox or
+  separate user, approvals, the connector and billing.
+
+A new page in this directory adds its line here; CI fails when a page is missing from this
+index.
