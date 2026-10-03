@@ -1,0 +1,92 @@
+name: Onboard
+
+# `uvx labhq onboard` from the built wheel on fresh runners, against a fake `cloudflared` and a
+# fake ntfy server (tests/onboard/fakes). No real tunnel, ntfy or account is used.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: onboard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  onboard:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Build the wheel
+        run: uv build --wheel
+
+      - name: Onboard from the wheel against the fakes
+        run: |
+          set -euo pipefail
+          wheel="$(ls dist/*.whl)"
+          work="${RUNNER_TEMP}/onboard"
+          fakes="${PWD}/tests/onboard/fakes"
+          mkdir -p "${work}/bin"
+          python="$(uv python find 3.12)"
+          free_port() {
+            "${python}" -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])'
+          }
+
+          # Resolve the wheel's environment now: later runs go through the fake proxy, offline.
+          uvx --refresh-package labhq --from "${wheel}" labhq --version
+          uv run --no-project --python 3.12 --with cryptography "${fakes}/certs.py" "${work}/certs"
+          printf '#!/bin/sh\nexec "%s" "%s" "$@"\n' "${python}" "${fakes}/cloudflared.py" \
+            > "${work}/bin/cloudflared"
+          chmod +x "${work}/bin/cloudflared"
+
+          ntfy_port="$(free_port)"
+          "${python}" "${fakes}/ntfy.py" --port "${ntfy_port}" --log "${work}/ntfy.log" &
+          ntfy=$!
+          trap 'kill "${ntfy}" 2>/dev/null || true' EXIT
+
+          proxy="http://127.0.0.1:$(free_port)"
+          export PATH="${work}/bin:${PATH}"
+          export LABHQ_DATA_DIR="${work}/data"
+          export LABHQ_NOTIFY_NTFY_SERVER="http://127.0.0.1:${ntfy_port}"
+          export LABHQ_ONBOARD_PORT="$(free_port)"
+          export FAKE_TUNNEL_PROXY_PORT="${proxy##*:}"
+          export FAKE_TUNNEL_CERTS="${work}/certs"
+          export HTTPS_PROXY="${proxy}" https_proxy="${proxy}"
+          export NO_PROXY="127.0.0.1,localhost" no_proxy="127.0.0.1,localhost"
+          export SSL_CERT_FILE="${work}/certs/ca.pem"
+          onboard() {
+            uvx --offline --from "${wheel}" labhq onboard --non-interactive --no-serve "$@"
+          }
+
+          test ! -e "${LABHQ_DATA_DIR}"
+          onboard | tee "${work}/first.log"
+          grep -q '^labhq is ready\.$' "${work}/first.log"
+          token="$(cat "${LABHQ_DATA_DIR}/mcp-token")"
+          grep -qF "Connector URL: https://onboard-check.trycloudflare.com/mcp/${token}" "${work}/first.log"
+          test "$(wc -l < "${work}/ntfy.log")" -eq 1
+
+          # A second run keeps the token and repeats the end-to-end check.
+          onboard | tee "${work}/second.log"
+          grep -q '^labhq is ready\.$' "${work}/second.log"
+          test "$(cat "${LABHQ_DATA_DIR}/mcp-token")" = "${token}"
+          test "$(wc -l < "${work}/ntfy.log")" -eq 2
+
+          # A tunnel that does not answer fails, names the step and never says ready.
+          if FAKE_TUNNEL_MODE=silent LABHQ_ONBOARD_VERIFY_ATTEMPTS=1 onboard > "${work}/silent.log" 2>&1; then
+            cat "${work}/silent.log"; exit 1
+          fi
+          grep -q '^error: public URL: ' "${work}/silent.log"
+          ! grep -q 'labhq is ready' "${work}/silent.log"
