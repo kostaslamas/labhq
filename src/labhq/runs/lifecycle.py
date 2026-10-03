@@ -141,6 +141,10 @@ class ActiveRun:
     async def interrupt(self) -> None:
         await self._adapter.interrupt()
 
+    async def note(self, kind: str, payload: dict[str, Any]) -> None:
+        """Record an event the engine raises itself, such as a disabled hook."""
+        await self._record(AdapterEvent(kind=kind, payload=payload))
+
     async def wait(self) -> Run:
         try:
             async for event in self._adapter.events():

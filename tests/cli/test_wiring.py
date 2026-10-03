@@ -4,18 +4,21 @@ from pathlib import Path
 
 import pytest
 from claude_agent_sdk import HookMatcher
+from sqlalchemy import select
 
 from labhq.adapters import FakeScript, default_registry
+from labhq.cli import workspace
 from labhq.cli.context import Context
 from labhq.cli.engine import Engine
 from labhq.cli.fake_worker import WORK_FILE, CommittingFakeAdapter
 from labhq.cli.work import assignment, create_agent, create_project, create_task
-from labhq.cli.workspace import PRE_TOOL_USE, run_hooks
+from labhq.cli.workspace import PRE_TOOL_USE, WARNING_EVENT, run_hooks
 from labhq.clock import FakeClock
 from labhq.db import create_engine, session_factory
 from labhq.db.enums import AgentStatus
-from labhq.db.models import Task
-from labhq.economy import RtkHook
+from labhq.db.models import RunEvent, Task
+from labhq.economy import RtkHook, rtk_hook
+from labhq.economy.rtk import RTK_MISSING
 from labhq.guards import deny_publishing
 from labhq.scheduler import enqueue
 from labhq.settings import Settings
@@ -95,6 +98,28 @@ async def test_a_second_run_on_the_task_reuses_its_worktree(context: Context, re
     assert first.cwd == second.cwd
     # A new commit on the same branch is a new push to approve; the old one stays pending.
     assert len(report.approvals) == 1
+
+
+@pytest.mark.parametrize("rtk_present", [False, True])
+async def test_a_run_without_rtk_records_the_warning_in_its_events(
+    context: Context, repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, rtk_present: bool
+) -> None:
+    search = tmp_path / "rtk-bin"
+    search.mkdir()
+    if rtk_present:
+        (search / "rtk").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+        (search / "rtk").chmod(0o755)
+    monkeypatch.setattr(workspace, "rtk_hook", lambda: rtk_hook(search_path=str(search)))
+    registry = default_registry.copy()
+    registry.register("fake", lambda: CommittingFakeAdapter(FakeScript()), replace=True)
+    await assigned_task(context, repo)
+
+    [run] = (await Engine(context, registry).run_pass()).runs
+
+    async with context.sessions() as db:
+        events = list(await db.scalars(select(RunEvent).where(RunEvent.run_id == run.id)))
+    warnings = [event.payload["code"] for event in events if event.kind == WARNING_EVENT]
+    assert warnings == ([] if rtk_present else [RTK_MISSING])
 
 
 def test_the_push_guard_runs_before_the_rtk_rewrite() -> None:
