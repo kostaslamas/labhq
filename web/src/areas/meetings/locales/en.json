@@ -1,4 +1,21 @@
 {
   "nav": "Meetings",
-  "placeholder": "Agendas, live agent conversations, decisions and action items will appear here."
+  "failed": "Could not load the meetings. Try again in a moment.",
+  "missing": "This meeting does not exist.",
+  "empty": "No meetings yet. A meeting appears here once it is requested.",
+  "not_started": "Not started",
+  "channel": "Mirrored to {name}",
+  "more": "Show more",
+  "agenda": "Agenda",
+  "conversation": "Conversation",
+  "no_messages": "Nobody has spoken yet.",
+  "join_label": "Join the meeting",
+  "join_send": "Send",
+  "join_failed": "The message was not sent. The meeting may be over.",
+  "closed": "This meeting is over, so it takes no more messages.",
+  "decisions": "Decisions",
+  "no_decisions": "No decisions recorded.",
+  "action_items": "Action items",
+  "no_actions": "No action items.",
+  "task": "Task"
 }
