@@ -39,3 +39,6 @@ jobs:
 
       - name: Tests
         run: uv run --frozen pytest -ra
+
+      - name: Limitations guide matches the markers
+        run: uv run --frozen python -m tools.platform_limits
