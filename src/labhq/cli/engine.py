@@ -9,6 +9,7 @@ from labhq.approvals import ApprovalService
 from labhq.cli.context import Context
 from labhq.cli.fake_worker import CommittingFakeAdapter
 from labhq.cli.pushes import request_pushes
+from labhq.cli.statuses import ingest_statuses
 from labhq.cli.workspace import WorkspaceRunService
 from labhq.db.enums import RunStatus
 from labhq.db.models import Approval, Run
@@ -95,6 +96,9 @@ class Engine:
         async with self._context.sessions() as db:
             runs = await db.scalars(select(Run).where(Run.id.in_(finished)).order_by(Run.id))
             report.runs += list(runs)
+        await ingest_statuses(
+            self._context.sessions, self._context.clock, self._context.settings, finished
+        )
         report.approvals += await request_pushes(
             self._context.sessions, self.approvals, self._context.settings, finished
         )
