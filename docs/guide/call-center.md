@@ -46,6 +46,7 @@ can add one is up to each vendor. Consumer Gemini does not accept custom MCP con
 | `brief` | read | Today in a few spoken sentences: finished work, decisions waiting, today's spend |
 | `inbox` | read | What waits for you: approvals (`A12`) and agent questions (`Q7`) |
 | `health` | read | Whether the machines that run the agents are up, and open incidents |
+| `meeting_minutes` | read | A meeting's participants, decisions, action items and cost; the latest one unless you name it |
 | `ask_ceo` | write | A question that needs reading and judgement; returns a ticket at once |
 | `get_reply` | read | The answer for an `ask_ceo` ticket, or "still working" |
 | `answer` | write | Your own words as the answer to an agent's question |
