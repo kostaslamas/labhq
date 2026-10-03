@@ -11,7 +11,7 @@ from tests.adapters.stub_sdk import CLI_PATH
 from tests.callcenter.calls.conftest import Line
 from tests.db.factories import project_agent_task
 
-READS = {"brief", "inbox", "health", "team", "agent_status"}
+READS = {"brief", "inbox", "health", "team", "agent_status", "read_screen"}
 BOUNDED = {"deliver", "interrupt", "answer"}
 
 
