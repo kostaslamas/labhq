@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import timedelta
@@ -20,14 +21,16 @@ ANSWER = "Worker is wiring the login form. Its status is fresh, from a minute ag
 
 
 class SlowFakeAdapter(FakeAdapter):
-    """A fake agent whose turn takes `seconds` of real time before it streams anything."""
+    """A fake agent whose turn takes `seconds` of real time; the test ends it before then."""
 
     def __init__(self, script: FakeScript, seconds: float) -> None:
         super().__init__(script)
         self._seconds = seconds
 
     async def events(self) -> AsyncIterator[AdapterEvent]:
-        await asyncio.sleep(self._seconds)
+        # Nothing sets this event: the turn lasts the full time unless it is cancelled.
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(asyncio.Event().wait(), self._seconds)
         async for event in super().events():
             yield event
 

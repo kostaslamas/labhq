@@ -1,6 +1,5 @@
 """A call is a window of time: inside it the agent resumes its session, after it a new call."""
 
-import asyncio
 from datetime import timedelta
 
 from sqlalchemy import func, select, update
@@ -92,5 +91,5 @@ async def _until_running(line: Line, count: int) -> None:
             )
         if running == count:
             return
-        await asyncio.sleep(0)
+        await line.clock.sleep(0)
     raise AssertionError(f"expected {count} running Call Center turns")
