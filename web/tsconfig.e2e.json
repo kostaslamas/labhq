@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.node.json",
+  "include": ["e2e/**/*.ts"],
+  "exclude": [],
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.e2e.tsbuildinfo",
+    // Spec bodies passed to page.evaluate run in the browser.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"]
+  }
+}

@@ -1,0 +1,60 @@
+/* Fonts are self-hosted through @fontsource: the bundle makes no request to a font CDN. */
+@import '@fontsource/oxanium/400.css';
+@import '@fontsource/oxanium/500.css';
+@import '@fontsource/oxanium/600.css';
+@import '@fontsource/oxanium/700.css';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark-first (plan §8.3). Every colour, font and surface is a theme token. */
+@theme {
+  --font-sans: 'Oxanium', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  --color-background: oklch(0.15 0.025 280);
+  --color-foreground: oklch(0.95 0.01 280);
+  --color-muted: oklch(0.72 0.03 280);
+  --color-line: oklch(1 0 0 / 0.1);
+  --color-surface: oklch(0.22 0.035 280 / 0.55);
+  --color-surface-raised: oklch(1 0 0 / 0.07);
+
+  --color-accent: oklch(0.62 0.2 282);
+  --color-accent-foreground: oklch(0.98 0.01 280);
+  --color-accent-purple: oklch(0.6 0.22 305);
+
+  --color-status-done: oklch(0.75 0.16 155);
+  --color-status-working: oklch(0.72 0.15 250);
+  --color-status-waiting: oklch(0.8 0.15 80);
+  --color-status-blocked: oklch(0.72 0.17 40);
+  --color-status-failed: oklch(0.68 0.21 22);
+  --color-status-idle: oklch(0.7 0.02 280);
+
+  --blur-glass: 18px;
+}
+
+@utility glass {
+  background-color: var(--color-surface);
+  backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    min-height: 100vh;
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(60rem 40rem at 10% -10%, oklch(0.62 0.2 282 / 0.18), transparent 60%),
+      radial-gradient(50rem 35rem at 110% 110%, oklch(0.6 0.22 305 / 0.14), transparent 60%);
+    background-attachment: fixed;
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+}
