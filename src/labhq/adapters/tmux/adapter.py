@@ -1,7 +1,8 @@
 """The `tmux` adapter: any CLI agent in a session of labhq's private tmux server (ADR 0003).
 
 One run is one session, named after the run, and one turn. The adapter polls the pane:
-changes become `screen` events, and the turn ends on the agent's own signal (or quiescence,
+changes become `screen` events, new lines matching the kind's `reply_pattern` also become
+`assistant` events, and the turn ends on the agent's own signal (or quiescence,
 or its exit). Before the session closes it reads what the engine needs afterwards: the
 statusline document, the screen after the agent's `usage_command`, and the final screen.
 It never interprets usage itself; `labhq.usage` does, after the run.
@@ -13,6 +14,7 @@ tries to resume a conversation its CLI does not have.
 import asyncio
 import json
 import os
+import re
 import shlex
 import shutil
 import uuid
@@ -60,6 +62,16 @@ class TmuxAgentConfig(BaseModel):
 
 def guard_hook_command(python: str) -> str:
     return shlex.join([python, "-m", "labhq.guards.hook_command"])
+
+
+def replies(kind: AgentKind, lines: list[str], seen: set[str]) -> list[str]:
+    """New lines that are the agent's own output; a redrawn line is reported once."""
+    if kind.reply_pattern is None:
+        return []
+    pattern = re.compile(kind.reply_pattern)
+    found = [line for line in dict.fromkeys(lines) if line not in seen and pattern.search(line)]
+    seen.update(found)
+    return found
 
 
 def split_session(stored: str | None) -> tuple[str | None, str | None]:
@@ -143,12 +155,16 @@ class TmuxAdapter:
         watch = Watch(screen="", last_change_at=self._clock.now())
         quiet = timedelta(seconds=config.quiescence_seconds)
         settle = timedelta(seconds=config.interrupt_settle_seconds)
+        replied: set[str] = set()
         while True:
             await self._clock.sleep(config.poll_seconds)
             screen = await asyncio.to_thread(self._server.capture, name)
             now = self._clock.now()
             if screen != watch.screen:
-                yield AdapterEvent("screen", {"lines": screen_delta(watch.screen, screen)})
+                lines = screen_delta(watch.screen, screen)
+                yield AdapterEvent("screen", {"lines": lines})
+                for line in replies(kind, lines, replied):
+                    yield AdapterEvent("assistant", {"text": line})
                 watch.screen, watch.last_change_at, watch.changed = screen, now, True
             watch.signal = self._read(SIGNAL_FILE)
             state = await asyncio.to_thread(self._server.pane_state, name)

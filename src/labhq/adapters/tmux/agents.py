@@ -76,6 +76,9 @@ class AgentKind:
     source: str
     session_key: str | None = None
     turn_end_pattern: str | None = None
+    # A screen line that is the agent's own output (a reply or a tool call); each new one is
+    # reported as an `assistant` event. None: the agent's lines cannot be told apart.
+    reply_pattern: str | None = None
 
 
 def signal_command(context: LaunchContext, channel: str, path: Path) -> list[str]:
@@ -112,13 +115,56 @@ def claude_settings(context: LaunchContext) -> list[str]:
     return ["--settings", json.dumps(settings)]
 
 
-def codex_notify(context: LaunchContext) -> list[str]:
-    # Codex appends the turn's JSON payload as the last argument of the notify program.
-    program = signal_command(context, "turn", context.signal_path)
-    return ["-c", f"notify={json.dumps(program)}"]
+def toml_value(value: object) -> str:
+    """A TOML inline value, as Codex parses the right side of `-c key=value`."""
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, str):
+        # A JSON string without ASCII escapes is a TOML basic string.
+        return json.dumps(value, ensure_ascii=False)
+    if isinstance(value, list):
+        return "[" + ", ".join(toml_value(item) for item in value) + "]"
+    if isinstance(value, dict):
+        pairs = (f"{key} = {toml_value(item)}" for key, item in value.items())
+        return "{" + ", ".join(pairs) + "}"
+    raise TypeError(f"no TOML form for {type(value).__name__}")
 
 
-LAUNCHES: dict[str, Launch] = {"claude_settings": claude_settings, "codex_notify": codex_notify}
+def _codex_hook(command: str, matcher: str | None = None) -> list[dict[str, object]]:
+    group: dict[str, object] = {"hooks": [{"type": "command", "command": command}]}
+    return [{"matcher": matcher, **group}] if matcher is not None else [group]
+
+
+def codex_config(context: LaunchContext) -> list[str]:
+    """Session-only `-c` overrides; the owner's `~/.codex/config.toml` is never edited.
+
+    openai/codex main (86a54b05): codex-rs/utils/cli/src/config_override.rs parses each value
+    as TOML and applies dotted keys; codex-rs/config/src/hook_config.rs reads `hooks.<Event>`
+    matcher groups from any config layer, the session flags included; codex-rs/hooks/src/
+    events/stop.rs and pre_tool_use.rs run command hooks with the payload on stdin, and exit
+    code 2 with a reason on stderr blocks the tool call. Hooks from session flags are
+    untrusted unless `--dangerously-bypass-hook-trust` is given, so the templates pass it.
+    """
+    turn = _shell(signal_command(context, "turn", context.signal_path))
+    overrides: dict[str, object] = {
+        # Stable and on by default (codex-rs/features/src/lib.rs); pinned against a config
+        # that turns it off, since the turn signal depends on it.
+        "features.hooks": True,
+        # An update prompt at start would block the first turn.
+        "check_for_update_on_startup": False,
+        # The run's cwd is labhq's worktree; never stop on "resume in which directory?".
+        "tui.resume_cwd": "current",
+        # Stop replaces the legacy `notify`, which codex-rs/hooks/src/legacy_notify.rs marks
+        # for removal; its payload carries `session_id`, the id `codex resume` takes.
+        "hooks.Stop": _codex_hook(turn),
+        "hooks.PreToolUse": _codex_hook(context.guard_hook, matcher="Bash"),
+    }
+    return [
+        word for key, value in overrides.items() for word in ("-c", f"{key}={toml_value(value)}")
+    ]
+
+
+LAUNCHES: dict[str, Launch] = {"claude_settings": claude_settings, "codex_config": codex_config}
 
 
 class UnknownAgentKindError(LookupError):
@@ -173,29 +219,50 @@ CLAUDE_CODE = AgentKind(
     ),
 )
 
+# Paths below are in openai/codex at main 86a54b05, checked 2026-10-03. The contract runs
+# against tests/adapters/fake_codex.py; docs/checks/codex-adapter.md runs it for real.
+CODEX_FLAGS = (
+    # codex-rs/utils/cli/src/shared_options.rs: no approvals, no sandbox; labhq's worktree,
+    # push URL and environment are the boundary instead (ADR 0003).
+    "--dangerously-bypass-approvals-and-sandbox",
+    # Same file: run the session-flag hooks of `codex_config` without persisted trust.
+    "--dangerously-bypass-hook-trust",
+    # codex-rs/tui/src/cli.rs: inline mode keeps the transcript in the pane's scrollback.
+    "--no-alt-screen",
+)
+
 CODEX = AgentKind(
     name="codex",
-    start=("codex", "--dangerously-bypass-approvals-and-sandbox", "{prompt}"),
-    resume=(
-        "codex",
-        "resume",
-        "--dangerously-bypass-approvals-and-sandbox",
-        "{session_id}",
-        "{prompt}",
-    ),
+    # codex-rs/tui/src/cli.rs: `codex [OPTIONS] [PROMPT]`; `--` keeps a prompt that starts
+    # with a dash a prompt.
+    start=("codex", *CODEX_FLAGS, "--", "{prompt}"),
+    # codex-rs/cli/src/main.rs `ResumeCommand`: `codex resume [OPTIONS] [SESSION_ID]
+    # [PROMPT]`, taking every interactive flag; root `-c` overrides are prepended to it.
+    resume=("codex", "resume", *CODEX_FLAGS, "--", "{session_id}", "{prompt}"),
+    # codex-rs/hooks/schema/generated/stop.command.input.schema.json: `session_id`, the
+    # thread id that `codex resume` takes; Codex assigns it, so it is read from the signal.
     session_id=SessionIdSource.SIGNAL,
-    session_key="thread-id",
+    session_key="session_id",
+    # codex-rs/tui chatwidget snapshots: "• Working (0s • esc to interrupt)".
     interrupt_keys=("Escape",),
+    # The `Stop` hook in `codex_config` runs the turn signal when a turn completes.
     turn_end=TurnEnd.SIGNAL,
+    # codex-rs/tui/src/status/snapshots: `/status` prints the 5h, weekly or monthly limit as
+    # "N% left"; no structured source reaches labhq, so the extractor reads the screen.
     usage_source=UsageSource.SCREEN,
-    launch="codex_notify",
-    hooks=None,
     usage_command="/status",
+    launch="codex_config",
+    # codex-rs/core/src/tools/hook_names.rs: shell calls reach `PreToolUse` as tool `Bash`
+    # with `{"command": ...}`, the payload `labhq.guards.hook_command` reads.
+    hooks="PreToolUse command hook in -c hooks.PreToolUse",
+    # codex-rs/tui chatwidget snapshots: replies and tool calls start with "• "; the
+    # "• Working (Ns • esc to interrupt)" status line redraws every second and is not one.
+    reply_pattern=r"^• (?!Working \()",
     source=(
-        "openai/codex main: codex-rs/cli/src/main.rs (`codex [OPTIONS] [PROMPT]`, "
-        "`codex resume <SESSION_ID>`), codex-rs/utils/cli/src/config_override.rs (`-c key=value`), "
-        "codex-rs/core config `notify` (agent-turn-complete payload with `thread-id`); "
-        "checked 2026-10-03"
+        "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "
+        "codex-rs/utils/cli/src/{shared_options,config_override}.rs, "
+        "codex-rs/config/src/hook_config.rs, codex-rs/hooks (Stop, PreToolUse, exit code 2), "
+        "codex-rs/tui/src/status (/status); checked 2026-10-03"
     ),
 )
 

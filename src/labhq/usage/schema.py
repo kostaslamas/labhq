@@ -19,6 +19,10 @@ from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, ValidationErro
 class UsageUnit(StrEnum):
     USD = "usd"
     PERCENT = "percent"
+    # The share of a plan window still available, as Codex prints it ("55% left"). The
+    # extractor copies it verbatim; `check_extraction`, not the model, turns it into the
+    # share used, so the plan cap reads one unit.
+    PERCENT_LEFT = "percent_left"
     TOKENS = "tokens"
     REQUESTS = "requests"
 
@@ -79,7 +83,15 @@ def check_extraction(
                 raise ExtractionError(f"{name} {number} does not appear in the captured text")
         _check_reset(reading.resets_at, captured_at, max_reset)
     _check_reset(extraction.limit_resets_at, captured_at, max_reset)
-    return extraction
+    return extraction.model_copy(update={"readings": [_as_used(r) for r in extraction.readings]})
+
+
+def _as_used(reading: Reading) -> Reading:
+    if reading.unit is not UsageUnit.PERCENT_LEFT:
+        return reading
+    if reading.value > 100:
+        raise ExtractionError(f"{reading.value}% left is more than the whole window")
+    return reading.model_copy(update={"unit": UsageUnit.PERCENT, "value": 100 - reading.value})
 
 
 def _check_reset(resets_at: datetime | None, captured_at: datetime, max_reset: timedelta) -> None:

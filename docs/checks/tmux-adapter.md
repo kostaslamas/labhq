@@ -15,17 +15,18 @@ For each of Claude Code, Codex CLI, Gemini CLI and Aider:
 | One task | A run on the agent kind ends `succeeded`, and the task branch has the agent's commit |
 | Resume | A second run on the same task starts with the kind's `resume` template, in the same worktree, and the agent remembers the first turn |
 | Usage | One usage reading is recorded: `usage_readings` rows with a value, or a `cost_events` row from a USD reading. For Claude Code it comes from the statusline, with no extraction run |
-| Push guard | Asked to `git push`, the agent fails: Claude Code's hook denies it; the others fail at the disabled push URL |
+| Push guard | Asked to `git push`, the agent fails: the hook of Claude Code or Codex CLI denies it; the others fail at the disabled push URL |
 
 ## Weaker guarantees (ADR 0003)
 
-- Only Claude Code installs the push guard hook (`PreToolUse` in `--settings`, through
-  `python -m labhq.guards.hook_command`). Codex CLI and Aider run no external hook command
-  labhq can pass, and Gemini CLI reads hooks only from settings files, which labhq does not
-  write. Those agents rely on the other two layers: the worktree's push URL points nowhere,
-  and the worker environment holds no git credentials.
-- A run's status comes from the turn-end signal and the process exit. Claude Code signals
-  through its `Stop` hook, Codex CLI through `notify`, Aider by exiting after `--message`;
+- Claude Code and Codex CLI install the push guard hook (`PreToolUse`, through
+  `python -m labhq.guards.hook_command`; Claude Code in `--settings`, Codex in `-c hooks.*`,
+  see docs/checks/codex-adapter.md). Aider runs no external hook command labhq can pass,
+  and Gemini CLI reads hooks only from settings files, which labhq does not write. Those
+  agents rely on the other two layers: the worktree's push URL points nowhere, and the
+  worker environment holds no git credentials.
+- A run's status comes from the turn-end signal and the process exit. Claude Code and Codex
+  CLI signal through their `Stop` hooks, Aider by exiting after `--message`;
   Gemini CLI's turn ends when its screen is quiet for `quiescence_seconds`.
 - The tmux adapter does not run on native Windows.
 
@@ -41,8 +42,9 @@ For each of Claude Code, Codex CLI, Gemini CLI and Aider:
 ## Run it
 
 Resume, per agent kind, through the adapter contract (a temporary directory, two runs, the
-second resumes the first session; `interrupt` is left out because a tmux run reports
-screens, not assistant messages):
+second resumes the first session; `interrupt` is left out for kinds without a
+`reply_pattern`, because their screens show no assistant messages to interrupt on. Codex has
+one; its full contract run is in docs/checks/codex-adapter.md):
 
 ```sh
 uv sync
