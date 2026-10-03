@@ -10,6 +10,7 @@ from labhq.db.models.callcenter import (
     Notification,
     StatusUpdate,
 )
+from labhq.db.models.chat import ChatBinding
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
 from labhq.db.models.runs import AgentTaskSession, CostEvent, Run, RunEvent, WakeupRequest
 from labhq.db.models.usage import UsageReading
@@ -23,6 +24,7 @@ __all__ = [
     "BudgetWarning",
     "Call",
     "CallRequest",
+    "ChatBinding",
     "Comment",
     "CostEvent",
     "Delivery",
