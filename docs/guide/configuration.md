@@ -102,6 +102,16 @@ Slack app credentials and placement, read from `LABHQ_SLACK_*` variables.
 | `LABHQ_SLACK_MAX_ATTEMPTS` | `int` | `5` |  |
 | `LABHQ_SLACK_RECONNECT_SECONDS` | `float` | `5.0` |  |
 
+## `labhq.economy.graphify.GraphifySettings`
+
+A graphify index per project, so managers and workers query code structure instead of reading files (plan §7.1). Like the `rtk` hook it is optional and must earn its place: the A/B in `docs/checks/graphify-ab.md` decides whether agents keep it on.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_GRAPHIFY_REFRESH_SECONDS` | `float` | `3600.0` | An index older than this is rebuilt even when HEAD has not moved (uncommitted work). |
+| `LABHQ_GRAPHIFY_BUILD_TIMEOUT_SECONDS` | `float` | `600.0` |  |
+| `LABHQ_GRAPHIFY_QUERY_BUDGET_TOKENS` | `int` | `2000` | graphify's own default; caps what one query adds to the agent's context. |
+
 ## `labhq.health.collectors.registry.CollectionSettings`
 
 Collectors per host kind, as a registry: `kind -> collector`. A new kind is a registration.
@@ -219,6 +229,7 @@ How often each background duty of the always-on program runs, from `LABHQ_PROGRA
 | `LABHQ_PROGRAM_STATUS_INTERVAL_SECONDS` | `float` | `30.0` | Status files change while a run is live, so a question surfaces before the run ends. |
 | `LABHQ_PROGRAM_LIVE_INTERVAL_SECONDS` | `float` | `1.0` | How often the change feed reads each live topic's watermark; the UI lags at most this. |
 | `LABHQ_PROGRAM_HEALTH_INTERVAL_SECONDS` | `float` | `300.0` | Plan §2.2: the collector samples every host "every few minutes". |
+| `LABHQ_PROGRAM_GRAPHIFY_INTERVAL_SECONDS` | `float` | `60.0` | How often project graphify indexes are checked; a new project waits at most this long. |
 | `LABHQ_PROGRAM_SHUTDOWN_GRACE_SECONDS` | `float` | `10.0` | Time the server gets to stop before it is cancelled on shutdown. |
 
 ## `labhq.scheduler.settings.SchedulerSettings`
