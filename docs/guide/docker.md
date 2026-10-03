@@ -91,10 +91,15 @@ Changing `CONTAINER_UID` or `CONTAINER_GID` rebuilds the image:
 
 ### Notifications
 
-ntfy is the default. Pick a long random topic, put it in `.env` and subscribe to the same
-topic in the ntfy app:
+Web Push is the default. Install the web app on your phone from your public address and enable
+notifications in it, see [Notifications](notifications.md). The key pair it signs with lives in
+the data volume.
+
+For ntfy, set `LABHQ_NOTIFY_KIND=ntfy`, pick a long random topic, put it in `.env` and subscribe
+to the same topic in the ntfy app:
 
 ```sh
+LABHQ_NOTIFY_KIND=ntfy
 LABHQ_NOTIFY_NTFY_TOPIC=labhq-k3v9x2q7m1
 ```
 

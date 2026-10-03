@@ -48,7 +48,7 @@ uvx labhq onboard
 ```
 
 That one command creates the database, issues the connector token, opens a public URL
-through a Cloudflare quick tunnel, sends a test notification through ntfy and checks the
+through a Cloudflare quick tunnel, prepares notifications and checks the
 whole path before it says `labhq is ready.` It needs no account with any third party. See
 [Onboarding](docs/guide/onboarding.md).
 
@@ -80,7 +80,8 @@ then run the same `uvx` command. On native Windows only the SDK adapter runs (no
 ## Quickstart
 
 1. **Onboard.** Run `uvx labhq onboard`. At the end it prints a connector URL with a QR code,
-   and an ntfy QR code. Subscribe to notifications in the ntfy app from the second one.
+   and the next step for notifications: open the labhq web app on your phone (on iOS, add it to
+   the Home Screen first) and enable notifications there.
 2. **Add the connector.** In Claude or ChatGPT, add a custom connector and paste the connector
    URL (or scan its QR code on your phone). Leave the authentication fields empty: the secret
    path in the URL is the credential. See [Call Center](docs/guide/call-center.md).
