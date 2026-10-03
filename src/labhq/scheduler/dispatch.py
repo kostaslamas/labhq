@@ -1,0 +1,134 @@
+"""Turn one pending wakeup into a queued run that holds its task, or leave it waiting.
+
+Everything here happens in one transaction: the run is queued, the task checked out and
+the wakeup marked dispatched together, or not at all. A wakeup that cannot start yet
+(agent inactive or at its concurrency limit, task held by another run) stays pending
+and is tried again on the next tick. One the budget stops is refused.
+"""
+
+from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+
+from sqlalchemy import func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from labhq.budgets import BudgetSettings, Decision, check
+from labhq.clock import Clock
+from labhq.db.enums import AgentStatus, RunStatus, WakeupStatus
+from labhq.db.models import Agent, Run, Task, WakeupRequest
+from labhq.scheduler.checkout import checkout
+from labhq.scheduler.reaper import LIVE_STATUSES
+from labhq.scheduler.settings import AgentLimits, SchedulerSettings
+from labhq.scheduler.sources import SourceRegistry
+
+
+class Verdict(StrEnum):
+    QUEUED = "queued"
+    AGENT_INACTIVE = "agent_inactive"
+    AT_CONCURRENCY = "at_concurrency"
+    TASK_HELD = "task_held"
+    BUDGET_STOP = "budget_stop"
+    # Another dispatcher took or refused the wakeup first.
+    GONE = "gone"
+
+
+@dataclass(frozen=True)
+class Dispatch:
+    verdict: Verdict
+    run_id: int | None = None
+    agent_id: int | None = None
+    task_id: int | None = None
+    prompt: str = ""
+    timeout_seconds: int = 0
+
+
+async def pending_wakeup_ids(session: AsyncSession) -> list[int]:
+    """Pending wakeups in start order: higher task priority first, then oldest first."""
+    rows = await session.scalars(
+        select(WakeupRequest.id)
+        .outerjoin(Task, Task.id == WakeupRequest.task_id)
+        .where(WakeupRequest.status == WakeupStatus.PENDING)
+        .order_by(func.coalesce(Task.priority, 0).desc(), WakeupRequest.id)
+    )
+    return list(rows)
+
+
+async def dispatch_one(
+    session: AsyncSession,
+    wakeup_id: int,
+    clock: Clock,
+    *,
+    sources: SourceRegistry,
+    settings: SchedulerSettings,
+    budget_settings: BudgetSettings | None,
+) -> Dispatch:
+    """Try to queue a run for `wakeup_id`. Commits on success and on refusal."""
+    request = await session.get_one(WakeupRequest, wakeup_id, populate_existing=True)
+    if request.status is not WakeupStatus.PENDING:
+        return Dispatch(Verdict.GONE)
+    agent = await session.get_one(Agent, request.agent_id)
+    if agent.status is not AgentStatus.ACTIVE:
+        return Dispatch(Verdict.AGENT_INACTIVE)
+    limits = AgentLimits.from_config(agent.config, settings)
+    if await _live_runs(session, agent.id) >= limits.max_concurrency:
+        return Dispatch(Verdict.AT_CONCURRENCY)
+
+    # Plan §7 rule 3: checked at enqueue and again here, since spend moves in between.
+    budget = await check(session, agent.id, clock, budget_settings)
+    now = clock.now()
+    if budget.decision is Decision.STOP:
+        request.status = WakeupStatus.REFUSED
+        request.updated_at = now
+        await session.commit()
+        return Dispatch(Verdict.BUDGET_STOP)
+
+    run = Run(
+        agent_id=agent.id,
+        task_id=request.task_id,
+        adapter=agent.adapter,
+        status=RunStatus.QUEUED,
+        created_at=now,
+    )
+    session.add(run)
+    await session.flush()
+    if request.task_id is not None and not await checkout(session, request.task_id, run.id):
+        await session.rollback()
+        return Dispatch(Verdict.TASK_HELD)
+    if not await _mark_dispatched(session, wakeup_id, run.id, now):
+        await session.rollback()
+        return Dispatch(Verdict.GONE)
+    await session.commit()
+
+    # Read after the commit, so wakeups merged up to now are in the brief.
+    await session.refresh(request)
+    task = await session.get(Task, request.task_id) if request.task_id is not None else None
+    return Dispatch(
+        Verdict.QUEUED,
+        run_id=run.id,
+        agent_id=agent.id,
+        task_id=request.task_id,
+        prompt=sources.handler(request.source).prompt(request, task),
+        timeout_seconds=limits.timeout_seconds,
+    )
+
+
+async def _live_runs(session: AsyncSession, agent_id: int) -> int:
+    count = await session.scalar(
+        select(func.count())
+        .select_from(Run)
+        .where(Run.agent_id == agent_id, Run.status.in_(LIVE_STATUSES))
+    )
+    return count or 0
+
+
+async def _mark_dispatched(
+    session: AsyncSession, wakeup_id: int, run_id: int, now: datetime
+) -> bool:
+    result = await session.execute(
+        update(WakeupRequest)
+        .where(WakeupRequest.id == wakeup_id, WakeupRequest.status == WakeupStatus.PENDING)
+        .values(status=WakeupStatus.DISPATCHED, run_id=run_id, updated_at=now)
+        .execution_options(synchronize_session=False)
+    )
+    return bool(result.rowcount)  # type: ignore[attr-defined]

@@ -56,24 +56,24 @@ class RunService:
         prompt: str,
         cwd: Path | None = None,
         hooks: dict[str, Any] | None = None,
+        run_id: int | None = None,
     ) -> "ActiveRun":
+        """Start a run. `run_id` adopts a queued run instead of creating one.
+
+        The scheduler needs the run id before the adapter starts, to take the task's
+        checkout with it; it queues the run, checks out, then hands the id here.
+        """
         db = self._sessions()
         try:
             agent = await db.get_one(Agent, agent_id)
             task = await db.get_one(Task, task_id) if task_id is not None else None
             stored = await _stored_session(db, agent, task_id)
             now = self._clock.now()
-            run = Run(
-                agent_id=agent.id,
-                task_id=task_id,
-                adapter=agent.adapter,
-                status=RunStatus.RUNNING,
-                session_id_before=stored.session_id if stored else None,
-                created_at=now,
-                started_at=now,
-                heartbeat_at=now,
-            )
-            db.add(run)
+            run = await _queued_run(db, run_id, agent_id, task_id, now)
+            run.adapter = agent.adapter
+            run.status = RunStatus.RUNNING
+            run.session_id_before = stored.session_id if stored else None
+            run.started_at = run.heartbeat_at = now
             await db.commit()
             if cwd is None and stored is not None and stored.cwd:
                 # Sessions are stored per working directory; resume needs the same one.
@@ -101,9 +101,10 @@ class RunService:
         prompt: str,
         cwd: Path | None = None,
         hooks: dict[str, Any] | None = None,
+        run_id: int | None = None,
     ) -> Run:
         active = await self.start(
-            agent_id=agent_id, task_id=task_id, prompt=prompt, cwd=cwd, hooks=hooks
+            agent_id=agent_id, task_id=task_id, prompt=prompt, cwd=cwd, hooks=hooks, run_id=run_id
         )
         return await active.wait()
 
@@ -233,6 +234,19 @@ class ActiveRun:
         row.session_id = session_id
         row.cwd = cwd
         row.updated_at = now
+
+
+async def _queued_run(
+    db: AsyncSession, run_id: int | None, agent_id: int, task_id: int | None, now: datetime
+) -> Run:
+    if run_id is None:
+        run = Run(agent_id=agent_id, task_id=task_id, adapter="", created_at=now)
+        db.add(run)
+        return run
+    run = await db.get_one(Run, run_id)
+    if run.status is not RunStatus.QUEUED or (run.agent_id, run.task_id) != (agent_id, task_id):
+        raise ValueError(f"run {run_id} is not a queued run of this agent and task")
+    return run
 
 
 async def _stored_session(
