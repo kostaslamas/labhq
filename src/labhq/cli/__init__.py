@@ -13,6 +13,7 @@ from labhq.cli.mcp import mcp_app
 from labhq.cli.notify import notify_app
 from labhq.cli.onboard import onboard
 from labhq.cli.org import org_app
+from labhq.cli.ready import ready
 from labhq.cli.rules import rules_app
 from labhq.cli.running import run
 from labhq.cli.serve import serve
@@ -35,6 +36,7 @@ app.add_typer(rules_app, name="rules")
 app.command()(demo)
 app.command()(serve)
 app.command()(onboard)
+app.command()(ready)
 
 
 def _print_version(value: bool) -> None:

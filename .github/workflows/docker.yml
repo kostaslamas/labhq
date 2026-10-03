@@ -1,0 +1,102 @@
+name: Docker
+
+# `docker compose up` from a clean checkout (#69): the image builds, the container turns
+# healthy through `labhq ready`, runs as a non-root user, publishes on 127.0.0.1 only and
+# answers MCP `tools/list` with its token. Nothing is pushed to a registry.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - compose.yaml
+      - .env.example
+      - pyproject.toml
+      - uv.lock
+      - src/**
+      - migrations/**
+      - web/**
+      - tools/build_web.py
+      - tests/docker/**
+      - .github/workflows/docker.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose-up:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure from .env.example
+        run: |
+          set -euo pipefail
+          projects="${RUNNER_TEMP}/projects"
+          mkdir -p "${projects}"
+          git init --quiet "${projects}/site"
+          sed -e "s|^PROJECTS_DIR=.*|PROJECTS_DIR=${projects}|" \
+            -e "s|^CONTAINER_UID=.*|CONTAINER_UID=$(id -u)|" \
+            -e "s|^CONTAINER_GID=.*|CONTAINER_GID=$(id -g)|" \
+            .env.example > .env
+          docker compose config --quiet
+
+      - name: Build the image
+        run: docker compose build
+
+      - name: docker compose up waits for healthy
+        run: docker compose up --detach --wait --wait-timeout 240
+
+      - name: The container is healthy, non-root and published on loopback only
+        run: |
+          set -euo pipefail
+          container="$(docker compose ps --quiet labhq)"
+          health="$(docker inspect --format '{{.State.Health.Status}}' "${container}")"
+          echo "health: ${health}"
+          test "${health}" = healthy
+          uid="$(docker compose exec -T labhq id -u)"
+          echo "uid: ${uid}"
+          test "${uid}" != 0
+          bindings="$(docker inspect --format '{{json .HostConfig.PortBindings}}' "${container}")"
+          echo "port bindings: ${bindings}"
+          test "$(docker compose port labhq 8787)" = "127.0.0.1:8787"
+          ! echo "${bindings}" | grep -Eq '"HostIp":"(0\.0\.0\.0|::|)"'
+          curl --fail --silent --show-error http://127.0.0.1:8787/api/health
+          curl --fail --silent --show-error http://127.0.0.1:8787/ | grep -q '<div id="app">'
+
+      - name: The pinned binaries are in the image
+        run: |
+          set -euo pipefail
+          docker compose exec -T labhq sh -c 'claude --version && cloudflared --version && git --version && tmux -V'
+          docker compose exec -T labhq sh -c 'test "${LABHQ_CLI_PATH}" = "$(command -v claude)"'
+          docker compose exec -T labhq sh -c '! command -v node'
+          docker compose exec -T labhq git -C /projects/site status --short
+
+      # ADR 0001: with ANTHROPIC_API_KEY left out of .env, the container has no key at all.
+      - name: Variables left out of .env stay unset
+        run: docker compose exec -T labhq sh -c 'test -z "${ANTHROPIC_API_KEY+set}" && test -z "${LABHQ_NOTIFY_KIND+set}"'
+
+      - name: labhq ready passes inside the container
+        run: docker compose exec -T labhq labhq ready
+
+      - name: The MCP endpoint answers tools/list with the token
+        run: |
+          set -euo pipefail
+          token="$(docker compose exec -T labhq labhq mcp token)"
+          echo "::add-mask::${token}"
+          docker compose exec -T -e MCP_TOKEN="${token}" labhq python - < tests/docker/mcp_tools_list.py
+
+      - name: Logs
+        if: always()
+        run: docker compose logs --no-color
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes
