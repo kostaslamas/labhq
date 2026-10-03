@@ -13,12 +13,14 @@ from labhq.db.enums import MeetingStatus
 from labhq.db.models import Meeting, Project
 from labhq.meetings import (
     MeetingError,
+    MeetingListeners,
     MeetingNotFoundError,
     MeetingRunner,
     MeetingService,
     MinutesView,
     read_minutes,
 )
+from labhq.meetings.channels.meeting_posts import MeetingMirror
 from labhq.money import format_micros
 from labhq.runs import RunService
 from labhq.work import find_project
@@ -30,11 +32,15 @@ LIST_LIMIT = 20
 
 def _service(context: Context) -> MeetingService:
     approvals = ApprovalService(context.sessions, clock=context.clock)
+    # The meeting is mirrored to chat through the outbox, which `labhq serve` sends.
+    listeners = MeetingListeners()
+    MeetingMirror(context.sessions, context.clock).install(listeners)
     # Turns run each agent through its own adapter, outside any task checkout.
     runner = MeetingRunner(
         context.sessions,
         clock=context.clock,
         runs=RunService(context.sessions, clock=context.clock),
+        listeners=listeners,
     )
     return MeetingService(context.sessions, clock=context.clock, approvals=approvals, runner=runner)
 

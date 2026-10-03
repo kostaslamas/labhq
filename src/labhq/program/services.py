@@ -12,6 +12,7 @@ from labhq.economy.graphify import refresh_loop
 from labhq.health.monitor import health_step
 from labhq.it import it_step
 from labhq.live import live_feed
+from labhq.meetings.channels.loop import chat_step
 from labhq.notify import Dispatcher
 from labhq.program.loops import LoopRegistry, Step
 from labhq.scheduler.reaper import LIVE_STATUSES
@@ -59,3 +60,4 @@ default_loops.register("live", "live_interval_seconds", live_feed)
 default_loops.register("health", "health_interval_seconds", health_step)
 default_loops.register("graphify", "graphify_interval_seconds", refresh_loop)
 default_loops.register("it", "health_interval_seconds", it_step)
+default_loops.register("chat", "chat_interval_seconds", chat_step)
