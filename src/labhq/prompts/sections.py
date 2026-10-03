@@ -1,6 +1,7 @@
 """The built-in sections: the role instruction first, then the output style for its reader."""
 
 from labhq.db.models import Agent, Task
+from labhq.economy.graphify import GRAPHIFY_POSITION, GRAPHIFY_SECTION, default_section
 from labhq.economy.style import StyleRegistry, styled_system_prompt
 from labhq.economy.style import default_registry as default_styles
 from labhq.prompts.registry import PromptRegistry, SectionBuilder
@@ -37,6 +38,7 @@ def builtin_registry(
         output_style_section(styles if styles is not None else default_styles()),
         position=OUTPUT_STYLE_POSITION,
     )
+    registry.register(GRAPHIFY_SECTION, default_section, position=GRAPHIFY_POSITION)
     return registry
 
 
