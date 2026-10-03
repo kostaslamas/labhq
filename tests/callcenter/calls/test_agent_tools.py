@@ -44,12 +44,12 @@ async def test_the_claude_adapter_serves_them_in_process_with_no_builtin_tools(
     assert sorted(options.allowed_tools) == sorted(f"mcp__labhq__{name}" for name in tools)
 
 
-async def test_the_agent_starts_on_the_sdk_adapter_and_moving_it_is_configuration(
+async def test_the_agent_starts_in_tmux_and_moving_it_is_configuration(
     line: Line,
 ) -> None:
     async with line.sessions() as db:
         agent = await call_center_agent(db, line.clock, CallAgentSettings())
-        assert agent.adapter == "claude"
+        assert (agent.adapter, agent.config["agent"]) == ("tmux", "claude-code")
         # The row is the configuration: pointing it at another adapter is the whole move.
         await db.execute(update(Agent).where(Agent.role == ROLE).values(adapter="fake"))
         await db.commit()

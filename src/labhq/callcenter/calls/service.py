@@ -27,7 +27,7 @@ from labhq.callcenter.calls.bounds import Interrupter, NoInterrupter
 from labhq.callcenter.calls.settings import CallAgentSettings, get_call_agent_settings
 from labhq.callcenter.calls.spoken import to_speech
 from labhq.callcenter.calls.tickets import expire_if_old, next_pending, record_request
-from labhq.callcenter.calls.tools import CallTools
+from labhq.callcenter.calls.tools import CallTools, internal_arguments
 from labhq.callcenter.screens import ScreenReader, default_screen_reader
 from labhq.callcenter.settings import CallCenterSettings, get_callcenter_settings
 from labhq.clock import Clock
@@ -186,6 +186,8 @@ class CallCenter:
                 cwd=self.workdir,
                 resume_session_id=resume,
                 tools=tools,
+                # An agent in tmux gets the same tools from its CLI's own stdio child.
+                tools_server=internal_arguments(call_id),
             )
         except RunStartError:
             log.exception("call %s: the Call Center agent did not start", call_id)

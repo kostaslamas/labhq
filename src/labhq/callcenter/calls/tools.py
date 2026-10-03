@@ -53,6 +53,11 @@ def _schema(**properties: dict[str, Any]) -> dict[str, Any]:
     return {"type": "object", "properties": properties, "required": sorted(properties)}
 
 
+def internal_arguments(call_id: int) -> tuple[str, ...]:
+    """The `labhq` command that serves these tools over stdio, for an agent in tmux."""
+    return ("mcp", "internal", "--call", str(call_id))
+
+
 def _screen_text(screen: Screen) -> str:
     return f"Its screen now, read without sending it anything:\n{screen_tail(screen.text)}"
 

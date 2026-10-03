@@ -43,7 +43,11 @@ async def call_center_agent(
         return agent
     settings = settings or get_call_agent_settings()
     now = clock.now()
-    config: dict[str, object] = {"max_turns": settings.agent_max_turns}
+    # `agent` is the tmux agent kind; the SDK adapter ignores it.
+    config: dict[str, object] = {
+        "max_turns": settings.agent_max_turns,
+        "agent": settings.agent_kind,
+    }
     if settings.agent_model is not None:
         config["model"] = settings.agent_model
     agent = Agent(
