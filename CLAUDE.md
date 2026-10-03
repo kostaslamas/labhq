@@ -141,3 +141,22 @@ Each issue also owns its tests under `tests/` and its `web/e2e/<area>.spec.ts`. 
 `web/src/areas/<area>/routes.ts` and messages from `web/src/areas/<area>/locales/{el,en}.json`; nobody
 edits the router or the i18n loader to add one. Python dependencies come only from #59 and npm
 dependencies only from #60.
+
+## Module ownership in Phase 5
+
+| Path | Owner issue |
+|---|---|
+| `src/labhq/onboard/` (except `discord.py`), `src/labhq/cli/onboard.py`, `.github/workflows/onboard.yml`, `docs/guide/onboarding.md`, `docs/checks/onboard.md` | #53 Onboarding |
+| `.github/workflows/platforms.yml`, `tools/platform_limits.py`, `tests/platforms.py`, `docs/guide/platforms.md`, the Windows terminator in `src/labhq/scheduler/termination.py` | #54 Platforms CI |
+| `src/labhq/adapters/ollama*.py`, `docs/checks/ollama-adapter.md` | #55 Ollama adapter |
+| `SECURITY.md`, `CHANGELOG.md`, `cliff.toml`, `tools/changelog.py`, `tools/release_check.py`, `.github/workflows/release.yml`, `.github/workflows/changelog.yml` | #56 Release hygiene |
+| The Codex entry of the `tmux` adapter and its fixtures, `docs/checks/codex-adapter.md` | #57 Codex adapter |
+| `tools/build_web.py`, `.github/workflows/package.yml`, the `[tool.hatch.build]` tables in `pyproject.toml` | #68 UI packaging |
+| `Dockerfile`, `.dockerignore`, `compose.yaml`, `.env.example`, `src/labhq/cli/ready.py`, `.github/workflows/docker.yml`, `docs/guide/docker.md`, `docs/checks/docker.md` | #69 Docker |
+| `src/labhq/chat/slack*.py`, `docs/guide/slack.md`, `docs/guide/slack-manifest.yaml`, `docs/checks/slack-meetings.md` | #77 Slack chat adapter |
+| `src/labhq/onboard/discord.py`, `docs/guide/discord.md`, `docs/checks/discord-onboarding.md` | #78 Discord bot onboarding |
+| `README.md`, `docs/guide/` (except pages named above), `docs/media/`, `tools/settings_doc.py`, `tools/doc_links.py`, `.github/workflows/docs.yml` | #80 Launch docs |
+| `src/labhq/approvals/merge.py` | #86 Merge on approval |
+| `src/labhq/scenario/`, `src/labhq/cli/scenario.py`, `docs/demo/` | #87 Three-minute demo |
+
+Tests mirror these paths under `tests/`. Releases, tags, publishing and launch posts are owner tasks (#89), never agent work.
