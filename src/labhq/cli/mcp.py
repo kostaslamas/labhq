@@ -8,9 +8,11 @@ import uvicorn
 from labhq.agenttools import default_registry as agent_tools
 from labhq.agenttools.stdio import run_tools, serve_stdio
 from labhq.approvals.registry import UnknownEntryError
+from labhq.callcenter.screens import default_screen_reader
 from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.expose import ExposureError, exposures, serve_exposed
 from labhq.mcp.auth import ensure_token, write_token
+from labhq.mcp.internal import internal_tools, serve_internal
 from labhq.mcp.server import build_app
 from labhq.mcp.tools.registry import default_registry
 
@@ -80,5 +82,23 @@ def agent(
         except LookupError as error:
             raise CliError(str(error)) from error
         await serve_stdio(tools)
+
+    execute(command)
+
+
+@mcp_app.command()
+def internal(
+    call: Annotated[int, typer.Option("--call", help="The call whose tools are served.")],
+) -> None:
+    """Serve the Call Center's tools for one call over stdio, for its CLI to start as a child."""
+
+    async def command(context: Context) -> None:
+        try:
+            tools = await internal_tools(
+                context.sessions, context.clock, call, screens=default_screen_reader()
+            )
+        except LookupError as error:
+            raise CliError(str(error)) from error
+        await serve_internal(tools)
 
     execute(command)
