@@ -1,0 +1,22 @@
+{
+  "title": "Notifications",
+  "lead": "Approvals that wait for you reach this device as a push notification. Tapping it opens the approval here.",
+  "enable": "Enable notifications on this device",
+  "working": "Waiting for your browser…",
+  "disable": "Turn off on this device",
+  "enabled": "This device receives notifications.",
+  "disabled": "This device does not receive notifications yet.",
+  "needs_install": {
+    "title": "Add labhq to your Home Screen first",
+    "body": "iPhone and iPad deliver notifications only to an app on the Home Screen. In Safari, tap Share, then Add to Home Screen, open labhq from there and come back to this page."
+  },
+  "denied": "Notifications are blocked for this address. Allow them in your browser or system settings, then reload this page.",
+  "unsupported": "This browser cannot receive push notifications here. Use a current browser over https, or on localhost.",
+  "inactive": "Web Push is not the active notifier. Set LABHQ_NOTIFY_KIND=webpush to use it.",
+  "errors": {
+    "permission": "Notifications were not allowed, so nothing was turned on.",
+    "sign_in": "Your session ended. Sign in again, then try once more.",
+    "server": "labhq did not accept the subscription. Check that it is running, then try again.",
+    "browser": "This browser could not subscribe. Reload the page and try again."
+  }
+}

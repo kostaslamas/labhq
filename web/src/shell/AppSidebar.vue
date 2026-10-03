@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { KeyRound, Languages } from 'lucide-vue-next'
+import { Bell, KeyRound, Languages } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
@@ -35,6 +35,14 @@ function switchLanguage(): void {
         <span class="text-center leading-tight">{{ t(item.labelKey) }}</span>
       </RouterLink>
     </nav>
+    <RouterLink
+      :to="{ name: 'notifications' }"
+      data-testid="notifications-link"
+      class="flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[0.7rem] text-muted hover:bg-surface-raised hover:text-foreground"
+    >
+      <Bell class="size-4" aria-hidden="true" />
+      {{ t('shell.notifications') }}
+    </RouterLink>
     <RouterLink
       :to="{ name: 'passkeys' }"
       data-testid="passkeys-link"
