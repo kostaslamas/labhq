@@ -2,8 +2,11 @@
 
 from dataclasses import dataclass
 
+import httpx
 from sqlalchemy import select
 
+from labhq.approvals import ApprovalService
+from labhq.approvals.gates import GateRelay, GateSettings, build_gate
 from labhq.cli.context import Context
 from labhq.cli.engine import Engine
 from labhq.cli.statuses import ingest_statuses
@@ -52,6 +55,26 @@ def _statuses(services: Services) -> Step:
     return ingest_live
 
 
+def _gates(services: Services) -> Step:
+    async def relay_pass() -> int:
+        # Read per pass, so configuring a gate needs no restart of the loop's wiring.
+        settings = GateSettings()
+        if not settings.configured:
+            return 0
+        context = services.context
+        async with httpx.AsyncClient(timeout=settings.timeout_seconds) as client:
+            relay = GateRelay(
+                context.sessions,
+                ApprovalService(context.sessions, clock=context.clock),
+                build_gate(settings, client),
+                name=settings.name,
+                passkey_proofs=settings.proofs,
+            )
+            return await relay.run_once()
+
+    return relay_pass
+
+
 default_loops: LoopRegistry[Services] = LoopRegistry()
 default_loops.register("scheduler", "scheduler_interval_seconds", _scheduler)
 default_loops.register("notifications", "notify_interval_seconds", _notifications)
@@ -61,3 +84,4 @@ default_loops.register("health", "health_interval_seconds", health_step)
 default_loops.register("graphify", "graphify_interval_seconds", refresh_loop)
 default_loops.register("it", "health_interval_seconds", it_step)
 default_loops.register("chat", "chat_interval_seconds", chat_step)
+default_loops.register("gates", "gate_interval_seconds", _gates)

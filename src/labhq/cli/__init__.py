@@ -9,6 +9,7 @@ from labhq import __version__
 from labhq.cli.adopt import adopt_app
 from labhq.cli.approvals import approvals_app
 from labhq.cli.demo import demo
+from labhq.cli.gate import gate_app
 from labhq.cli.health import health
 from labhq.cli.hosts import hosts_app
 from labhq.cli.mcp import mcp_app
@@ -33,6 +34,7 @@ app.add_typer(task_app, name="task")
 app.command()(run)
 app.add_typer(approvals_app, name="approvals")
 app.command()(health)
+app.add_typer(gate_app, name="gate")
 app.add_typer(hosts_app, name="hosts")
 app.add_typer(mcp_app, name="mcp")
 app.add_typer(notify_app, name="notify")
