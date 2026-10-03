@@ -9,6 +9,11 @@ It never interprets usage itself; `labhq.usage` does, after the run.
 
 Session ids are stored as `<kind>:<id>`, so a run on another agent kind (a fallback) never
 tries to resume a conversation its CLI does not have.
+
+Tools cannot cross into the agent's process, so each tool set is a `labhq mcp` command the
+CLI starts over stdio: `mcp agent --run N` for the run agent's engine tools, and the
+request's `tools_server` for a run's own tools (the Call Center's `mcp internal --call N`).
+A run's own tools replace the built-in ones, so only a CLI that can drop those runs them.
 """
 
 import asyncio
@@ -28,10 +33,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, RunRequest
 from labhq.adapters.tmux.agents import (
     LAUNCHES,
+    TOOL_LAUNCHES,
     AgentKind,
     AgentKinds,
     LaunchContext,
     SessionIdSource,
+    ToolServer,
     default_python,
 )
 from labhq.adapters.tmux.environment import session_environment
@@ -44,6 +51,9 @@ SIGNAL_FILE = "turn-end.json"
 STATUSLINE_FILE = "statusline.json"
 # The last lines of the pane are what a limit notice or a usage report occupies.
 FINAL_SCREEN_LINES = 80
+OWN_TOOLS_SERVER = "labhq"
+AGENT_TOOLS_SERVER = "labhq-agent"
+SETTINGS_PREFIX = "LABHQ_"
 
 
 class TmuxAgentConfig(BaseModel):
@@ -72,6 +82,11 @@ def replies(kind: AgentKind, lines: list[str], seen: set[str]) -> list[str]:
     found = [line for line in dict.fromkeys(lines) if line not in seen and pattern.search(line)]
     seen.update(found)
     return found
+
+
+def session_name(run_id: int) -> str:
+    """The tmux session of a run; `tmux -L labhq attach -t run-<id>` watches it."""
+    return f"run-{run_id}"
 
 
 def split_session(stored: str | None) -> tuple[str | None, str | None]:
@@ -135,7 +150,11 @@ class TmuxAdapter:
             raise AdapterError("the tmux adapter needs a working directory")
         config = TmuxAgentConfig.model_validate(dict(request.config))
         kind = self._kinds.get(config.agent)
-        name = f"run-{request.run_id}" if request.run_id is not None else f"run-{uuid.uuid4().hex}"
+        name = (
+            session_name(request.run_id)
+            if request.run_id is not None
+            else f"run-{uuid.uuid4().hex}"
+        )
         run_dir = self._server.state_dir / "runs" / name
         shutil.rmtree(run_dir, ignore_errors=True)
         run_dir.mkdir(parents=True)
@@ -222,7 +241,38 @@ class TmuxAdapter:
         }
         words = [word.format_map(values) for word in template]
         extra = LAUNCHES[kind.launch](context) if kind.launch is not None else []
+        extra += self._tool_words(kind, request, run_dir)
         return [words[0], *extra, *words[1:]]
+
+    def _tool_words(self, kind: AgentKind, request: RunRequest, run_dir: Path) -> list[str]:
+        own = bool(request.tools)
+        servers = self._tool_servers(request)
+        if not servers:
+            return []
+        launch = TOOL_LAUNCHES[kind.tool_launch] if kind.tool_launch is not None else None
+        if own and (launch is None or launch.exclusive is None):
+            raise AdapterError(
+                f"{kind.name} cannot run with only its own tools: its CLI cannot drop its "
+                "built-in shell and file tools"
+            )
+        if launch is None:
+            # Engine tools are an addition; a CLI that takes no MCP server works without them.
+            return []
+        exclusive = launch.exclusive if own and launch.exclusive is not None else ()
+        return [*launch.attach(run_dir, servers), *exclusive]
+
+    def _tool_servers(self, request: RunRequest) -> list[ToolServer]:
+        env = {k: v for k, v in self._environ.items() if k.startswith(SETTINGS_PREFIX)}
+        labhq = (self._python, "-m", "labhq")
+        servers: list[ToolServer] = []
+        if request.tools:
+            if not request.tools_server:
+                raise AdapterError("the run's own tools name no stdio server to serve them")
+            servers.append(ToolServer(OWN_TOOLS_SERVER, (*labhq, *request.tools_server), env))
+        if request.agent_tools and request.run_id is not None:
+            argv = (*labhq, "mcp", "agent", "--run", str(request.run_id))
+            servers.append(ToolServer(AGENT_TOOLS_SERVER, argv, env))
+        return servers
 
     async def _after_turn(self, screen: str, *, alive: bool) -> AsyncIterator[AdapterEvent]:
         statusline = self._read(STATUSLINE_FILE)
@@ -277,7 +327,13 @@ class TmuxAdapter:
             terminal_reason="process_exit" if dead else "completed",
             num_turns=1,
             errors=errors,
+            text=self._reply(kind, watch.signal),
         )
+
+    def _reply(self, kind: AgentKind, signal: str | None) -> str | None:
+        payload = _json_object(signal) if signal and kind.reply_key is not None else None
+        reply = payload.get(kind.reply_key) if payload and kind.reply_key else None
+        return reply if isinstance(reply, str) else None
 
     def _discovered_session(self, kind: AgentKind, signal: str | None) -> str | None:
         if kind.session_id is not SessionIdSource.SIGNAL or kind.session_key is None:

@@ -36,6 +36,10 @@ class RunRequest:
     # A run given its own tools gets only those: no shell, no file tools, nothing built in.
     # The Call Center agent (ADR 0004) is the first caller.
     tools: Sequence[AgentTool] = ()
+    # `labhq` arguments of a stdio MCP server that serves `tools` from another process, such
+    # as `mcp internal --call N`. An adapter whose agent runs outside this process (tmux)
+    # starts it there; an in-process adapter serves `tools` directly.
+    tools_server: Sequence[str] = ()
     # The run this request belongs to; adapters that name external resources use it.
     run_id: int | None = None
     # Engine tools (labhq.agenttools) bound to the run's agent, served next to its own tools.

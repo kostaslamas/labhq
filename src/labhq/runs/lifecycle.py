@@ -85,6 +85,7 @@ class RunService:
         resume_session_id: str | None = None,
         tools: Sequence[AgentTool] = (),
         config: dict[str, Any] | None = None,
+        tools_server: Sequence[str] = (),
     ) -> "ActiveRun":
         """Start a run. `run_id` adopts a queued run instead of creating one.
 
@@ -123,6 +124,7 @@ class RunService:
                 config={**agent.config, **(config or {})},
                 hooks=hooks,
                 tools=tools,
+                tools_server=tools_server,
                 run_id=run.id,
                 agent_tools=[bind(spec, tool_context) for spec in agent_tool_specs],
                 system_prompt_append=system_prompt_append,

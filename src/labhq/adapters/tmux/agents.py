@@ -2,7 +2,8 @@
 
 A template is a tuple of words; `{prompt}`, `{session_id}` and `{guard_hook}` are filled
 in per run, and the words of the agent's launch integration (statusline, turn signal, push
-guard hook) go right after the program name. Adding an agent is one `register` call.
+guard hook) and of its tool servers go right after the program name. Adding an agent is one
+`register` call.
 
 Every entry records where its commands and flags were checked. The screens they print are
 tested through fixtures, and the whole path through a developer machine is the manual check
@@ -10,9 +11,10 @@ in docs/checks/tmux-adapter.md.
 """
 
 import json
+import os
 import shlex
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -79,6 +81,10 @@ class AgentKind:
     # A screen line that is the agent's own output (a reply or a tool call); each new one is
     # reported as an `assistant` event. None: the agent's lines cannot be told apart.
     reply_pattern: str | None = None
+    # Key of the stdio MCP integration in `TOOL_LAUNCHES`, or None for a CLI that takes none.
+    tool_launch: str | None = None
+    # Key of the turn-end signal's payload that carries the turn's final reply, if any.
+    reply_key: str | None = None
 
 
 def signal_command(context: LaunchContext, channel: str, path: Path) -> list[str]:
@@ -167,6 +173,85 @@ def codex_config(context: LaunchContext) -> list[str]:
 LAUNCHES: dict[str, Launch] = {"claude_settings": claude_settings, "codex_config": codex_config}
 
 
+@dataclass(frozen=True)
+class ToolServer:
+    """A stdio MCP server the agent's CLI starts as its child: a `labhq mcp` command."""
+
+    name: str
+    argv: tuple[str, ...]
+    # labhq's own settings (`LABHQ_*`), which the session's environment does not carry.
+    env: Mapping[str, str]
+
+
+# Words that make the CLI start `servers` as children; the path is the run's own directory.
+ToolAttach = Callable[[Path, Sequence[ToolServer]], list[str]]
+
+
+@dataclass(frozen=True)
+class ToolLaunch:
+    attach: ToolAttach
+    # Words that take every built-in tool away (shell, file reads and writes), leaving only
+    # the attached servers' tools. None: the CLI cannot drop them, so it never runs an agent
+    # that must have only its own tools, such as the Call Center (ADR 0004).
+    exclusive: tuple[str, ...] | None
+    source: str
+
+
+MCP_CONFIG_FILE = "mcp.json"
+
+
+def claude_mcp(run_dir: Path, servers: Sequence[ToolServer]) -> list[str]:
+    # A file, not an inline JSON argument: the servers' environment stays out of `ps`.
+    config = {
+        "mcpServers": {
+            server.name: {
+                "type": "stdio",
+                "command": server.argv[0],
+                "args": list(server.argv[1:]),
+                "env": dict(server.env),
+            }
+            for server in servers
+        }
+    }
+    path = run_dir / MCP_CONFIG_FILE
+    with os.fdopen(os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w") as file:
+        file.write(json.dumps(config))
+    # Only these servers: the owner's own MCP configuration stays out of labhq's runs.
+    return ["--mcp-config", str(path), "--strict-mcp-config"]
+
+
+def codex_mcp(run_dir: Path, servers: Sequence[ToolServer]) -> list[str]:
+    words: list[str] = []
+    for server in servers:
+        table = {"command": server.argv[0], "args": list(server.argv[1:]), "env": dict(server.env)}
+        words += ["-c", f"mcp_servers.{server.name}={toml_value(table)}"]
+    return words
+
+
+TOOL_LAUNCHES: dict[str, ToolLaunch] = {
+    "claude_mcp": ToolLaunch(
+        attach=claude_mcp,
+        exclusive=("--tools", ""),
+        source=(
+            "https://code.claude.com/docs/en/cli-reference (--mcp-config takes files, "
+            '--strict-mcp-config, --tools "" disables every built-in tool and leaves MCP '
+            "tools); claude-agent-sdk 0.2.163 subprocess_cli.py passes `tools=[]` the same "
+            "way; checked 2026-10-03"
+        ),
+    ),
+    "codex_mcp": ToolLaunch(
+        attach=codex_mcp,
+        # `features.shell_tool` turns the shell off, but no documented switch removes
+        # apply_patch, so Codex never runs an agent that must have no file-writing tool.
+        exclusive=None,
+        source=(
+            "openai/codex main: codex-rs/config/src/mcp_types.rs (mcp_servers.<name>.command, "
+            "args, env), codex-rs/features/src/lib.rs (shell_tool); checked 2026-10-03"
+        ),
+    ),
+}
+
+
 class UnknownAgentKindError(LookupError):
     pass
 
@@ -180,6 +265,10 @@ class AgentKinds:
             raise ValueError(f"agent kind {kind.name!r} is already registered")
         if kind.launch is not None and kind.launch not in LAUNCHES:
             raise ValueError(f"agent kind {kind.name!r} names an unknown launch {kind.launch!r}")
+        if kind.tool_launch is not None and kind.tool_launch not in TOOL_LAUNCHES:
+            raise ValueError(
+                f"agent kind {kind.name!r} names an unknown tool launch {kind.tool_launch!r}"
+            )
         self._kinds[kind.name] = kind
 
     def get(self, name: str) -> AgentKind:
@@ -214,9 +303,12 @@ CLAUDE_CODE = AgentKind(
     usage_command=None,
     source=(
         "https://code.claude.com/docs/en/cli-reference (--session-id, --resume, --settings, "
-        "--dangerously-skip-permissions), /hooks (Stop, PreToolUse, exit code 2), "
-        "/statusline (rate_limits, cost.total_cost_usd); checked 2026-10-03"
+        "--dangerously-skip-permissions), /hooks (Stop, PreToolUse, exit code 2, "
+        "Stop's last_assistant_message), /statusline (rate_limits, cost.total_cost_usd); "
+        "checked 2026-10-03"
     ),
+    tool_launch="claude_mcp",
+    reply_key="last_assistant_message",
 )
 
 # Paths below are in openai/codex at main 86a54b05, checked 2026-10-03. The contract runs
@@ -258,6 +350,7 @@ CODEX = AgentKind(
     # codex-rs/tui chatwidget snapshots: replies and tool calls start with "• "; the
     # "• Working (Ns • esc to interrupt)" status line redraws every second and is not one.
     reply_pattern=r"^• (?!Working \()",
+    tool_launch="codex_mcp",
     source=(
         "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "
         "codex-rs/utils/cli/src/{shared_options,config_override}.rs, "
@@ -278,6 +371,7 @@ GEMINI = AgentKind(
     launch=None,
     hooks=None,
     usage_command="/stats",
+    # MCP servers come only from Gemini CLI's settings files, which labhq does not write.
     source=(
         "google-gemini/gemini-cli main: packages/cli/src/config/config.ts (--session-id, "
         "--resume, -i/--prompt-interactive, --approval-mode yolo), "
