@@ -73,7 +73,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
                  ▼
             labhq MCP server ──> engine ──> agents
                  │
-                 └──> notifier (ntfy / Telegram) ──> εσύ
+                 └──> notifier (Web Push / ntfy / Telegram) ──> εσύ
 ```
 
 ### 3.2 Κανόνες σχεδίασης
@@ -83,7 +83,7 @@ Orchestrator ("CEO")            long-lived, memory, βλέπει ΟΛΑ τα pro
 3. Οι απαντήσεις γράφονται για να ακουστούν: σύντομες προτάσεις, χωρίς πίνακες, χωρίς JSON.
 4. Σωστά MCP annotations: `readOnlyHint` στις ερωτήσεις (περνούν χωρίς επιβεβαίωση), `destructiveHint` στις ενέργειες (ζητούν επιβεβαίωση).
 5. Οι κανόνες ζουν μέσα στα tools (description, αποτελέσματα, σφάλματα). Οι clients τιμούν ανομοιόμορφα το server `instructions`, άρα δεν βασιζόμαστε σε αυτό.
-6. Οι voice assistants δεν μπορούν να σου στείλουν push. Οι ειδοποιήσεις περνούν από pluggable notifier (ntfy ως default, Telegram προαιρετικά).
+6. Οι voice assistants δεν μπορούν να σου στείλουν push. Οι ειδοποιήσεις περνούν από pluggable notifier: default το Web Push της web εφαρμογής του labhq, εγκατεστημένης στην αρχική οθόνη του κινητού· ntfy και Telegram προαιρετικά. Μια εξωτερική πύλη έγκρισης μπορεί να αναλάβει τις heavy εγκρίσεις (ADR 0007).
 
 ### 3.3 Υποψήφια tools
 
@@ -304,7 +304,7 @@ docker compose up
 | Ανάγκη | Default χωρίς λογαριασμό | Αναβάθμιση | Τι κάνει ο χρήστης |
 |---|---|---|---|
 | Δημόσιο URL | Cloudflare quick tunnel (`cloudflared tunnel --config /dev/null --url …`) | Tailscale Funnel (σταθερό URL) ή δικό σου domain (Cloudflare Tunnel, Pangolin, Caddy) | Quick tunnel: τίποτα, αλλά νέο URL σε κάθε restart. Funnel: ένα SSO login και μία έγκριση στον browser |
-| Ειδοποιήσεις | ntfy.sh με τυχαίο topic | Telegram bot | Εγκαθιστά την εφαρμογή ntfy και κάνει subscribe από QR |
+| Ειδοποιήσεις | Web Push από τη web εφαρμογή του labhq (ADR 0007) | ntfy, Telegram ή εξωτερική πύλη έγκρισης | Ανοίγει το link στο κινητό, το προσθέτει στην αρχική οθόνη και επιτρέπει τις ειδοποιήσεις |
 | Meetings | Meeting room στο desktop UI | Discord bot | Φτιάχνει app στο Discord Developer Portal και αντιγράφει το token, ενεργοποιεί το Message Content, πατά το έτοιμο invite link. Ο bot φτιάχνει μόνος του κανάλια, threads και webhooks ανά agent |
 | Login και εγκρίσεις | Ενσωματωμένα passkeys | — | Τίποτα |
 | Μοντέλα | Υπάρχον login του `claude` ή API key | — | Login ή επικόλληση key |
