@@ -1,6 +1,7 @@
 """The owner's checkout after the move: rules excluded, uncommitted work untouched, push
 deterred by the environment alone."""
 
+import pytest
 from sqlalchemy import select
 
 from labhq.adoption import RULES_RELATIVE_PATH, rules_message
@@ -9,6 +10,8 @@ from labhq.callcenter.status.ingest import STATUS_RELATIVE_PATH
 from labhq.db.models import StatusUpdate
 from labhq.worktrees.git import run_git
 from tests.adoption.conftest import World, adopt, wait_for
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 
 def refs(world: World) -> str:

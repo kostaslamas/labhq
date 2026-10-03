@@ -70,6 +70,10 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_checkout.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_checks.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_move.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_observe.py::test_ending_an_agent_its_parent_never_reaps_returns_once_it_is_a_zombie` | POSIX zombie processes and /bin/sh |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
 | `tests/callcenter/screens/test_call_center_reads.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/callcenter/screens/test_calls_in_tmux.py` | the tmux adapter does not run on native Windows (ADR 0003) |
@@ -94,6 +98,7 @@ and CI fails when it does not match them.
 | `tests/expose/test_serve.py::test_running_server_answers_json_not_sse_and_the_url_is_announced_once` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/expose/test_serve.py::test_unverified_tunnel_never_announces` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/health/test_local_commands.py::test_the_certificate_script_reads_a_file_on_disk` | the certificate probe is a POSIX shell script |
+| `tests/mcp/test_internal.py::test_the_call_center_in_tmux_has_no_shell_and_no_file_tool` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |
 | `tests/mcp/test_server.py::test_token_file_is_0600_and_stable` | POSIX file permission bits |
 | `tests/notify/test_channels.py::test_the_generated_topic_is_random_and_kept` | POSIX file permission bits |

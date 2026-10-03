@@ -4,12 +4,15 @@ changes and the plan cap."""
 import json
 from datetime import timedelta
 
+import pytest
 from sqlalchemy import select
 
 from labhq.adoption import CHECKOUT_CHANGED, STATUS_REQUEST, rules_message, state_of
 from labhq.adoption.session import send_message, session_name
 from labhq.db.models import Agent, Notification, UsageReading
 from tests.adoption.conftest import CLOCK, World, adopt, wait_for
+
+pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 
 
 async def turn(world: World, name: str, text: str) -> None:
