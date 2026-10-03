@@ -38,6 +38,7 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ),
     ("agent", "approve"): (("init",), ("agent", "approve", "42")),
     ("task", "add"): (("init",), ("task", "add", "--project", "nope", "--title", "T")),
+    ("task", "merge"): (("init",), ("task", "merge", "42")),
     ("run",): (("run",),),
     ("approvals", "list"): (("approvals", "list"),),
     ("approvals", "approve"): (("init",), ("approvals", "approve", "42")),

@@ -1,4 +1,4 @@
-"""`init`, `project add`, `agent add|approve` and `task add`: who works on what."""
+"""`init`, `project add`, `agent add|approve` and `task add|merge`: who works on what."""
 
 import json
 from decimal import Decimal, InvalidOperation
@@ -13,7 +13,7 @@ from labhq import work
 from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.cli.engine import cli_adapters
 from labhq.db.enums import AgentStatus
-from labhq.db.models import Agent, Project, Task
+from labhq.db.models import Agent, Approval, Project, Task
 from labhq.money import usd_to_micros
 
 # Re-exported: callers and tests that build assignments through the CLI module keep working.
@@ -30,7 +30,9 @@ MIGRATIONS = _migrations()
 
 project_app = typer.Typer(help="Register git repositories as projects.", no_args_is_help=True)
 agent_app = typer.Typer(help="Add agents and approve new ones.", no_args_is_help=True)
-task_app = typer.Typer(help="Add tasks and assign them to agents.", no_args_is_help=True)
+task_app = typer.Typer(
+    help="Add tasks, assign them to agents and request their merge.", no_args_is_help=True
+)
 
 
 def migrate(url: str) -> None:
@@ -231,3 +233,22 @@ def task_add(
     task = execute(body)
     assigned = f", assigned to agent {task.assignee_id}" if task.assignee_id else ""
     typer.echo(f"task {task.id} {task.title}{assigned}")
+
+
+@task_app.command("merge")
+def task_merge(
+    task_id: Annotated[int, typer.Argument(help="The task's id.")],
+    target: Annotated[str, typer.Option(help="The branch to merge into.")] = "main",
+) -> None:
+    """Request approval to merge a task's branch; the engine merges once it is approved."""
+
+    async def body(context: Context) -> Approval:
+        async with context.sessions() as db:
+            return await work.request_merge(db, context.clock, task_id, target=target)
+
+    approval = execute(body)
+    payload = approval.payload
+    typer.echo(
+        f"approval {approval.id} {approval.status}: merge {payload['branch']} "
+        f"({payload['commit'][:12]}) into {payload['target']}"
+    )

@@ -8,6 +8,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from labhq.approvals.merge import MERGE_ACTION, MergePayload, merge_branch
 from labhq.approvals.push import PUSH_ACTION, PushPayload, push_branch
 from labhq.approvals.registry import Registry
 from labhq.health.intervention import INTERVENTION_ACTION, HostIntervention, InterventionPayload
@@ -29,4 +30,7 @@ default_executors.register(
 default_executors.register(
     INTERVENTION_ACTION,
     Executor(run=HostIntervention().run, validate=InterventionPayload.model_validate),
+)
+default_executors.register(
+    MERGE_ACTION, Executor(run=merge_branch, validate=MergePayload.model_validate)
 )

@@ -1,3 +1,4 @@
+from labhq.work.merge import request_merge, task_branch
 from labhq.work.service import (
     OPERATOR_REASON,
     WorkError,
@@ -20,4 +21,6 @@ __all__ = [
     "check_repository",
     "find_agent",
     "find_project",
+    "request_merge",
+    "task_branch",
 ]
