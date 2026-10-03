@@ -12,6 +12,13 @@ from labhq.db.models.callcenter import (
 )
 from labhq.db.models.chat import ChatBinding
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
+from labhq.db.models.meetings import (
+    Meeting,
+    MeetingActionItem,
+    MeetingDecision,
+    MeetingParticipant,
+    MeetingTranscriptEntry,
+)
 from labhq.db.models.runs import AgentTaskSession, CostEvent, Run, RunEvent, WakeupRequest
 from labhq.db.models.usage import UsageReading
 from labhq.db.models.work import Agent, Comment, Project, Task
@@ -32,6 +39,11 @@ __all__ = [
     "HealthSample",
     "Host",
     "Incident",
+    "Meeting",
+    "MeetingActionItem",
+    "MeetingDecision",
+    "MeetingParticipant",
+    "MeetingTranscriptEntry",
     "Notification",
     "Project",
     "Run",
