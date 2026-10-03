@@ -8,13 +8,14 @@ fills in the rest for every run it starts: a task run works in the task's own wo
 
 import asyncio
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from claude_agent_sdk import HookMatcher
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from labhq.adapters import AdapterRegistry
+from labhq.adapters import AdapterRegistry, AgentTool
 from labhq.clock import Clock
 from labhq.db.models import Project, Task
 from labhq.economy import RtkHook, rtk_hook
@@ -67,6 +68,8 @@ class WorkspaceRunService(RunService):
         cwd: Path | None = None,
         hooks: dict[str, Any] | None = None,
         run_id: int | None = None,
+        resume_session_id: str | None = None,
+        tools: Sequence[AgentTool] = (),
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
             cwd = await self._task_worktree(task_id)
@@ -77,6 +80,8 @@ class WorkspaceRunService(RunService):
             cwd=cwd,
             hooks=hooks if hooks is not None else run_hooks(self._rtk),
             run_id=run_id,
+            resume_session_id=resume_session_id,
+            tools=tools,
         )
         # A log line scrolls away; the run's own events are where a lost saving stays visible.
         for warning in self._rtk.warnings:

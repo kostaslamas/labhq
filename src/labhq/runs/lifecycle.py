@@ -5,6 +5,7 @@ live. The terminal result sets the status through `labhq.runs.status`, writes on
 `cost_events` row in micros through `labhq.money`, and stores the session for resume.
 """
 
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,14 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from labhq.adapters import Adapter, AdapterEvent, AdapterRegistry, AdapterResult, RunRequest
+from labhq.adapters import (
+    Adapter,
+    AdapterEvent,
+    AdapterRegistry,
+    AdapterResult,
+    AgentTool,
+    RunRequest,
+)
 from labhq.adapters import default_registry as builtin_adapters
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
@@ -57,11 +65,15 @@ class RunService:
         cwd: Path | None = None,
         hooks: dict[str, Any] | None = None,
         run_id: int | None = None,
+        resume_session_id: str | None = None,
+        tools: Sequence[AgentTool] = (),
     ) -> "ActiveRun":
         """Start a run. `run_id` adopts a queued run instead of creating one.
 
         The scheduler needs the run id before the adapter starts, to take the task's
         checkout with it; it queues the run, checks out, then hands the id here.
+        `resume_session_id` continues a session kept outside `agent_task_sessions`, such as
+        a call's; it wins over the task's stored session.
         """
         db = self._sessions()
         try:
@@ -72,7 +84,7 @@ class RunService:
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = agent.adapter
             run.status = RunStatus.RUNNING
-            run.session_id_before = stored.session_id if stored else None
+            run.session_id_before = resume_session_id or (stored.session_id if stored else None)
             run.started_at = run.heartbeat_at = now
             await db.commit()
             if cwd is None and stored is not None and stored.cwd:
@@ -84,6 +96,7 @@ class RunService:
                 resume_session_id=run.session_id_before,
                 config=dict(agent.config),
                 hooks=hooks,
+                tools=tools,
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(db, self._clock, self._registry.create(agent.adapter), run)
@@ -102,9 +115,16 @@ class RunService:
         cwd: Path | None = None,
         hooks: dict[str, Any] | None = None,
         run_id: int | None = None,
+        resume_session_id: str | None = None,
     ) -> Run:
         active = await self.start(
-            agent_id=agent_id, task_id=task_id, prompt=prompt, cwd=cwd, hooks=hooks, run_id=run_id
+            agent_id=agent_id,
+            task_id=task_id,
+            prompt=prompt,
+            cwd=cwd,
+            hooks=hooks,
+            run_id=run_id,
+            resume_session_id=resume_session_id,
         )
         return await active.wait()
 
@@ -120,6 +140,8 @@ class ActiveRun:
         self._seq = 0
         self._project_id: int | None = None
         self._cwd: Path | None = None
+        # The adapter's terminal result once `wait()` has finished it; None on a failure.
+        self.result: AdapterResult | None = None
 
     @property
     def run_id(self) -> int:
@@ -177,6 +199,7 @@ class ActiveRun:
         await self._db.commit()
 
     async def _finish(self, result: AdapterResult) -> None:
+        self.result = result
         now = self._clock.now()
         run = self.run
         run.status = status_for(result)

@@ -1,9 +1,24 @@
 """The interface every agent adapter implements, and the values it exchanges with runs."""
 
-from collections.abc import AsyncIterator, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
+
+
+@dataclass(frozen=True)
+class AgentTool:
+    """A tool the engine serves to an agent in its own process.
+
+    `input_schema` is a JSON schema object; the handler receives the validated arguments and
+    returns the text the agent reads. Each adapter decides how it exposes the tool.
+    """
+
+    name: str
+    description: str
+    input_schema: dict[str, Any]
+    handler: Callable[[dict[str, Any]], Awaitable[str]]
+    read_only: bool = True
 
 
 @dataclass(frozen=True)
@@ -18,6 +33,9 @@ class RunRequest:
     config: Mapping[str, Any] = field(default_factory=dict)
     # Adapter-specific hook matchers supplied by the caller (for example the push guard).
     hooks: Mapping[str, Any] | None = None
+    # A run given its own tools gets only those: no shell, no file tools, nothing built in.
+    # The Call Center agent (ADR 0004) is the first caller.
+    tools: Sequence[AgentTool] = ()
 
 
 @dataclass(frozen=True)
@@ -45,6 +63,8 @@ class AdapterResult:
     model: str | None = None
     num_turns: int | None = None
     errors: list[str] = field(default_factory=list)
+    # The run's final answer, when the adapter reports one.
+    text: str | None = None
 
 
 class AdapterError(RuntimeError):

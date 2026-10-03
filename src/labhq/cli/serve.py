@@ -6,10 +6,12 @@ import httpx
 import typer
 import uvicorn
 
+from labhq.callcenter.calls import SchedulerInterrupter
 from labhq.cli.context import Context, execute, fail
 from labhq.cli.engine import Engine
 from labhq.mcp.auth import ensure_token
 from labhq.mcp.server import build_app
+from labhq.mcp.tools.calls import attach_interrupter
 from labhq.mcp.tools.registry import default_registry
 from labhq.notify import Dispatcher, NotifyError, NotifySettings, build_notifier
 
@@ -48,6 +50,7 @@ def serve(
                 Engine(context),
                 Dispatcher(context.sessions, notifier, clock=context.clock, settings=settings),
             )
+            attach_interrupter(SchedulerInterrupter(services.engine.scheduler))
             # No access log: the secret path would land in it.
             config = uvicorn.Config(
                 build_app(default_registry, secret), host=host, port=port, access_log=False

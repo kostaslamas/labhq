@@ -91,6 +91,21 @@ class Scheduler:
             await db.commit()
             return result
 
+    async def interrupt_agent(self, agent_id: int) -> bool:
+        """Interrupt the live runs of `agent_id` that this process holds; return whether any.
+
+        The Call Center calls this only when the owner asked for it (ADR 0004). The run ends
+        as `interrupted` and the agent's next run starts from its queued wakeups.
+        """
+        live = [
+            run
+            for run in self._live.values()
+            if run.active.run.agent_id == agent_id and not run.waiter.done()
+        ]
+        for run in live:
+            await _interrupt(run)
+        return bool(live)
+
     async def tick(self) -> TickReport:
         report = TickReport()
         await self._police(report)

@@ -9,6 +9,7 @@ from labhq.adapters.base import (
     AdapterError,
     AdapterEvent,
     AdapterResult,
+    AgentTool,
     RunRequest,
 )
 from labhq.adapters.claude import ClaudeAdapter, default_cli_path
@@ -32,6 +33,7 @@ __all__ = [
     "AdapterFactory",
     "AdapterRegistry",
     "AdapterResult",
+    "AgentTool",
     "ClaudeAdapter",
     "FakeAdapter",
     "FakeScript",

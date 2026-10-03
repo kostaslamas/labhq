@@ -11,6 +11,8 @@ EXPECTED: dict[str, tuple[bool, bool | None]] = {
     "decide": (False, True),
     "order": (False, False),
     "answer": (False, False),
+    "ask_ceo": (False, False),
+    "get_reply": (True, None),
 }
 
 
@@ -38,3 +40,5 @@ def test_descriptions_state_the_rules() -> None:
     assert "A12" in specs["decide"].description
     assert "Q7" in specs["answer"].description
     assert "T3" in specs["order"].description
+    assert "get_reply" in specs["ask_ceo"].description
+    assert "same ticket" in specs["get_reply"].description

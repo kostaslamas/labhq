@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from claude_agent_sdk import HookMatcher
 
-from labhq.adapters import AdapterError, ClaudeAdapter, RunRequest
+from labhq.adapters import AdapterError, AgentTool, ClaudeAdapter, RunRequest
 from labhq.adapters.claude import default_cli_path
 from labhq.adapters.contract import run_once
 from tests.adapters.stub_sdk import CLI_PATH, MODEL, StubScript, stub_claude
@@ -114,3 +114,32 @@ async def test_one_adapter_instance_serves_one_run(tmp_path: Path) -> None:
     await adapter.start(RunRequest(prompt="hi", cwd=tmp_path))
     with pytest.raises(AdapterError, match="one run"):
         await adapter.start(RunRequest(prompt="again", cwd=tmp_path))
+
+
+def test_a_run_without_its_own_tools_keeps_the_builtin_ones() -> None:
+    options = ClaudeAdapter(cli_path=CLI_PATH, environ={}).options_for(RunRequest(prompt="hi"))
+    assert options.tools is None
+    assert options.mcp_servers == {}
+    assert options.allowed_tools == []
+
+
+async def test_a_run_given_its_own_tools_gets_only_those_served_in_process() -> None:
+    async def echo(arguments: dict[str, object]) -> str:
+        return f"echo {arguments['word']}"
+
+    tool = AgentTool("echo", "Echo a word.", {"type": "object", "properties": {}}, echo)
+    options = ClaudeAdapter(cli_path=CLI_PATH, environ={}).options_for(
+        RunRequest(prompt="hi", tools=[tool])
+    )
+
+    assert options.tools == []
+    assert options.strict_mcp_config is True
+    assert options.allowed_tools == ["mcp__labhq__echo"]
+    server = options.mcp_servers["labhq"]
+    assert server["type"] == "sdk"
+
+
+async def test_the_final_answer_text_is_reported(tmp_path: Path) -> None:
+    script = StubScript(result_overrides={"result": "All quiet."})
+    _, result = await run_once(stub_claude(script)(), RunRequest(prompt="hi", cwd=tmp_path))
+    assert result.text == "All quiet."
