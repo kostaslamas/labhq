@@ -1,0 +1,42 @@
+{
+  "login": {
+    "title": "Sign in to labhq",
+    "lead": "Use the passkey you enrolled on this address. Your device asks for your fingerprint, face or PIN.",
+    "button": "Sign in with a passkey",
+    "waiting": "Waiting for your device…",
+    "not_enrolled": "No passkey is enrolled yet. Run this on the machine labhq runs on, then open the link it prints:"
+  },
+  "enroll": {
+    "title": "Create a passkey",
+    "lead": "This passkey works on this address only. Your device asks for your fingerprint, face or PIN.",
+    "name_label": "Name (optional)",
+    "name_placeholder": "My phone",
+    "button": "Create a passkey",
+    "waiting": "Waiting for your device…",
+    "done": "Passkey created. Sign in to continue.",
+    "sign_in": "Go to sign-in",
+    "no_token": "This page needs an enrollment link. Run `labhq passkey enroll` on the machine labhq runs on."
+  },
+  "passkeys": {
+    "title": "Passkeys",
+    "created": "added {date}",
+    "revoked": "revoked",
+    "revoke": "Revoke",
+    "add_title": "Add a passkey on another device",
+    "add_lead": "Scan the code with your phone to enroll a passkey on your public address. The link works once and expires soon.",
+    "add_button": "Show a link and QR code",
+    "qr_alt": "QR code for the enrollment link",
+    "expires": "Valid until {time}",
+    "failed": "That did not work. Check that LABHQ_PUBLIC_URL is set, then try again.",
+    "sign_out": "Sign out"
+  },
+  "errors": {
+    "cancelled": "The passkey prompt was dismissed or timed out. Try again.",
+    "unsupported": "This browser cannot use passkeys. Use a current browser over https or on localhost.",
+    "no_passkey": "No passkey is enrolled for this address. A passkey works only on the address it was made on.",
+    "enrollment_link_invalid": "This enrollment link was already used, has expired or belongs to another address. Create a new one.",
+    "origin_not_allowed": "labhq does not accept sign-in from this address. Set LABHQ_PUBLIC_URL to it.",
+    "rejected": "The passkey was not accepted. Try again.",
+    "network": "labhq cannot be reached. Check that it is running."
+  }
+}
