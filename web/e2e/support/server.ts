@@ -36,6 +36,7 @@ export interface SeedSummary {
   approvals: { heavy: number; light: number }
   question: number
   incident: number
+  meetings: { standup: number; planning: number }
 }
 
 export function seedSummary(): SeedSummary {

@@ -11,6 +11,7 @@ from labhq.db.enums import (
     AgentStatus,
     ApprovalStatus,
     IncidentStatus,
+    MeetingStatus,
     QuestionStatus,
     RiskClass,
     RunStatus,
@@ -21,6 +22,7 @@ from labhq.db.models import (
     Approval,
     CostEvent,
     Incident,
+    Meeting,
     Project,
     Run,
     Task,
@@ -49,6 +51,8 @@ async def test_seeds_every_kind_of_row_the_ui_shows(tmp_path: Path, seed_clock: 
             light = await db.get_one(Approval, seeded.approvals["light"])
             question = await db.get_one(AgentQuestion, seeded.question)
             incident = await db.get_one(Incident, seeded.incident)
+            standup = await db.get_one(Meeting, seeded.meetings["standup"])
+            planning = await db.get_one(Meeting, seeded.meetings["planning"])
     finally:
         await engine.dispose()
 
@@ -68,6 +72,8 @@ async def test_seeds_every_kind_of_row_the_ui_shows(tmp_path: Path, seed_clock: 
     assert question.question == ui_seed.QUESTION
     assert incident.status is IncidentStatus.OPEN
     assert incident.details["latest"] == {"/": ui_seed.DISK_FULL_PERCENT}
+    assert (standup.kind, standup.status) == ("standup", MeetingStatus.RUNNING)
+    assert planning.status is MeetingStatus.ENDED
 
 
 def test_the_command_prints_the_summary_as_json(
