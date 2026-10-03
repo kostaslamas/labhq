@@ -1,5 +1,7 @@
 """Which tools an agent gets, and who a tool acts for."""
 
+from pathlib import Path
+
 import pytest
 from pydantic import BaseModel
 from sqlalchemy import update
@@ -18,6 +20,7 @@ from labhq.agenttools import (
 from labhq.agenttools import default_registry as builtin_tools
 from labhq.clock import FakeClock
 from labhq.db.models import Agent
+from labhq.memory import AgentMemory
 from labhq.runs import RunService
 from tests.agenttools.conftest import Team
 
@@ -105,7 +108,7 @@ async def test_whoami_answers_for_the_caller_not_the_agent_it_names(
 
 
 async def test_a_run_hands_its_adapter_the_agents_tools_bound_to_it(
-    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, team: Team
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, team: Team, tmp_path: Path
 ) -> None:
     script = FakeScript()
     registry_ = adapters.copy()
@@ -115,7 +118,11 @@ async def test_a_run_hands_its_adapter_the_agents_tools_bound_to_it(
             update(Agent).where(Agent.id == team.manager_id).values(config={"tools": ["assign"]})
         )
         await db.commit()
-    service = RunService(sessions, clock=clock, registry=registry_, agent_tools=registry())
+    # A manager keeps memory; its home stays in this test's directory.
+    memory = AgentMemory(tmp_path / "agents")
+    service = RunService(
+        sessions, clock=clock, registry=registry_, memory=memory, agent_tools=registry()
+    )
 
     await service.execute(agent_id=team.manager_id, task_id=team.task_id, prompt="go")
 
