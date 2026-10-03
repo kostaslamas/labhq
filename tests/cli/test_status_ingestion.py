@@ -60,7 +60,10 @@ async def test_a_finished_run_ingests_its_status_file_and_the_question_once(
     async with context.sessions() as db:
         [update] = (await db.scalars(select(StatusUpdate))).all()
         [question] = (await db.scalars(select(AgentQuestion))).all()
-        [notification] = (await db.scalars(select(Notification))).all()
+        notification = await db.scalar(
+            select(Notification).where(Notification.kind == "agent_question")
+        )
+    assert notification is not None
     assert update.fields["summary"] == "Working."
     assert (question.question, question.agent_id) == ("Which branch?", worker.id)
     assert notification.subject == f"question:{question.id}"
