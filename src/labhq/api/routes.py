@@ -21,6 +21,7 @@ from labhq.api.vocabulary import vocabulary_router
 from labhq.auth.routes import public_router as auth_public_router
 from labhq.auth.routes import router as auth_router
 from labhq.live.endpoint import live_router
+from labhq.notify.routes import router as push_router
 
 
 @dataclass(frozen=True)
@@ -70,3 +71,4 @@ default_routers.register(meetings_router)
 default_routers.register(rules_router)
 default_routers.register(authoring_router)
 default_routers.register(today_router)
+default_routers.register(push_router)
