@@ -72,6 +72,7 @@ def test_without_rtk_the_hook_is_off_and_a_warning_is_recorded(
     assert "rtk is not on PATH" in caplog.text
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 def test_with_rtk_on_path_the_hook_matches_the_shell_tool(stub_on_path: Path) -> None:
     hook = rtk_hook()
     assert hook.enabled
@@ -81,6 +82,7 @@ def test_with_rtk_on_path_the_hook_matches_the_shell_tool(stub_on_path: Path) ->
     assert matcher.matcher == SHELL_TOOL
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_with_a_stub_rtk_the_hook_rewrites_the_command(stub_on_path: Path) -> None:
     (matcher,) = rtk_hook().matchers
     output = await call_hook(matcher, bash_input("pytest -q tests"))
@@ -94,22 +96,26 @@ async def test_with_a_stub_rtk_the_hook_rewrites_the_command(stub_on_path: Path)
     assert "permissionDecision" not in specific
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_commands_rtk_declines_run_unchanged(stub_on_path: Path) -> None:
     (matcher,) = rtk_hook().matchers
     assert await call_hook(matcher, bash_input("ls -la")) == {}
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_other_tools_are_left_alone(stub_on_path: Path) -> None:
     (matcher,) = rtk_hook().matchers
     assert await call_hook(matcher, bash_input("pytest", tool_name="Read")) == {}
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_an_empty_command_is_left_alone(stub_on_path: Path) -> None:
     (matcher,) = rtk_hook().matchers
     assert await call_hook(matcher, bash_input("   ")) == {}
 
 
 @pytest.mark.parametrize("code", [0, 3])
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_a_rewrite_counts_whether_rtk_allows_it_or_leaves_the_prompt(
     tmp_path: Path, code: int
 ) -> None:
@@ -141,6 +147,7 @@ async def test_a_hung_rtk_times_out_and_the_command_runs_unchanged(tmp_path: Pat
     assert await rewrite_command(binary, "pytest", timeout=0.2) is None
 
 
+@pytest.mark.posix_only("the rtk stub is a POSIX shell script")
 async def test_rtk_gets_no_environment_beyond_path_and_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

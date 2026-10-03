@@ -61,6 +61,25 @@ and CI fails when it does not match them.
 
 | Test | Limitation |
 |---|---|
+| `tests/cli/test_wiring.py::test_a_run_without_rtk_records_the_warning_in_its_events` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_a_rewrite_counts_whether_rtk_allows_it_or_leaves_the_prompt` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_an_empty_command_is_left_alone` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_commands_rtk_declines_run_unchanged` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_other_tools_are_left_alone` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_rtk_gets_no_environment_beyond_path_and_home` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_with_a_stub_rtk_the_hook_rewrites_the_command` | the rtk stub is a POSIX shell script |
+| `tests/economy/test_rtk.py::test_with_rtk_on_path_the_hook_matches_the_shell_tool` | the rtk stub is a POSIX shell script |
+| `tests/expose/test_quick_tunnel.py::test_close_stops_cloudflared_and_is_repeatable` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_quick_tunnel.py::test_exit_before_url_is_an_error` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_quick_tunnel.py::test_no_url_in_time_is_a_timeout_and_stops_the_process` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_quick_tunnel.py::test_runs_cloudflared_with_empty_config_and_parses_the_url` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve.py::test_failed_proof_stops_the_tunnel_and_raises` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve.py::test_running_server_answers_json_not_sse_and_the_url_is_announced_once` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve.py::test_unverified_tunnel_never_announces` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |
+| `tests/mcp/test_server.py::test_token_file_is_0600_and_stable` | POSIX file permission bits |
+| `tests/notify/test_channels.py::test_the_generated_topic_is_random_and_kept` | POSIX file permission bits |
+| `tests/program/test_sigterm.py::test_a_stop_signal_ends_labhq_serve_with_exit_code_zero` | POSIX stop signals |
 | `tests/scheduler/test_termination.py::test_a_process_that_is_already_gone_reports_false` | POSIX process groups and signals |
 | `tests/scheduler/test_termination.py::test_posix_signals_the_whole_process_group` | POSIX process groups and signals |
 

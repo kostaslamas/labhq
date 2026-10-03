@@ -120,6 +120,7 @@ def test_failing_tool_returns_spoken_sentence_without_traceback(
     assert "Traceback" in caplog.text
 
 
+@pytest.mark.posix_only("POSIX file permission bits")
 def test_token_file_is_0600_and_stable(tmp_path: Path) -> None:
     directory = tmp_path / "data"
     token = ensure_token(directory)
@@ -128,6 +129,7 @@ def test_token_file_is_0600_and_stable(tmp_path: Path) -> None:
     assert load_token(directory) == token
 
 
+@pytest.mark.posix_only("POSIX file permission bits")
 def test_cli_token_shows_rotates_and_logs_nothing(
     data_dir: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
