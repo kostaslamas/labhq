@@ -1,0 +1,147 @@
+name: Release
+
+# On a pushed release tag: check the tag against the files, build, prove the wheel installs
+# and runs, publish to PyPI through trusted publishing and attach the files to a draft
+# GitHub release. PyPI authenticates the workflow by its OIDC identity, so the repository
+# holds no PyPI token; the trusted publisher on PyPI is configured by the owner.
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TAG: ${{ github.ref_name }}
+
+jobs:
+  check:
+    name: Release check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # actions/checkout can record a pushed annotated tag as a lightweight ref; fetch the
+      # tag object itself so the annotated-tag check sees what was pushed.
+      - name: Fetch the tag object
+        run: git fetch --force origin "refs/tags/${TAG}:refs/tags/${TAG}"
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Check the tag, version, changelog and root files
+        run: uv run --frozen python -m tools.release_check "${TAG}"
+
+  build:
+    name: Build sdist and wheel
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: Build
+        run: uv build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  smoke:
+    name: Install the wheel and run it
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      # A fresh environment outside any checkout: only the wheel and its dependencies.
+      - name: Install the wheel in a fresh environment and run labhq --version
+        run: |
+          set -euo pipefail
+          fresh="${RUNNER_TEMP}/fresh"
+          uv venv --python 3.12 "${fresh}"
+          uv pip install --python "${fresh}/bin/python" dist/*.whl
+          "${fresh}/bin/labhq" --version | tee "${RUNNER_TEMP}/version.txt"
+          grep -q '^labhq [0-9]' "${RUNNER_TEMP}/version.txt"
+
+  publish:
+    name: Publish to PyPI (trusted publishing)
+    needs: smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/labhq/
+    permissions:
+      # The OIDC token PyPI exchanges for a short-lived upload token.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          version: "0.8.17"
+
+      - name: Publish
+        run: uv publish --trusted-publishing always dist/*
+
+  github-release:
+    name: Draft the GitHub release
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      # A draft, so the owner reviews the notes (the annotated tag's acceptance evidence)
+      # before anyone sees the release.
+      - name: Create the draft release with the built files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          prerelease=()
+          if [[ "${TAG}" == *-* ]]; then
+            prerelease=(--prerelease)
+          fi
+          gh release create "${TAG}" dist/* --repo "${REPO}" --draft --verify-tag \
+            --title "${TAG}" --notes-from-tag "${prerelease[@]}"
