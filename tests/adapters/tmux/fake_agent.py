@@ -17,7 +17,6 @@ import shlex
 import subprocess
 import sys
 import threading
-import tty
 from pathlib import Path
 
 TURN_END = "LABHQ-FAKE-TURN-END"
@@ -72,6 +71,10 @@ LOGIN_DIALOG = "Select login method:\n \u276f 1. Claude account\n   2. Anthropic
 
 def trust_dialog() -> None:
     """Claude Code 2.1.288: unnumbered options, cursor on "No, exit", Down moves it."""
+    # Imported here: `termios` does not exist on native Windows, where the test module is
+    # still collected (and reported as a known limitation) before its posix_only mark applies.
+    import tty
+
     options = ["No, exit", "Yes, I trust this folder"]
     chosen = 0
     tty.setcbreak(sys.stdin.fileno())
