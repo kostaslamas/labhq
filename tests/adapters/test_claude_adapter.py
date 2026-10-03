@@ -139,6 +139,26 @@ async def test_a_run_given_its_own_tools_gets_only_those_served_in_process() -> 
     assert server["type"] == "sdk"
 
 
+def test_agent_config_can_take_every_tool_away() -> None:
+    # The usage extractor agent runs with `{"tools": []}` (ADR 0003).
+    options = ClaudeAdapter(cli_path=CLI_PATH, environ={}).options_for(
+        RunRequest(prompt="hi", config={"tools": []})
+    )
+    assert options.tools == []
+
+
+async def test_a_runs_own_tools_win_over_configured_tools() -> None:
+    async def echo(arguments: dict[str, object]) -> str:
+        return "echo"
+
+    tool = AgentTool("echo", "Echo.", {"type": "object", "properties": {}}, echo)
+    options = ClaudeAdapter(cli_path=CLI_PATH, environ={}).options_for(
+        RunRequest(prompt="hi", config={"tools": ["Bash"]}, tools=[tool])
+    )
+    assert options.tools == []
+    assert options.allowed_tools == ["mcp__labhq__echo"]
+
+
 async def test_the_final_answer_text_is_reported(tmp_path: Path) -> None:
     script = StubScript(result_overrides={"result": "All quiet."})
     _, result = await run_once(stub_claude(script)(), RunRequest(prompt="hi", cwd=tmp_path))
