@@ -14,6 +14,7 @@ import labhq
 from labhq.api.approvals import router as approvals_router
 from labhq.api.meetings import router as meetings_router
 from labhq.api.projects import router as projects_router
+from labhq.api.rules.routes import router as rules_router
 from labhq.api.vocabulary import vocabulary_router
 from labhq.auth.routes import public_router as auth_public_router
 from labhq.auth.routes import router as auth_router
@@ -64,3 +65,4 @@ default_routers.register(auth_router)
 default_routers.register(approvals_router)
 default_routers.register(projects_router)
 default_routers.register(meetings_router)
+default_routers.register(rules_router)
