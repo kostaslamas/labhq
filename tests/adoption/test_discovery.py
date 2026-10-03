@@ -86,12 +86,14 @@ def test_discovery_finds_the_agent_and_its_directory_reading_no_private_file(
     assert len(mine) == 1
     assert mine[0].kind == KIND
     assert mine[0].cwd == tmp_path / "checkout"
-    assert AUDIT.paths, "the audit hook saw nothing; the check would prove nothing"
     private = [home / name for name in (*PRIVATE_DIRS, *PRIVATE_FILES)]
     touched = [path for path in AUDIT.paths if any(path.startswith(str(p)) for p in private)]
     assert touched == []
     if sys.platform.startswith("linux"):
-        # On Linux the process table is /proc; nothing outside it is opened.
+        # On Linux the process table is /proc, so the hook must see it, or the check above
+        # would prove nothing; nothing outside it is opened. macOS and Windows answer
+        # through system calls, so no file is opened there at all.
+        assert AUDIT.paths, "the audit hook saw nothing; the check would prove nothing"
         assert all(path.startswith("/proc") for path in AUDIT.paths), AUDIT.paths
 
 
