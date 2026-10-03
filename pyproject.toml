@@ -115,7 +115,14 @@ testpaths = ["tests"]
 pythonpath = ["."]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
-addopts = ["--strict-markers", "--strict-config", "--import-mode=importlib"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--import-mode=importlib",
+    # Platform limitation markers and the no-skip rule (tests/platforms.py).
+    "-p",
+    "tests.platforms",
+]
 xfail_strict = true
 filterwarnings = ["error"]
 
