@@ -81,6 +81,14 @@ packages = ["src/labhq"]
 [tool.hatch.build.targets.wheel.force-include]
 "migrations" = "labhq/migrations"
 
+# Builds `web/` and packages it as `labhq/web/`; `LABHQ_SKIP_WEB_BUILD=1` opts out (#68).
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "tools/build_web.py"
+
+# The sdist carries the UI sources so a wheel built from it has the UI; never its build output.
+[tool.hatch.build.targets.sdist]
+exclude = ["web/node_modules", "web/dist", "web/test-results", "web/playwright-report"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"

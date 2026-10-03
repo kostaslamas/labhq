@@ -1,0 +1,129 @@
+name: Package
+
+# The built web UI inside the wheel (#68): `uv build` makes the sdist and then the wheel from
+# it, the wheel is installed outside the checkout and `labhq serve` must answer `/` and an
+# asset from it. A Python-only build and a build without npm are checked too.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheel-with-ui:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build the sdist, then the wheel from the sdist
+        run: uv build
+
+      - name: The sdist carries the UI sources, the wheel the built UI
+        run: |
+          set -euo pipefail
+          uv run python -m tools.build_web check-sdist dist/*.tar.gz
+          uv run python -m tools.build_web check-wheel dist/*.whl
+          LABHQ_BUILT_WHEEL="$(ls "${PWD}"/dist/*.whl)" \
+            uv run pytest tests/tools/test_build_web.py -k built_in_ci -rA \
+            | tee "${RUNNER_TEMP}/wheel-test.log"
+          grep -q 'PASSED.*test_the_wheel_built_in_ci_contains_the_ui' "${RUNNER_TEMP}/wheel-test.log"
+
+      - name: Serve the UI from the wheel installed outside the checkout
+        run: |
+          set -euo pipefail
+          wheel="$(ls "${PWD}"/dist/*.whl)"
+          work="${RUNNER_TEMP}/installed"
+          mkdir -p "${work}"
+          cd "${work}"
+          uv venv --python 3.12 venv
+          uv pip install --python venv/bin/python "${wheel}"
+          export LABHQ_DATA_DIR="${work}/data"
+          venv/bin/labhq init
+          port="$(venv/bin/python -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+          venv/bin/labhq serve --port "${port}" > serve.out 2> serve.err &
+          server=$!
+          trap 'kill "${server}" 2>/dev/null || true' EXIT
+          base="http://127.0.0.1:${port}"
+          for _ in $(seq 1 100); do
+            curl -fsS "${base}/api/health" > /dev/null 2>&1 && break
+            kill -0 "${server}"
+            sleep 0.2
+          done
+          curl -fsS "${base}/" > index.html
+          grep -q '<div id="app">' index.html
+          asset="$(grep -oE '/assets/[^"]+\.js' index.html | head -n 1)"
+          test -n "${asset}"
+          curl -fsS "${base}${asset}" > /dev/null
+          ! grep -q 'the web UI is absent' serve.err
+
+  python-only-wheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.17"
+          python-version: "3.12"
+
+      - name: A build without npm fails and names the way out
+        run: |
+          set -euo pipefail
+          bin="${RUNNER_TEMP}/no-npm"
+          mkdir -p "${bin}"
+          ln -s "$(command -v uv)" "${bin}/uv"
+          if env PATH="${bin}:/usr/bin:/bin" uv build --wheel -o "${RUNNER_TEMP}/no-npm-dist" \
+              > "${RUNNER_TEMP}/no-npm.log" 2>&1; then
+            cat "${RUNNER_TEMP}/no-npm.log"; exit 1
+          fi
+          cat "${RUNNER_TEMP}/no-npm.log"
+          grep -q 'npm was not found on PATH' "${RUNNER_TEMP}/no-npm.log"
+          grep -q 'LABHQ_SKIP_WEB_BUILD=1' "${RUNNER_TEMP}/no-npm.log"
+          test ! -e "${RUNNER_TEMP}"/no-npm-dist/*.whl
+
+      - name: Build a Python-only wheel
+        env:
+          LABHQ_SKIP_WEB_BUILD: "1"
+        run: uv build --wheel
+
+      - name: labhq serve says the UI is absent
+        run: |
+          set -euo pipefail
+          wheel="$(ls "${PWD}"/dist/*.whl)"
+          work="${RUNNER_TEMP}/installed"
+          mkdir -p "${work}"
+          cd "${work}"
+          uv venv --python 3.12 venv
+          uv pip install --python venv/bin/python "${wheel}"
+          export LABHQ_DATA_DIR="${work}/data"
+          venv/bin/labhq init
+          port="$(venv/bin/python -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1])')"
+          venv/bin/labhq serve --port "${port}" > serve.out 2> serve.err &
+          server=$!
+          trap 'kill "${server}" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 100); do
+            curl -fsS "http://127.0.0.1:${port}/api/health" > /dev/null 2>&1 && break
+            kill -0 "${server}"
+            sleep 0.2
+          done
+          grep -q 'the web UI is absent: this labhq was built with LABHQ_SKIP_WEB_BUILD=1' serve.err
+          test "$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/")" = 404
