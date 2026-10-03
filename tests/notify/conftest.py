@@ -39,7 +39,7 @@ def dispatcher_for(
     tmp_path_factory: pytest.TempPathFactory,
 ):
     def make(outbound: Outbound, **env: object) -> Dispatcher:
-        settings = NotifySettings(**env)  # type: ignore[arg-type]
+        settings = NotifySettings(**{"kind": "ntfy", **env})  # type: ignore[arg-type]
         notifier = build_notifier(settings, outbound.client(), tmp_path_factory.mktemp("data"))
         return Dispatcher(sessions, notifier, clock=clock, settings=settings)
 

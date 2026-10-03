@@ -258,7 +258,9 @@ Notifier choice, credentials and retry policy, read from `LABHQ_NOTIFY_*` variab
 
 | Variable | Type | Default | Description |
 |---|---|---|---|
-| `LABHQ_NOTIFY_KIND` | `str` | `ntfy` | A key of `labhq.notify.registry.notifiers`; ntfy needs no account. |
+| `LABHQ_NOTIFY_KIND` | `str` | `webpush` | A key of `labhq.notify.registry.notifiers`; Web Push needs no account or third party. |
+| `LABHQ_NOTIFY_WEBPUSH_SUBJECT` | `str` | `https://github.com` | The VAPID `sub` claim: how a push service can reach the sender. py_vapid accepts only a mailto: address or an https URL without a path, so the default is a host alone. |
+| `LABHQ_NOTIFY_WEBPUSH_TTL_SECONDS` | `int` | `3600` | How long a push service keeps a push for a phone that is off; an approval goes stale. |
 | `LABHQ_NOTIFY_NTFY_SERVER` | `str` | `https://ntfy.sh` |  |
 | `LABHQ_NOTIFY_NTFY_TOPIC` | `str \| None` | unset | Unset: a random topic is generated once and kept in the data directory. |
 | `LABHQ_NOTIFY_NTFY_PRIORITY` | `str` | `high` |  |

@@ -1,4 +1,4 @@
-"""Notifier: ntfy by default, Telegram optional, every message sent once from an outbox."""
+"""Notifier: Web Push by default, ntfy or Telegram optional, sent once from an outbox."""
 
 from labhq.notify.base import Message, Notifier, NotifyError
 from labhq.notify.dispatcher import Dispatcher
