@@ -45,19 +45,22 @@ class WebSession(Base):
 class WebauthnChallenge(Base):
     """A challenge issued once, for one purpose, consumed by one conditional update.
 
-    An enrollment link is a row too: its `challenge` is the hash of the link's token.
+    An enrollment link is a row too, keyed by the hash of its token.
     """
 
     __tablename__ = "webauthn_challenges"
     __table_args__ = (Index("ix_webauthn_challenges_expires_at", "expires_at"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # The SHA-256 of the challenge (or of an enrollment link's token), never the value itself.
     challenge: Mapped[str] = mapped_column(String(128), unique=True)
     # `login`, `register`, `enrollment_link` or a step-up purpose such as `approval:42`.
     purpose: Mapped[str] = mapped_column(String(64))
     rp_id: Mapped[str] = mapped_column(String(255))
     # A step-up challenge belongs to the session that asked for it.
-    session_id: Mapped[int | None] = mapped_column(ForeignKey("web_sessions.id", ondelete="CASCADE"))
+    session_id: Mapped[int | None] = mapped_column(
+        ForeignKey("web_sessions.id", ondelete="CASCADE")
+    )
     created_at: Mapped[datetime]
     expires_at: Mapped[datetime]
     used_at: Mapped[datetime | None]
