@@ -44,6 +44,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/labhq"]
 
+# `uvx labhq onboard` runs from the wheel alone, so the migrations travel inside the package.
+[tool.hatch.build.targets.wheel.force-include]
+"migrations" = "labhq/migrations"
+
 [tool.ruff]
 line-length = 100
 target-version = "py312"
