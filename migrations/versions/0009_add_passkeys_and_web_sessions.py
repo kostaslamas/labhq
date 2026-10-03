@@ -74,7 +74,6 @@ def upgrade() -> None:
         batch_op.create_index("ix_webauthn_challenges_expires_at", ["expires_at"], unique=False)
 
 
-
 def downgrade() -> None:
     with op.batch_alter_table("webauthn_challenges", schema=None) as batch_op:
         batch_op.drop_index("ix_webauthn_challenges_expires_at")
