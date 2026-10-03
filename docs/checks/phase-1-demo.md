@@ -88,11 +88,11 @@ failure below rather than rerunning until it passes.
 
 ## Result
 
-Not run yet. The owner records each run here before the `v0.1.0-alpha.1` tag.
+Recorded runs, newest last. A run is recorded whether it passed or not.
 
 | Date | labhq commit | Claude Code | SDK | Billing | Model | Run | Commits ahead | cost_micros | Push after approve | Run by |
 |---|---|---|---|---|---|---|---|---|---|---|
-| | | | | | | | | | | |
+| 2026-10-03 | `5cbe430` | 2.1.288 | 0.2.163 | subscription | `claude-haiku-4-5-20251001` | succeeded | 1 (`HELLO.md`) | 121386 (`total_cost_usd` 0.1213864) | executed; remote branch at the pinned commit `600adaa` | owner's machine |
 
 ## Phase 1 manual checks
 
