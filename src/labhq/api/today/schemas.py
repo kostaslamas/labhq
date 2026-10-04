@@ -16,7 +16,7 @@ class ExecutedApproval(BaseModel):
     commit: str | None
 
 
-class Deliverable(BaseModel):
+class TodayDeliverable(BaseModel):
     task_id: int
     title: str
     project_id: int
@@ -92,6 +92,6 @@ class SpendWithoutOutput(BaseModel):
 class Today(BaseModel):
     since: datetime
     until: datetime
-    deliverables: list[Deliverable]
+    deliverables: list[TodayDeliverable]
     needs_you: NeedsYou
     spend_without_output: list[SpendWithoutOutput]

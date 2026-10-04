@@ -7,13 +7,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.api.today.schemas import (
     BudgetNotice,
-    Deliverable,
     ExecutedApproval,
     NeedsYou,
     OpenIncident,
     PendingApproval,
     PendingQuestion,
     SpendWithoutOutput,
+    TodayDeliverable,
 )
 from labhq.budgets.periods import period_start
 from labhq.budgets.settings import get_budget_settings
@@ -38,7 +38,7 @@ type ProjectRef = tuple[int | None, str | None]
 NO_PROJECT: ProjectRef = (None, None)
 
 
-async def deliverables(db: AsyncSession, since: datetime) -> list[Deliverable]:
+async def deliverables(db: AsyncSession, since: datetime) -> list[TodayDeliverable]:
     rows = (
         await db.execute(
             select(Task, Project.name)
@@ -50,12 +50,12 @@ async def deliverables(db: AsyncSession, since: datetime) -> list[Deliverable]:
     ids = [task.id for task, _ in rows]
     published = await _published(db, ids)
     costs = await _task_costs(db, ids)
-    result: list[Deliverable] = []
+    result: list[TodayDeliverable] = []
     for task, project_name in rows:
         approvals = published.get(task.id, [])
         branches = [item.branch for item in approvals if item.branch]
         result.append(
-            Deliverable(
+            TodayDeliverable(
                 task_id=task.id,
                 title=task.title,
                 project_id=task.project_id,
@@ -236,7 +236,7 @@ async def _budget_warnings(db: AsyncSession, clock: Clock) -> list[BudgetNotice]
 
 
 async def spend_without_output(
-    db: AsyncSession, since: datetime, delivered: list[Deliverable]
+    db: AsyncSession, since: datetime, delivered: list[TodayDeliverable]
 ) -> list[SpendWithoutOutput]:
     """Agents that cost money in the window while none of their runs reached a deliverable."""
     delivered_agents = set(
