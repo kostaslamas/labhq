@@ -53,6 +53,8 @@ def isolated(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     monkeypatch.setenv("PATH", str(bin_dir))
+    # These tests exercise the ntfy channel; Web Push has its own onboarding test.
+    monkeypatch.setenv("LABHQ_NOTIFY_KIND", "ntfy")
     monkeypatch.setenv("LABHQ_ONBOARD_PORT", str(free_port()))
     monkeypatch.setenv("LABHQ_ONBOARD_VERIFY_ATTEMPTS", "3")
     monkeypatch.setenv("LABHQ_ONBOARD_VERIFY_DELAY_SECONDS", "0.2")

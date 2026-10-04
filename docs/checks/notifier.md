@@ -14,7 +14,8 @@ a new approval creates, and `labhq notify test` reaches the same phone.
 - The ntfy app is installed on the phone (Android, iOS or the web app at ntfy.sh). No
   account is needed.
 - A labhq data directory exists: `uv run labhq init`.
-- The default notifier is ntfy on `https://ntfy.sh`. To use another server or a fixed topic,
+- Set `LABHQ_NOTIFY_KIND=ntfy`: the default notifier is Web Push, checked in
+  `web-push-phone.md`. ntfy uses `https://ntfy.sh`; to use another server or a fixed topic,
   set `LABHQ_NOTIFY_NTFY_SERVER` or `LABHQ_NOTIFY_NTFY_TOPIC`.
 
 ## Run it

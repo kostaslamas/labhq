@@ -491,6 +491,40 @@
         "title": "ProjectStatus",
         "type": "string"
       },
+      "PushKeys": {
+        "properties": {
+          "auth": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Auth",
+            "type": "string"
+          },
+          "p256dh": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "P256Dh",
+            "type": "string"
+          }
+        },
+        "required": ["p256dh", "auth"],
+        "title": "PushKeys",
+        "type": "object"
+      },
+      "PushStatus": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "public_key": {
+            "title": "Public Key",
+            "type": "string"
+          }
+        },
+        "required": ["public_key", "active"],
+        "title": "PushStatus",
+        "type": "object"
+      },
       "QuestionStatus": {
         "enum": ["pending", "answered"],
         "title": "QuestionStatus",
@@ -518,6 +552,24 @@
         "title": "StepUpBody",
         "type": "object"
       },
+      "SubscribeBody": {
+        "description": "`PushSubscription.toJSON()` as the browser gives it.",
+        "properties": {
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "pattern": "^https://",
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/PushKeys"
+          }
+        },
+        "required": ["endpoint", "keys"],
+        "title": "SubscribeBody",
+        "type": "object"
+      },
       "TaskRef": {
         "properties": {
           "id": {
@@ -537,6 +589,19 @@
         "enum": ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"],
         "title": "TaskStatus",
         "type": "string"
+      },
+      "UnsubscribeBody": {
+        "properties": {
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          }
+        },
+        "required": ["endpoint"],
+        "title": "UnsubscribeBody",
+        "type": "object"
       },
       "Vocabulary": {
         "description": "The status values the backend may return, by enum.",
@@ -1303,6 +1368,99 @@
         },
         "summary": "Health Get",
         "tags": ["health"]
+      }
+    },
+    "/api/push/status": {
+      "get": {
+        "operationId": "push_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Status",
+        "tags": ["push"]
+      }
+    },
+    "/api/push/subscriptions": {
+      "post": {
+        "operationId": "push_subscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscribeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Subscribe",
+        "tags": ["push"]
+      }
+    },
+    "/api/push/subscriptions/remove": {
+      "post": {
+        "operationId": "push_unsubscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UnsubscribeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Unsubscribe",
+        "tags": ["push"]
       }
     },
     "/api/vocabulary": {

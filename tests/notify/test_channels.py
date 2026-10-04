@@ -19,7 +19,7 @@ async def test_ntfy_posts_body_title_priority_and_click_url_to_the_topic(
     outbound: Outbound, tmp_path: Path
 ) -> None:
     notifier = build_notifier(
-        NotifySettings(ntfy_server="https://ntfy.example/", ntfy_topic="abc"),
+        NotifySettings(kind="ntfy", ntfy_server="https://ntfy.example/", ntfy_topic="abc"),
         outbound.client(),
         tmp_path,
     )
@@ -33,7 +33,9 @@ async def test_ntfy_posts_body_title_priority_and_click_url_to_the_topic(
 
 
 async def test_ntfy_encodes_a_non_ascii_title(outbound: Outbound, tmp_path: Path) -> None:
-    notifier = build_notifier(NotifySettings(ntfy_topic="abc"), outbound.client(), tmp_path)
+    notifier = build_notifier(
+        NotifySettings(kind="ntfy", ntfy_topic="abc"), outbound.client(), tmp_path
+    )
     await notifier.send(Message("Έγκριση", "x"))
     assert outbound.requests[0].headers["Title"].startswith("=?UTF-8?B?")
 
@@ -49,7 +51,7 @@ def test_the_generated_topic_is_random_and_kept(tmp_path: Path) -> None:
 async def test_ntfy_without_a_topic_setting_uses_the_kept_topic(
     outbound: Outbound, tmp_path: Path
 ) -> None:
-    notifier = build_notifier(NotifySettings(), outbound.client(), tmp_path)
+    notifier = build_notifier(NotifySettings(kind="ntfy"), outbound.client(), tmp_path)
     await notifier.send(Message("t", "b"))
     assert outbound.requests[0].url.path == "/" + load_or_create_topic(tmp_path)
 

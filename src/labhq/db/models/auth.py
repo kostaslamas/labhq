@@ -64,3 +64,17 @@ class WebauthnChallenge(Base):
     created_at: Mapped[datetime]
     expires_at: Mapped[datetime]
     used_at: Mapped[datetime | None]
+
+
+class PushSubscription(Base):
+    """One browser's Web Push subscription. The endpoint is a capability: whoever holds it and
+    the keys can push to that device, so it is never logged."""
+
+    __tablename__ = "push_subscriptions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    endpoint: Mapped[str] = mapped_column(String(2048), unique=True)
+    # The browser's public key and auth secret, base64url as `PushSubscription.toJSON` gives them.
+    p256dh: Mapped[str] = mapped_column(String(255))
+    auth: Mapped[str] = mapped_column(String(255))
+    created_at: Mapped[datetime]

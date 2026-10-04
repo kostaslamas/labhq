@@ -280,6 +280,57 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/push/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Push Status */
+    get: operations['push_status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/push/subscriptions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Push Subscribe */
+    post: operations['push_subscribe']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/push/subscriptions/remove': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Push Unsubscribe */
+    post: operations['push_unsubscribe']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/vocabulary': {
     parameters: {
       query?: never
@@ -519,6 +570,20 @@ export interface components {
      * @enum {string}
      */
     ProjectStatus: 'active' | 'paused' | 'archived'
+    /** PushKeys */
+    PushKeys: {
+      /** Auth */
+      auth: string
+      /** P256Dh */
+      p256dh: string
+    }
+    /** PushStatus */
+    PushStatus: {
+      /** Active */
+      active: boolean
+      /** Public Key */
+      public_key: string
+    }
     /**
      * QuestionStatus
      * @enum {string}
@@ -539,6 +604,15 @@ export interface components {
       /** Purpose */
       purpose: string
     }
+    /**
+     * SubscribeBody
+     * @description `PushSubscription.toJSON()` as the browser gives it.
+     */
+    SubscribeBody: {
+      /** Endpoint */
+      endpoint: string
+      keys: components['schemas']['PushKeys']
+    }
     /** TaskRef */
     TaskRef: {
       /** Id */
@@ -551,6 +625,11 @@ export interface components {
      * @enum {string}
      */
     TaskStatus: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'cancelled'
+    /** UnsubscribeBody */
+    UnsubscribeBody: {
+      /** Endpoint */
+      endpoint: string
+    }
     /**
      * Vocabulary
      * @description The status values the backend may return, by enum.
@@ -1109,6 +1188,97 @@ export interface operations {
         content: {
           'application/json': components['schemas']['Health']
         }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_status: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PushStatus']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_subscribe: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscribeBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_unsubscribe: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UnsubscribeBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Error */
       default: {

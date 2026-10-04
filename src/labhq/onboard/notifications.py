@@ -15,7 +15,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from labhq.db import create_engine, session_factory
 from labhq.db.enums import NotificationStatus
 from labhq.db.models import Notification
-from labhq.notify import Dispatcher, NotifyError, NotifySettings, build_notifier, enqueue
+from labhq.notify import (
+    Dispatcher,
+    NotifyError,
+    NotifySettings,
+    build_notifier,
+    enqueue,
+    subscriptions,
+)
 from labhq.notify.topic import TOPIC_FILENAME
 from labhq.onboard.base import Detection, ManualAction, OnboardContext, Outcome, StepError
 
@@ -26,6 +33,9 @@ class Channel:
 
     describe: Callable[[NotifySettings, Path], str]
     subscribe_link: Callable[[NotifySettings, Path], str | None]
+    # A channel with no account (Web Push) has nobody to reach until a device subscribes in the
+    # web app, so a test notification before that would only fail.
+    needs_subscriber: bool = False
 
 
 def _ntfy_topic(settings: NotifySettings, data_dir: Path) -> str | None:
@@ -49,6 +59,11 @@ def _ntfy_link(settings: NotifySettings, data_dir: Path) -> str | None:
 
 # Keyed like `labhq.notify.notifiers`; a kind without a row still sends, it just has no link.
 CHANNELS: dict[str, Channel] = {
+    "webpush": Channel(
+        lambda settings, data_dir: "Web Push from the labhq web app",
+        lambda *_: None,
+        needs_subscriber=True,
+    ),
     "ntfy": Channel(_ntfy_describe, _ntfy_link),
     "telegram": Channel(lambda settings, data_dir: "Telegram bot", lambda *_: None),
 }
@@ -72,13 +87,18 @@ class NotificationsStep:
 
     def verify(self, context: OnboardContext) -> Outcome:
         settings = NotifySettings()
+        channel = CHANNELS.get(settings.kind)
+        if channel and channel.needs_subscriber and not self._has_subscriber(context):
+            return Outcome(
+                f"{settings.kind} is ready; no device has enabled it yet. Open the labhq web app "
+                "on your phone (on iOS, add it to the Home Screen first) and enable notifications"
+            )
         try:
             error = asyncio.run(self._send_test(context, settings))
         except SQLAlchemyError as failure:
             raise StepError(f"cannot use the outbox: {failure}") from failure
         if error is not None:
             raise StepError(f"the test notification was not accepted ({error})")
-        channel = CHANNELS.get(settings.kind)
         link = channel.subscribe_link(settings, context.settings.data_dir) if channel else None
         return Outcome(
             f"{settings.kind} accepted a test notification",
@@ -88,6 +108,18 @@ class NotificationsStep:
         )
 
     @staticmethod
+    def _has_subscriber(context: OnboardContext) -> bool:
+        async def count_rows() -> int:
+            engine = create_engine(context.settings.resolved_database_url)
+            try:
+                async with session_factory(engine)() as db:
+                    return await subscriptions.count(db)
+            finally:
+                await engine.dispose()
+
+        return asyncio.run(count_rows()) > 0
+
+    @staticmethod
     async def _send_test(context: OnboardContext, settings: NotifySettings) -> str | None:
         """Returns None once sent, else the reason; a failed row is not retried later."""
         engine = create_engine(context.settings.resolved_database_url)
@@ -95,7 +127,9 @@ class NotificationsStep:
         try:
             async with httpx.AsyncClient(timeout=context.onboard.http_timeout_seconds) as client:
                 try:
-                    notifier = build_notifier(settings, client, context.settings.data_dir)
+                    notifier = build_notifier(
+                        settings, client, context.settings.data_dir, sessions=sessions
+                    )
                 except NotifyError as error:
                     return str(error)
                 row_id = await _enqueue_test(sessions, context.clock.now())
