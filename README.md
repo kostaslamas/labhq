@@ -58,11 +58,14 @@ To keep `labhq` on your `PATH` instead of running it through `uvx`:
 uv tool install labhq
 ```
 
-With Docker, from a clone of this repository (see [Docker](docs/guide/docker.md)):
+With Docker or rootless Podman (no daemon, no root), from a clone of this repository (see
+[Containers](docs/guide/containers.md)):
 
 ```sh
 cp .env.example .env     # then set PROJECTS_DIR
 docker compose up -d
+# or, with Podman:
+podman compose -f compose.yaml -f compose.podman.yaml up -d
 ```
 
 **Windows.** WSL2 and Docker Desktop are the supported ways: inside WSL2 the Linux commands

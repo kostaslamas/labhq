@@ -8,7 +8,7 @@ networking, which no CI runner offers, so this is a manual check (CONTRIBUTING.m
 
 ## What it proves
 
-On Docker Desktop, the steps in `docs/guide/docker.md` reach a healthy container whose UI,
+On Docker Desktop, the steps in `docs/guide/containers.md` reach a healthy container whose UI,
 MCP endpoint and model login work, and whose data survives a restart.
 
 ## Before you run it
@@ -20,7 +20,7 @@ MCP endpoint and model login work, and whose data survives a restart.
 
 ## Run it
 
-1. Follow "Install" in `docs/guide/docker.md`: clone, `cp .env.example .env`, set
+1. Follow "Install" in `docs/guide/containers.md`: clone, `cp .env.example .env`, set
    `PROJECTS_DIR`, `docker compose up -d`.
 2. `docker compose ps` shows `(healthy)` within two minutes. `docker compose exec labhq id -u`
    prints a non-zero id. `docker compose port labhq 8787` prints `127.0.0.1:8787`.

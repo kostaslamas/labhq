@@ -55,7 +55,7 @@ Only an operating system boundary takes your keys, your agent socket and your cr
 helpers out of an agent's reach. Pick one:
 
 - **Docker.** `docker compose up` runs labhq as a non-root user in a container that sees only
-  the repositories you mount and its own volumes. See [Docker](docker.md).
+  the repositories you mount and its own volumes. See [Containers](containers.md).
 - **A separate OS user.** Create a user for labhq with its own home, give it only the
   repositories it works on, and no SSH keys or forge tokens. This suits agents labhq starts
   itself.
