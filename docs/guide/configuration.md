@@ -320,6 +320,7 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_INTERRUPT_GRACE_SECONDS` | `int` | `30` | Time a timed-out run gets to honour its interrupt before it is abandoned. |
 | `LABHQ_SCHEDULER_TICK_SECONDS` | `float` | `5.0` |  |
 | `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `0` | An agent that ends a turn without a handoff gets another turn. 0 keeps it going until the task is resolved (the owner's choice); its budget and the plan-usage cap still stop it. A positive limit marks the task blocked and sends it to the reviewer instead. |
+| `LABHQ_SCHEDULER_STALL_ALERT_RUNS` | `int` | `3` | Every this many silent turns the reviewer (the parent task's assignee) is woken to look at the stuck task while it keeps going. 0 never alerts. |
 
 ## `labhq.settings.Settings`
 

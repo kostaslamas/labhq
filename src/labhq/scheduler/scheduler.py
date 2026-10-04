@@ -192,6 +192,7 @@ class Scheduler:
                 self._clock,
                 live.run_id,
                 max_unreported_runs=self._settings.max_unreported_runs,
+                stall_alert_runs=self._settings.stall_alert_runs,
             )
             await db.commit()
         report.finished.append(live.run_id)
@@ -277,6 +278,7 @@ class Scheduler:
                 self._clock,
                 run_id,
                 max_unreported_runs=self._settings.max_unreported_runs,
+                stall_alert_runs=self._settings.stall_alert_runs,
             )
             await db.commit()
 

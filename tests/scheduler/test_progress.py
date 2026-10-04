@@ -133,3 +133,58 @@ async def test_without_a_limit_an_unreported_task_keeps_getting_turns(world: Wor
                 )
             )
         assert any(w.agent_id == world.agent_id and w.task_id == world.task_id for w in pending)
+
+
+async def test_a_task_that_keeps_going_silently_wakes_its_reviewer(world: World) -> None:
+    async with world.sessions() as db:
+        manager = Agent(
+            project_id=world.project_id,
+            role="manager",
+            title="Manager",
+            adapter="fake",
+            status=AgentStatus.ACTIVE,
+            created_at=world.clock.now(),
+            updated_at=world.clock.now(),
+        )
+        db.add(manager)
+        await db.flush()
+        manager_id = manager.id
+        worker = await db.get_one(Agent, world.agent_id)
+        worker.reports_to = manager_id
+        task = await db.get_one(Task, world.task_id)
+        task.assignee_id = worker.id
+        task.status = TaskStatus.IN_PROGRESS
+        await db.commit()
+
+    for turn in range(1, 4):
+        async with world.sessions() as db:
+            for wakeup in await db.scalars(select(WakeupRequest)):
+                wakeup.status = WakeupStatus.DISPATCHED
+            run = Run(
+                agent_id=world.agent_id,
+                task_id=world.task_id,
+                adapter="fake",
+                status=RunStatus.SUCCEEDED,
+                created_at=world.clock.now(),
+                started_at=world.clock.now(),
+            )
+            db.add(run)
+            await db.flush()
+            await continue_task(db, world.clock, run.id, max_unreported_runs=0, stall_alert_runs=3)
+            await db.commit()
+        async with world.sessions() as db:
+            alerts = [
+                w
+                for w in await db.scalars(
+                    select(WakeupRequest).where(WakeupRequest.status == WakeupStatus.PENDING)
+                )
+                if w.agent_id == manager_id
+            ]
+        if turn < 3:
+            assert alerts == []
+        else:
+            assert len(alerts) == 1
+            assert "turns without a report" in (alerts[0].reason or "")
+
+    task = await get_task(world, world.task_id)
+    assert task.status is TaskStatus.IN_PROGRESS

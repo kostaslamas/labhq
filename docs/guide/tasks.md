@@ -26,7 +26,10 @@ root task. Merge and push remain separate heavy actions that need their own appr
 
 If an assigned agent ends a turn without handing off or reporting a blocker, the scheduler
 gives it another turn, and keeps doing so until the task is resolved: the CEO and the
-managers do not stop on their own. Only the agent's budget and the plan-usage cap stop it.
+managers do not stop on their own. Only the agent's budget and the plan-usage cap stop it. So that a stuck task is never
+invisible, every `LABHQ_SCHEDULER_STALL_ALERT_RUNS` silent turns (three by default) wake its
+reviewer, the parent task's assignee, who can look at it with `task_overview` and give
+feedback, split or reassign it, or ask you; the task keeps going meanwhile.
 Set `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` to a positive number to stop after that many
 silent turns instead: the task is then marked blocked and sent to its reviewer, and a
 reviewer that keeps ending turns without deciding triggers an owner notification. Budget and agent approvals can still pause

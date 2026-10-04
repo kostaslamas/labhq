@@ -23,6 +23,9 @@ class SchedulerSettings(BaseSettings):
     # the task is resolved (the owner's choice); its budget and the plan-usage cap still stop
     # it. A positive limit marks the task blocked and sends it to the reviewer instead.
     max_unreported_runs: int = Field(default=0, ge=0)
+    # Every this many silent turns the reviewer (the parent task's assignee) is woken to look
+    # at the stuck task while it keeps going. 0 never alerts.
+    stall_alert_runs: int = Field(default=3, ge=0)
 
 
 class AgentLimits(BaseModel):

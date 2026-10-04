@@ -20,8 +20,54 @@ def _limit_reached(attempts: int, limit: int) -> bool:
     return limit > 0 and attempts >= limit
 
 
+def _alert_due(attempts: int, every: int) -> bool:
+    return every > 0 and attempts > 0 and attempts % every == 0
+
+
+async def _alert_reviewer(
+    db: AsyncSession, clock: Clock, task: Task, run: Run, attempts: int
+) -> None:
+    """Wake the reviewer to look at a task that keeps going without a report; it keeps going."""
+    from labhq.work.progress import reviewer
+    from labhq.work.service import WorkError
+
+    try:
+        agent_id, reviewer_task_id = await reviewer(db, task)
+    except WorkError:
+        await notify_owner(
+            db,
+            kind="task_stalled",
+            subject=f"task:{task.id}",
+            title=f"Task T{task.id} keeps going without a report",
+            body=f"{task.title}: agent {run.agent_id} ended {attempts} turns without a handoff.",
+            idempotency_key=f"task-stalled:task:{task.id}:attempts:{attempts}",
+            now=clock.now(),
+        )
+        return
+    await enqueue(
+        db,
+        Wakeup(
+            agent_id=agent_id,
+            source=WakeupSource.COMMENT,
+            idempotency_key=f"task-stalled:task:{task.id}:attempts:{attempts}",
+            task_id=reviewer_task_id,
+            reason=(
+                f"Task #{task.id} ({task.title}) has ended {attempts} turns without a report. "
+                "Look at it with task_overview, then give feedback, split or reassign it, or ask "
+                "the owner."
+            ),
+        ),
+        clock,
+    )
+
+
 async def continue_task(
-    db: AsyncSession, clock: Clock, run_id: int, *, max_unreported_runs: int
+    db: AsyncSession,
+    clock: Clock,
+    run_id: int,
+    *,
+    max_unreported_runs: int,
+    stall_alert_runs: int = 0,
 ) -> None:
     run = await db.get_one(Run, run_id)
     if run.task_id is None or run.status not in TERMINAL:
@@ -41,6 +87,8 @@ async def continue_task(
     if await _pending(db, run):
         return
     attempts = await _attempts(db, run, task)
+    if not _limit_reached(attempts, max_unreported_runs) and _alert_due(attempts, stall_alert_runs):
+        await _alert_reviewer(db, clock, task, run, attempts)
     if _limit_reached(attempts, max_unreported_runs):
         from labhq.work.progress import report_task, reviewer
         from labhq.work.service import WorkError
