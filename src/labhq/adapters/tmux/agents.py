@@ -110,6 +110,8 @@ class AgentKind:
     # means the program of `start`.
     processes: tuple[str, ...] = ()
     continue_source: str = ""
+    # What a person picks it by, in lists and forms; the name is for commands and config.
+    display_name: str = ""
 
     @property
     def process_names(self) -> tuple[str, ...]:
@@ -227,6 +229,7 @@ def default_python() -> str:
 
 CLAUDE_CODE = AgentKind(
     name="claude-code",
+    display_name="Claude Code",
     start=("claude", "--dangerously-skip-permissions", "--session-id", "{session_id}", "{prompt}"),
     resume=("claude", "--dangerously-skip-permissions", "--resume", "{session_id}", "{prompt}"),
     session_id=SessionIdSource.ASSIGNED,
@@ -276,6 +279,7 @@ CODEX_FLAGS = (
 
 CODEX = AgentKind(
     name="codex",
+    display_name="Codex",
     # codex-rs/tui/src/cli.rs: `codex [OPTIONS] [PROMPT]`; `--` keeps a prompt that starts
     # with a dash a prompt.
     start=("codex", *CODEX_FLAGS, "--", "{prompt}"),
@@ -323,6 +327,7 @@ CODEX = AgentKind(
 
 GEMINI = AgentKind(
     name="gemini",
+    display_name="Gemini CLI",
     start=("gemini", "--approval-mode", "yolo", "--session-id", "{session_id}", "-i", "{prompt}"),
     resume=("gemini", "--approval-mode", "yolo", "--resume", "{session_id}", "-i", "{prompt}"),
     session_id=SessionIdSource.ASSIGNED,
@@ -353,6 +358,7 @@ GEMINI = AgentKind(
 
 AIDER = AgentKind(
     name="aider",
+    display_name="Aider",
     start=("aider", "--yes-always", "--no-pretty", "--no-fancy-input", "--message", "{prompt}"),
     resume=(
         "aider",
