@@ -11,6 +11,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 
 from labhq.adapters import AdapterError, AdapterEvent, FakeAdapter, RunRequest
+from labhq.work import has_git_commit
 from labhq.worktrees import worker_environment
 from labhq.worktrees.git import run_git
 
@@ -20,12 +21,14 @@ COMMIT_MESSAGE = "docs: record a fake worker run"
 IDENTITY = ("-c", "user.name=labhq fake worker", "-c", "user.email=fake-worker@labhq.invalid")
 
 
-def commit_work(cwd: Path, prompt: str) -> str:
-    """Append the brief to the work file, commit it and return the new commit."""
+def commit_work(cwd: Path, prompt: str) -> str | None:
+    """Append the brief to the work file; commit it when the project uses Git."""
     path = cwd / WORK_FILE
     first_line = prompt.strip().splitlines()[0] if prompt.strip() else "(empty brief)"
     with path.open("a", encoding="utf-8") as work:
         work.write(f"- {first_line}\n")
+    if not has_git_commit(cwd):
+        return None
     environment = worker_environment()
     run_git("add", WORK_FILE, cwd=cwd, env=environment)
     run_git(*IDENTITY, "commit", "--quiet", "-m", COMMIT_MESSAGE, cwd=cwd, env=environment)
@@ -43,7 +46,10 @@ class CommittingFakeAdapter(FakeAdapter):
         async for event in super().events():
             if event.kind == "result":
                 commit = await asyncio.to_thread(commit_work, self._cwd(), self._brief.prompt)
-                yield AdapterEvent("commit", {"commit": commit, "file": WORK_FILE})
+                yield AdapterEvent(
+                    "commit" if commit else "file",
+                    {"commit": commit, "file": WORK_FILE} if commit else {"file": WORK_FILE},
+                )
             yield event
 
     def _cwd(self) -> Path:

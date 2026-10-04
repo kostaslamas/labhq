@@ -33,7 +33,7 @@ MIGRATIONS = _migrations()
 DEFAULT_ADAPTER = "fake"
 KIND_HELP = "The agent to run, one of: " + ", ".join(c.name for c in agent_choices()) + "."
 
-project_app = typer.Typer(help="Register git repositories as projects.", no_args_is_help=True)
+project_app = typer.Typer(help="Register server directories as projects.", no_args_is_help=True)
 agent_app = typer.Typer(help="Add agents and approve new ones.", no_args_is_help=True)
 task_app = typer.Typer(
     help="Add tasks, assign them to agents and request their merge.", no_args_is_help=True
@@ -93,16 +93,16 @@ async def create_project(context: Context, name: str, repo: Path, budget: int | 
 @project_app.command("add")
 def project_add(
     name: Annotated[str, typer.Argument(help="A unique project name.")],
-    repo: Annotated[Path, typer.Option(help="The project's git repository.")],
+    repo: Annotated[Path, typer.Option(help="The project's directory on this machine.")],
     budget_usd: Annotated[
         str | None, typer.Option(help="Monthly budget in USD, for example 25 or 2.50.")
     ] = None,
 ) -> None:
-    """Register a git repository as a project."""
+    """Register an existing directory as a project."""
 
     async def body(context: Context) -> Project:
         return await create_project(
-            context, name, work.check_repository(repo), parse_budget(budget_usd)
+            context, name, work.check_project_directory(repo), parse_budget(budget_usd)
         )
 
     project = execute(body)

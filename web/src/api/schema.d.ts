@@ -415,7 +415,7 @@ export interface paths {
     put?: never
     /**
      * Projects Create
-     * @description Register a git repository on this machine as a project.
+     * @description Register an existing directory on this machine as a project.
      */
     post: operations['projects_create']
     delete?: never
@@ -493,7 +493,7 @@ export interface paths {
     }
     /**
      * Repository Browser Get
-     * @description List visible directories only; the create route still validates the chosen repo.
+     * @description List visible directories only; the create route validates the chosen folder.
      */
     get: operations['repository_browser_get']
     put?: never

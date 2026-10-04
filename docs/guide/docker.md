@@ -26,8 +26,8 @@ ships both.
    cd labhq
    ```
 
-2. Copy the settings template and set `PROJECTS_DIR` to the directory that holds the git
-   repositories labhq will work on. On Linux, also set `CONTAINER_UID` and `CONTAINER_GID` to
+2. Copy the settings template and set `PROJECTS_DIR` to the directory that holds the project
+   folders labhq will work on. On Linux, also set `CONTAINER_UID` and `CONTAINER_GID` to
    the output of `id -u` and `id -g`, so that git inside the container accepts the
    repositories and the files agents write belong to you.
 
@@ -44,7 +44,7 @@ ships both.
 
 4. Open <http://127.0.0.1:8787>. `HOST_PORT` in `.env` picks a different host port.
 
-The repositories appear inside the container under `/projects`. Register one with its path
+The project folders appear inside the container under `/projects`. Register one with its path
 there:
 
 ```sh
@@ -52,7 +52,7 @@ docker compose exec labhq labhq project add site --repo /projects/site
 ```
 
 You can also use **Add project** in the web UI and choose **Browse server folders**. The
-picker shows `/projects` inside the container, then fills in the repository path for you.
+picker shows `/projects` inside the container, then fills in the project folder path for you.
 
 ## Model login
 

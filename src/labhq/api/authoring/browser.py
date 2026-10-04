@@ -1,4 +1,4 @@
-"""Signed-in directory picker for repositories on the machine running labhq."""
+"""Signed-in directory picker for projects on the machine running labhq."""
 
 from pathlib import Path
 
@@ -39,7 +39,7 @@ def _within_root(path: Path, roots: list[Path]) -> Path | None:
 def repository_browser_get(
     request: Request, path: str | None = Query(default=None, max_length=4096)
 ) -> BrowserListing:
-    """List visible directories only; the create route still validates the chosen repo."""
+    """List visible directories only; the create route validates the chosen folder."""
     roots = _roots(request)
     choices = [BrowserFolder(name=root.name or str(root), path=str(root)) for root in roots]
     if path is None:

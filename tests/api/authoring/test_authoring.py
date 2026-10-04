@@ -55,7 +55,7 @@ def test_the_routes_need_a_session(app_client: TestClient, repo: Path) -> None:
     assert add_agent(app_client, 1).status_code == 401
 
 
-async def test_a_project_is_registered_from_a_repository(
+async def test_a_project_is_registered_from_a_directory(
     signed_in: TestClient, repo: Path, context: Context
 ) -> None:
     response = add_project(signed_in, repo, budget_micros=5_000_000)
@@ -68,15 +68,30 @@ async def test_a_project_is_registered_from_a_repository(
     assert (project.name, project.budget_micros) == ("site", 5_000_000)
 
 
-@pytest.mark.parametrize("make", ["missing", "plain_dir", "no_commit", "relative"])
-async def test_a_path_that_is_not_a_repository_with_a_commit_is_refused(
+@pytest.mark.parametrize("make", ["plain_dir", "no_commit"])
+async def test_a_directory_without_a_git_commit_is_accepted(
     signed_in: TestClient, tmp_path: Path, context: Context, make: str
 ) -> None:
     target = tmp_path / make
-    if make != "missing":
-        target.mkdir()
+    target.mkdir()
     if make == "no_commit":
         run_git("init", "--quiet", cwd=target)
+
+    response = add_project(signed_in, target)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["repo_path"] == str(target)
+    async with context.sessions() as db:
+        assert await db.scalar(select(Project.id)) is not None
+
+
+@pytest.mark.parametrize("make", ["missing", "file", "relative"])
+async def test_a_path_that_is_not_an_absolute_directory_is_refused(
+    signed_in: TestClient, tmp_path: Path, context: Context, make: str
+) -> None:
+    target = tmp_path / make
+    if make == "file":
+        target.write_text("not a directory", encoding="utf-8")
 
     response = signed_in.post(
         "/api/projects",
@@ -86,9 +101,9 @@ async def test_a_path_that_is_not_a_repository_with_a_commit_is_refused(
 
     assert response.status_code == 422, response.text
     error = response.json()["error"]
-    assert error["code"] in {"not_a_repository", "repo_path_not_absolute"}
+    assert error["code"] in {"not_a_directory", "repo_path_not_absolute"}
     if make != "relative":
-        assert "is not a git repository with a commit" in error["message"]
+        assert "is not an existing directory" in error["message"]
     async with context.sessions() as db:
         assert await db.scalar(select(Project.id)) is None
 

@@ -6,9 +6,10 @@ from labhq.work.service import (
     add_project,
     add_task,
     assignment,
-    check_repository,
+    check_project_directory,
     find_agent,
     find_project,
+    has_git_commit,
     resolve_kind,
 )
 
@@ -19,9 +20,10 @@ __all__ = [
     "add_project",
     "add_task",
     "assignment",
-    "check_repository",
+    "check_project_directory",
     "find_agent",
     "find_project",
+    "has_git_commit",
     "request_merge",
     "resolve_kind",
     "task_branch",

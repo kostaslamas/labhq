@@ -1,6 +1,6 @@
 """Add projects and agents from the web app, through the same services as the CLI.
 
-Nothing here owns logic: `labhq.work` checks the repository and creates the rows, and the
+Nothing here owns logic: `labhq.work` checks the directory and creates the rows, and the
 `create_agent` approval of `labhq.hierarchy` is what activates a new agent (plan §5, rule 4),
 decided on the approvals page like any other.
 """
@@ -50,14 +50,14 @@ async def agent_kinds_list() -> list[AgentKindChoice]:
 async def projects_create(
     body: NewProjectBody, owner: SignedIn, db: SessionDep, clock: ClockDep
 ) -> RegisteredProject:
-    """Register a git repository on this machine as a project."""
+    """Register an existing directory on this machine as a project."""
     path = Path(body.repo_path)
     if not path.is_absolute():
-        raise ApiError(422, "repo_path_not_absolute", "Give the repository's full path.")
+        raise ApiError(422, "repo_path_not_absolute", "Give the project's full path.")
     try:
-        repo = work.check_repository(path)
+        repo = work.check_project_directory(path)
     except work.WorkError as error:
-        raise ApiError(422, "not_a_repository", str(error)) from None
+        raise ApiError(422, "not_a_directory", str(error)) from None
     try:
         project = await work.add_project(
             db, clock, name=body.name, repo=repo, budget=body.budget_micros

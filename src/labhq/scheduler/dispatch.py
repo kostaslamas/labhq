@@ -32,7 +32,7 @@ from labhq.usage.plan import fallback_kind
 # Sessions do not move between CLIs; the fallback starts from what the task left behind.
 TAKEOVER_NOTE = (
     "You take this task over from another agent kind that reached its plan limit. "
-    "Start from .labhq/status.md and the commits on this branch."
+    "Start from the task status file and the work already in this workspace."
 )
 
 

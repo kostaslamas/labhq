@@ -36,9 +36,11 @@ def status_fingerprint(fields: StatusFields) -> str:
     return hashlib.sha256(fields.model_dump_json().encode("utf-8")).hexdigest()
 
 
-def read_status_file(worktree: Path) -> tuple[StatusFields, datetime] | None:
+def read_status_file(
+    worktree: Path, relative_path: Path = STATUS_RELATIVE_PATH
+) -> tuple[StatusFields, datetime] | None:
     """The parsed file and its modification time (UTC), or None when there is no file."""
-    path = worktree / STATUS_RELATIVE_PATH
+    path = worktree / relative_path
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
         modified = datetime.fromtimestamp(path.stat().st_mtime, UTC)
@@ -54,13 +56,14 @@ async def ingest_status(
     agent_id: int,
     task_id: int | None,
     worktree: Path,
+    relative_path: Path = STATUS_RELATIVE_PATH,
 ) -> IngestResult:
     """Store the worktree's status if it differs from the agent's last stored one.
 
     `observed_at` is the file's own modification time, because freshness compares it with
     the agent's last activity; ingesting late must not make an old status look new.
     """
-    read = read_status_file(worktree)
+    read = read_status_file(worktree, relative_path)
     if read is None:
         return IngestResult(None)
     fields, modified = read

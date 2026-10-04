@@ -107,8 +107,7 @@ def test_every_command_has_help_text(cli: Cli, path: tuple[str, ...]) -> None:
 def test_every_command_exits_non_zero_on_failure(
     cli: Cli, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, path: tuple[str, ...]
 ) -> None:
-    not_a_repo = tmp_path / "plain-directory"
-    not_a_repo.mkdir()
+    not_a_repo = tmp_path / "missing-directory"
     if path in {("init",), ("mcp", "token"), ("mcp", "serve"), ("serve",), ("onboard",)}:
         # A data directory that cannot be created: a file sits where it should be.
         blocked = tmp_path / "blocked"

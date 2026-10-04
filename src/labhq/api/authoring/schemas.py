@@ -21,7 +21,7 @@ class NewProjectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=120)
-    # An absolute path on the machine labhq runs on, checked to be a git repository with a commit.
+    # An absolute directory path on the machine labhq runs on.
     repo_path: str = Field(min_length=1, max_length=4096)
     budget_micros: int | None = Field(default=None, ge=0, le=2**62)
 

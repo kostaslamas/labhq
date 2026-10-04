@@ -1,6 +1,6 @@
 # Security
 
-labhq starts AI agents on your machine, in your repositories, with your permissions. This
+labhq starts AI agents on your machine, in your project folders, with your permissions. This
 page says what it protects, what it does not, and how to set it up so that a mistake by an
 agent stays small. To report a vulnerability, follow [SECURITY.md](../../SECURITY.md); never
 open a public issue for one.
@@ -8,10 +8,11 @@ open a public issue for one.
 ## What an agent can reach
 
 By default every agent runs in `bypassPermissions` (Claude Code's
-`--dangerously-skip-permissions`) inside its own git worktree, so it works without stopping
-to ask for each command. The worktree is where it is expected to work, not a boundary:
+`--dangerously-skip-permissions`) inside its own Git worktree or directly in a project folder
+without Git, so it works without stopping to ask for each command. The folder is where it is
+expected to work, not a boundary:
 
-- An agent can read and change any file the user running labhq can, inside the worktree and
+- An agent can read and change any file the user running labhq can, inside the project and
   outside it.
 - It can run any program that user can run, and reach any network that user can reach.
 - Text it reads (a web page, a log, another agent's screen) can carry instructions, and a
@@ -20,6 +21,9 @@ to ask for each command. The worktree is where it is expected to work, not a bou
 The IT/Infra department's agents are the exception: they run in read-only mode, where only
 allowlisted read commands pass and every other command or file edit is denied. Fixes to a
 machine reach it only as a ticket you approve.
+
+In a project folder without Git, task edits are written to that folder immediately. Tasks
+share its files, and there is no branch, merge, or push approval to undo or publish changes.
 
 ## The push guard, and what it does not guarantee
 

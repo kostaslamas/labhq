@@ -7,7 +7,10 @@ assignee. A project needs an active manager for that route.
 
 Managers and leads split their assigned task with `create_task`. A child created during a
 task run is linked to that task automatically; they can also name its parent explicitly.
-Assign each child to a team member to wake them in their own worktree. A worker reports a
+Assign each child to a team member. In Git projects, each task runs in its own worktree; in
+projects backed by an ordinary folder, agents edit that folder directly and changes are
+visible immediately, without a merge or push approval. Plain-folder tasks keep separate
+status files under `.labhq/tasks/<task-id>/status.md`. A worker reports a
 result or blocker with `report_task`. The parent task's assignee wakes to inspect it and either accepts the child
 or sends it back with feedback. The same review applies at every level.
 

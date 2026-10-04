@@ -20,7 +20,7 @@ _SCOPE = (
 
 # Not prose style: it tells a working agent where to report, so the owner is not interrupted.
 STATUS_INSTRUCTION = (
-    "Keep .labhq/status.md current (summary, done, next, blockers, refs) and put every "
+    "Keep the task's status file current (summary, done, next, blockers, refs) and put every "
     "question for the owner under its questions field, one per line; never wait on a reply."
 )
 

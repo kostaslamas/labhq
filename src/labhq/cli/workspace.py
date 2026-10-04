@@ -1,8 +1,8 @@
 """Where a run works and which hooks guard it: the wiring the scheduler leaves to its caller.
 
 The scheduler starts runs with an agent, a task and a prompt only. `WorkspaceRunService`
-fills in the rest for every run it starts: a task run works in the task's own worktree
-(created on first use, push disabled), and every run gets the push guard ahead of the
+fills in the rest for every run it starts: Git projects use task worktrees, while ordinary
+directories are edited in place. Every run gets the push guard ahead of the
 `rtk` rewrite hook, so a rewritten command can never slip past the guard's verdict.
 """
 
@@ -22,12 +22,18 @@ from labhq.economy import RtkHook, rtk_hook
 from labhq.guards import push_guard_matcher
 from labhq.runs import ActiveRun, RunService
 from labhq.settings import Settings
-from labhq.worktrees import Worktree, Worktrees, default_root
+from labhq.work import has_git_commit
+from labhq.worktrees import Worktree, WorktreeError, Worktrees, default_root
 
 log = logging.getLogger(__name__)
 
 PRE_TOOL_USE = "PreToolUse"
 WARNING_EVENT = "warning"
+PLAIN_STATUS_DIR = Path(".labhq") / "tasks"
+
+
+def plain_status_path(task_id: int) -> Path:
+    return PLAIN_STATUS_DIR / str(task_id) / "status.md"
 
 
 def project_worktrees(settings: Settings, project: Project) -> Worktrees:
@@ -74,7 +80,14 @@ class WorkspaceRunService(RunService):
         tools_server: Sequence[str] = (),
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
-            cwd = await self._task_worktree(task_id)
+            cwd, plain = await self._task_workspace(task_id)
+            if plain:
+                prompt += (
+                    "\n\nThis project is an ordinary folder, shared by its tasks. "
+                    "Edit files directly and do not initialize Git. "
+                    f"For this task, keep {plain_status_path(task_id)} "
+                    "current instead of the shared .labhq/status.md."
+                )
         active = await super().start(
             agent_id=agent_id,
             task_id=task_id,
@@ -92,12 +105,18 @@ class WorkspaceRunService(RunService):
             await active.note(WARNING_EVENT, warning.as_event_payload())
         return active
 
-    async def _task_worktree(self, task_id: int) -> Path:
+    async def _task_workspace(self, task_id: int) -> tuple[Path, bool]:
         async with self._workspace_sessions() as db:
             task = await db.get_one(Task, task_id)
             project = await db.get_one(Project, task.project_id)
+        folder = Path(project.repo_path)
+        if not folder.is_dir():
+            raise WorktreeError(f"project directory {folder} is no longer available")
+        if not await asyncio.to_thread(has_git_commit, folder):
+            log.info("task %s works directly in %s", task_id, folder)
+            return folder, True
         worktrees = project_worktrees(self._settings, project)
         # git runs as a child process; keep the event loop free for live runs meanwhile.
         worktree = await asyncio.to_thread(ensure_worktree, worktrees, task)
         log.info("task %s works in %s on %s", task_id, worktree.path, worktree.branch)
-        return worktree.path
+        return worktree.path, False
