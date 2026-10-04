@@ -1,7 +1,8 @@
 # Manual check: brief, ask_ceo and get_reply by voice
 
 CI proves the parts with the fake agent (`tests/callcenter/calls/`, `tests/mcp/tools/`):
-`ask_ceo` returns a ticket in under 2 s while the agent takes 30 s, `get_reply` redeems it
+`ask_ceo` returns a ticket in under 2 s while the agent takes 30 s, `get_reply` and
+`ask_ceo` with `wait_seconds` long-poll (below), `get_reply` redeems it
 with a speakable answer, a follow-up inside the call window resumes the same session, and
 `deliver` and `interrupt` refuse anything the owner did not ask for. Only a real voice
 client and a real model prove the scenario end to end, so this is a manual check, recorded
@@ -31,21 +32,26 @@ brief, then ask_ceo, then get_reply, by voice, through the labhq connector.
 1. Start the connector:
 
    ```sh
-   uv run labhq mcp serve --expose quick-tunnel
+   uv run labhq serve --expose quick-tunnel
    ```
 
    Wait for `Connector URL: https://<words>.trycloudflare.com/mcp/<token>` and add it as a
-   custom connector in Claude (or as a connector in ChatGPT developer mode). To let
-   `interrupt` reach running agents, use `uv run labhq serve` behind your own tunnel
-   instead: only that process holds the scheduler's live runs.
+   custom connector in Claude (or as a connector in ChatGPT developer mode). `labhq serve`
+   runs the whole program, so `interrupt` reaches running agents; `labhq mcp serve
+   --expose` serves the connector alone, without the scheduler.
 2. Open a voice conversation with the connector enabled. Start recording.
 3. Say: "Give me my brief." Passing: the app calls `brief` and reads a short, plain answer:
    no table, no list markers, no JSON.
 4. Say: "Ask the CEO what the worker is doing and whether anything is blocked." Passing:
-   the app calls `ask_ceo` and says it has a ticket within about 2 seconds.
-5. Wait a few seconds and say: "Get the reply." Passing: the app calls `get_reply` with
-   the same ticket. If it hears "Still working on it", it asks again; the answer then names
-   the agent and what it is doing, in two to five spoken sentences.
+   the app calls `ask_ceo` and says it has a ticket within about 2 seconds, or, when it
+   passes `wait_seconds`, reads the answer directly.
+5. Say: "Get the reply." Passing: the app calls `get_reply` with the same ticket and the
+   call itself waits, up to 25 seconds by default and never more than 50, until the answer is
+   ready, so the app does not have to call again by itself. If it hears "Still working on
+   it", it calls `get_reply` again with that ticket and never asks the question again; the
+   answer then names the agent and what it is doing, in two to five spoken sentences.
+   A run that cannot go on (a dialog nobody can answer, no progress for five minutes) ends
+   as failed, and `get_reply` speaks "could not finish that one" instead of "Still working".
 6. Within five minutes, say: "Ask the CEO what that agent does next." Passing: the answer
    follows from the previous one (the call resumed the same session). Confirm afterwards:
 
@@ -73,3 +79,4 @@ to 6 passed.
 
 | Date | App and device | Video | Steps 3 to 6 | Notes |
 |---|---|---|---|---|
+| 2026-10-03 | scripted MCP client, `labhq serve` | none | not a voice run | End-to-end over MCP found the trust-dialog hang, the instant `get_reply` and the missing `serve --expose`; all three fixed in #133. The owner's voice run is still to be recorded. |

@@ -71,6 +71,20 @@ sqlite3 "$LABHQ_DATA_DIR/labhq.sqlite3" \
   'select agent_kind, source, unit, "window", value, error from usage_readings order by id desc limit 5'
 ```
 
+A fresh Claude Code directory first asks "Is this a project you created or one you trust?".
+Verified against Claude Code 2.1.288 in tmux: the options are not numbered, the cursor `❯`
+starts on "No, exit", Down moves it to "Yes, I trust this folder", and Enter then accepts and
+Claude Code reaches its prompt; `1` does nothing. labhq answers only when the run's directory,
+resolved, lies strictly under the data directory (the Call Center's `callcenter` directory,
+task worktrees). It presses Down (at most 4 times), captures the pane after each press, and
+sends Enter only once the `❯` line contains the option text named by `accept_option` of the
+`trust-folder` entry in `src/labhq/adapters/tmux/agents.py`. If the option is never selected,
+or the directory is not labhq's, the run fails with the reason and Enter is never sent. To
+re-check after a Claude Code update, start a Call Center run with
+`LABHQ_CALLCENTER_AGENT_ADAPTER=tmux` in a data directory you have never trusted and watch it
+with `tmux -L labhq attach -t run-<id>`. A run whose screen does not change for
+`no_progress_seconds` (agent config, default 300) also fails.
+
 Watch a run live with `tmux -L labhq attach -t run-<run id>` (detach with `C-b d`).
 
 When a CLI's screen changes, replace its fixture under `tests/usage/fixtures/` with a fresh
