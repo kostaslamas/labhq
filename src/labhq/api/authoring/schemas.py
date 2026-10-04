@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from labhq.db.enums import AgentStatus
 
 
-class AgentKindOut(BaseModel):
+class AgentKindChoice(BaseModel):
     # What commands and config call it, for example `codex`.
     name: str
     display_name: str
@@ -17,7 +17,7 @@ class AgentKindOut(BaseModel):
     available: bool
 
 
-class ProjectBody(BaseModel):
+class NewProjectBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str = Field(min_length=1, max_length=120)
@@ -26,14 +26,14 @@ class ProjectBody(BaseModel):
     budget_micros: int | None = Field(default=None, ge=0, le=2**62)
 
 
-class ProjectOut(BaseModel):
+class RegisteredProject(BaseModel):
     id: int
     name: str
     repo_path: str
     budget_micros: int | None
 
 
-class AgentBody(BaseModel):
+class NewAgentBody(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     role: str = Field(min_length=1, max_length=64)
@@ -43,7 +43,7 @@ class AgentBody(BaseModel):
     budget_micros: int | None = Field(default=None, ge=0, le=2**62)
 
 
-class AgentOut(BaseModel):
+class AddedAgent(BaseModel):
     id: int
     project_id: int
     role: str

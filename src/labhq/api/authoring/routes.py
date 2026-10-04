@@ -13,11 +13,11 @@ from labhq import work
 from labhq.adapters import default_registry
 from labhq.adapters.kinds import UnknownAgentChoiceError, agent_choices
 from labhq.api.authoring.schemas import (
-    AgentBody,
-    AgentKindOut,
-    AgentOut,
-    ProjectBody,
-    ProjectOut,
+    AddedAgent,
+    AgentKindChoice,
+    NewAgentBody,
+    NewProjectBody,
+    RegisteredProject,
 )
 from labhq.api.deps import ClockDep, ContextDep, SessionDep
 from labhq.api.errors import ApiError
@@ -30,10 +30,10 @@ router = APIRouter(tags=["authoring"])
 
 
 @router.get("/agent-kinds")
-async def agent_kinds_list() -> list[AgentKindOut]:
+async def agent_kinds_list() -> list[AgentKindChoice]:
     """Every agent a person can add, with whether its program is installed on this machine."""
     return [
-        AgentKindOut(
+        AgentKindChoice(
             name=choice.name,
             display_name=choice.display_name,
             adapter=choice.adapter,
@@ -46,8 +46,8 @@ async def agent_kinds_list() -> list[AgentKindOut]:
 
 @router.post("/projects", status_code=201)
 async def projects_create(
-    body: ProjectBody, owner: SignedIn, db: SessionDep, clock: ClockDep
-) -> ProjectOut:
+    body: NewProjectBody, owner: SignedIn, db: SessionDep, clock: ClockDep
+) -> RegisteredProject:
     """Register a git repository on this machine as a project."""
     path = Path(body.repo_path)
     if not path.is_absolute():
@@ -63,7 +63,7 @@ async def projects_create(
     except work.WorkError as error:
         raise ApiError(409, "project_exists", str(error)) from None
     await db.commit()
-    return ProjectOut(
+    return RegisteredProject(
         id=project.id,
         name=project.name,
         repo_path=project.repo_path,
@@ -74,12 +74,12 @@ async def projects_create(
 @router.post("/projects/{project_id}/agents", status_code=201)
 async def project_agents_create(
     project_id: int,
-    body: AgentBody,
+    body: NewAgentBody,
     owner: SignedIn,
     context: ContextDep,
     db: SessionDep,
     clock: ClockDep,
-) -> AgentOut:
+) -> AddedAgent:
     """Add an agent to a project. It starts pending: nothing runs until its approval."""
     try:
         project = await work.find_project(db, str(project_id))
@@ -116,7 +116,7 @@ async def project_agents_create(
     approval = await service.request(
         CREATE_AGENT, {"agent_id": agent.id}, agent_id=agent.reports_to
     )
-    return AgentOut(
+    return AddedAgent(
         id=agent.id,
         project_id=project.id,
         role=agent.role,
