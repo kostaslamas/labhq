@@ -8,6 +8,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./ProjectsPage.vue'),
     meta: { nav: { labelKey: 'projects.nav', icon: FolderKanban, order: 20 } },
   },
+  {
+    path: '/projects/:id',
+    name: 'project',
+    component: () => import('./ProjectPage.vue'),
+    props: true,
+  },
 ]
 
 export default routes

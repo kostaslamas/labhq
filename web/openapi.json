@@ -124,7 +124,7 @@
           "project": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProjectRef"
+                "$ref": "#/components/schemas/labhq__api__approvals__schemas__ProjectRef"
               },
               {
                 "type": "null"
@@ -227,6 +227,64 @@
         "title": "AuthStatus",
         "type": "object"
       },
+      "Budget": {
+        "description": "One budget level as `labhq.budgets` reads it, for the current period.",
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The limit; absent means no limit.",
+            "title": "Budget Micros"
+          },
+          "spent_micros": {
+            "title": "Spent Micros",
+            "type": "integer"
+          },
+          "state": {
+            "$ref": "#/components/schemas/Decision"
+          },
+          "used_percent": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Percent"
+          }
+        },
+        "required": ["budget_micros", "spent_micros", "state", "used_percent"],
+        "title": "Budget",
+        "type": "object"
+      },
+      "BudgetPolicy": {
+        "properties": {
+          "period_start": {
+            "format": "date-time",
+            "title": "Period Start",
+            "type": "string"
+          },
+          "stop_percent": {
+            "title": "Stop Percent",
+            "type": "integer"
+          },
+          "warn_percent": {
+            "title": "Warn Percent",
+            "type": "integer"
+          }
+        },
+        "required": ["warn_percent", "stop_percent", "period_start"],
+        "title": "BudgetPolicy",
+        "type": "object"
+      },
       "CallRequestStatus": {
         "enum": ["pending", "answered", "failed", "expired"],
         "title": "CallRequestStatus",
@@ -285,6 +343,11 @@
         "title": "Credential",
         "type": "object"
       },
+      "Decision": {
+        "enum": ["allow", "warn", "stop"],
+        "title": "Decision",
+        "type": "string"
+      },
       "DecisionBody": {
         "properties": {
           "credential": {
@@ -319,6 +382,42 @@
         },
         "required": ["decision"],
         "title": "DecisionBody",
+        "type": "object"
+      },
+      "Deliverable": {
+        "description": "A done task and what it produced.",
+        "properties": {
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "commits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Commits",
+            "type": "array"
+          },
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
+          "done_at": {
+            "format": "date-time",
+            "title": "Done At",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["task_id", "title", "branch", "commits", "cost_micros", "done_at"],
+        "title": "Deliverable",
         "type": "object"
       },
       "EnrollOptionsBody": {
@@ -471,8 +570,90 @@
         "title": "Page[ApprovalOut]",
         "type": "object"
       },
-      "ProjectRef": {
+      "Page_ProjectCard_": {
         "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProjectCard"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": ["items", "next_cursor"],
+        "title": "Page[ProjectCard]",
+        "type": "object"
+      },
+      "ProjectCard": {
+        "properties": {
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latest_deliverable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Deliverable"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "open_tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskCount"
+            },
+            "title": "Open Tasks",
+            "type": "array"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          }
+        },
+        "required": ["id", "name", "status", "budget", "open_tasks", "latest_deliverable"],
+        "title": "ProjectCard",
+        "type": "object"
+      },
+      "ProjectStatus": {
+        "enum": ["active", "paused", "archived"],
+        "title": "ProjectStatus",
+        "type": "string"
+      },
+      "ProjectView": {
+        "properties": {
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/Deliverable"
+            },
+            "title": "Deliverables",
+            "type": "array"
+          },
+          "deliverables_total": {
+            "title": "Deliverables Total",
+            "type": "integer"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
@@ -480,16 +661,41 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "policy": {
+            "$ref": "#/components/schemas/BudgetPolicy"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProjectStatus"
+          },
+          "tasks": {
+            "items": {
+              "$ref": "#/components/schemas/TaskCount"
+            },
+            "title": "Tasks",
+            "type": "array"
+          },
+          "team": {
+            "items": {
+              "$ref": "#/components/schemas/TeamMember"
+            },
+            "title": "Team",
+            "type": "array"
           }
         },
-        "required": ["id", "name"],
-        "title": "ProjectRef",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "budget",
+          "policy",
+          "team",
+          "tasks",
+          "deliverables",
+          "deliverables_total"
+        ],
+        "title": "ProjectView",
         "type": "object"
-      },
-      "ProjectStatus": {
-        "enum": ["active", "paused", "archived"],
-        "title": "ProjectStatus",
-        "type": "string"
       },
       "QuestionStatus": {
         "enum": ["pending", "answered"],
@@ -518,6 +724,20 @@
         "title": "StepUpBody",
         "type": "object"
       },
+      "TaskCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          }
+        },
+        "required": ["status", "count"],
+        "title": "TaskCount",
+        "type": "object"
+      },
       "TaskRef": {
         "properties": {
           "id": {
@@ -537,6 +757,42 @@
         "enum": ["backlog", "todo", "in_progress", "in_review", "blocked", "done", "cancelled"],
         "title": "TaskStatus",
         "type": "string"
+      },
+      "TeamMember": {
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "budget": {
+            "$ref": "#/components/schemas/Budget"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/TeamMember"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["id", "role", "title", "adapter", "status", "budget", "reports"],
+        "title": "TeamMember",
+        "type": "object"
       },
       "Vocabulary": {
         "description": "The status values the backend may return, by enum.",
@@ -668,6 +924,32 @@
         "enum": ["pending", "dispatched", "refused", "cancelled"],
         "title": "WakeupStatus",
         "type": "string"
+      },
+      "labhq__api__approvals__schemas__ProjectRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "ProjectRef",
+        "type": "object"
+      },
+      "labhq__api__projects__schemas__ProjectRef": {
+        "properties": {
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          }
+        },
+        "required": ["project_id"],
+        "title": "ProjectRef",
+        "type": "object"
       }
     }
   },
@@ -1303,6 +1585,157 @@
         },
         "summary": "Health Get",
         "tags": ["health"]
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "description": "One card per project: budget, open tasks by status and the latest deliverable.",
+        "operationId": "projects_list",
+        "parameters": [
+          {
+            "description": "Opaque; from `next_cursor`.",
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Opaque; from `next_cursor`.",
+              "title": "Cursor"
+            }
+          },
+          {
+            "description": "Rows per page.",
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Rows per page.",
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Page_ProjectCard_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Projects List",
+        "tags": ["projects"]
+      }
+    },
+    "/api/projects/of-task/{task_id}": {
+      "get": {
+        "description": "The project that owns a task, so a link to a task can open its project.",
+        "operationId": "projects_of_task",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/labhq__api__projects__schemas__ProjectRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Projects Of Task",
+        "tags": ["projects"]
+      }
+    },
+    "/api/projects/{project_id}": {
+      "get": {
+        "description": "The project's team tree, deliverables, tasks by status and budget.",
+        "operationId": "projects_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectView"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Projects Get",
+        "tags": ["projects"]
       }
     },
     "/api/vocabulary": {

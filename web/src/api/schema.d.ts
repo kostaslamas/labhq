@@ -280,6 +280,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/projects': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Projects List
+     * @description One card per project: budget, open tasks by status and the latest deliverable.
+     */
+    get: operations['projects_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/projects/of-task/{task_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Projects Of Task
+     * @description The project that owns a task, so a link to a task can open its project.
+     */
+    get: operations['projects_of_task']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/projects/{project_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Projects Get
+     * @description The project's team tree, deliverables, tasks by status and budget.
+     */
+    get: operations['projects_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/vocabulary': {
     parameters: {
       query?: never
@@ -347,7 +407,7 @@ export interface components {
       payload: {
         [key: string]: unknown
       }
-      project: components['schemas']['ProjectRef'] | null
+      project: components['schemas']['labhq__api__approvals__schemas__ProjectRef'] | null
       /** Remote */
       remote: string | null
       requester: components['schemas']['AgentRef'] | null
@@ -376,6 +436,34 @@ export interface components {
       authenticated: boolean
       /** Enrolled */
       enrolled: boolean
+    }
+    /**
+     * Budget
+     * @description One budget level as `labhq.budgets` reads it, for the current period.
+     */
+    Budget: {
+      /**
+       * Budget Micros
+       * @description The limit; absent means no limit.
+       */
+      budget_micros: number | null
+      /** Spent Micros */
+      spent_micros: number
+      state: components['schemas']['Decision']
+      /** Used Percent */
+      used_percent: number | null
+    }
+    /** BudgetPolicy */
+    BudgetPolicy: {
+      /**
+       * Period Start
+       * Format: date-time
+       */
+      period_start: string
+      /** Stop Percent */
+      stop_percent: number
+      /** Warn Percent */
+      warn_percent: number
     }
     /**
      * CallRequestStatus
@@ -410,6 +498,11 @@ export interface components {
       /** Transports */
       transports: string[]
     }
+    /**
+     * Decision
+     * @enum {string}
+     */
+    Decision: 'allow' | 'warn' | 'stop'
     /** DecisionBody */
     DecisionBody: {
       /** Credential */
@@ -423,6 +516,27 @@ export interface components {
       decision: 'approve' | 'reject'
       /** Note */
       note?: string | null
+    }
+    /**
+     * Deliverable
+     * @description A done task and what it produced.
+     */
+    Deliverable: {
+      /** Branch */
+      branch: string
+      /** Commits */
+      commits: string[]
+      /** Cost Micros */
+      cost_micros: number
+      /**
+       * Done At
+       * Format: date-time
+       */
+      done_at: string
+      /** Task Id */
+      task_id: number
+      /** Title */
+      title: string
     }
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
@@ -507,18 +621,48 @@ export interface components {
       /** Next Cursor */
       next_cursor: string | null
     }
-    /** ProjectRef */
-    ProjectRef: {
+    /** Page[ProjectCard] */
+    Page_ProjectCard_: {
+      /** Items */
+      items: components['schemas']['ProjectCard'][]
+      /** Next Cursor */
+      next_cursor: string | null
+    }
+    /** ProjectCard */
+    ProjectCard: {
+      budget: components['schemas']['Budget']
       /** Id */
       id: number
+      latest_deliverable: components['schemas']['Deliverable'] | null
       /** Name */
       name: string
+      /** Open Tasks */
+      open_tasks: components['schemas']['TaskCount'][]
+      status: components['schemas']['ProjectStatus']
     }
     /**
      * ProjectStatus
      * @enum {string}
      */
     ProjectStatus: 'active' | 'paused' | 'archived'
+    /** ProjectView */
+    ProjectView: {
+      budget: components['schemas']['Budget']
+      /** Deliverables */
+      deliverables: components['schemas']['Deliverable'][]
+      /** Deliverables Total */
+      deliverables_total: number
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+      policy: components['schemas']['BudgetPolicy']
+      status: components['schemas']['ProjectStatus']
+      /** Tasks */
+      tasks: components['schemas']['TaskCount'][]
+      /** Team */
+      team: components['schemas']['TeamMember'][]
+    }
     /**
      * QuestionStatus
      * @enum {string}
@@ -539,6 +683,12 @@ export interface components {
       /** Purpose */
       purpose: string
     }
+    /** TaskCount */
+    TaskCount: {
+      /** Count */
+      count: number
+      status: components['schemas']['TaskStatus']
+    }
     /** TaskRef */
     TaskRef: {
       /** Id */
@@ -551,6 +701,21 @@ export interface components {
      * @enum {string}
      */
     TaskStatus: 'backlog' | 'todo' | 'in_progress' | 'in_review' | 'blocked' | 'done' | 'cancelled'
+    /** TeamMember */
+    TeamMember: {
+      /** Adapter */
+      adapter: string
+      budget: components['schemas']['Budget']
+      /** Id */
+      id: number
+      /** Reports */
+      reports: components['schemas']['TeamMember'][]
+      /** Role */
+      role: string
+      status: components['schemas']['AgentStatus']
+      /** Title */
+      title: string
+    }
     /**
      * Vocabulary
      * @description The status values the backend may return, by enum.
@@ -627,6 +792,18 @@ export interface components {
      * @enum {string}
      */
     WakeupStatus: 'pending' | 'dispatched' | 'refused' | 'cancelled'
+    /** ProjectRef */
+    labhq__api__approvals__schemas__ProjectRef: {
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+    }
+    /** ProjectRef */
+    labhq__api__projects__schemas__ProjectRef: {
+      /** Project Id */
+      project_id: number
+    }
   }
   responses: never
   parameters: never
@@ -1108,6 +1285,102 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Health']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  projects_list: {
+    parameters: {
+      query?: {
+        /** @description Opaque; from `next_cursor`. */
+        cursor?: string | null
+        /** @description Rows per page. */
+        limit?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Page_ProjectCard_']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  projects_of_task: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['labhq__api__projects__schemas__ProjectRef']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  projects_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ProjectView']
         }
       }
       /** @description Error */
