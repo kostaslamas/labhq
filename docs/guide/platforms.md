@@ -65,7 +65,13 @@ and CI fails when it does not match them.
 | `tests/adapters/test_codex_usage.py::test_an_invented_codex_reading_is_recorded_as_failed_never_zero` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_codex_usage.py::test_the_usage_screen_of_a_codex_run_is_recorded_as_readings` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_contract.py::test_adapter_honours_the_contract` | the tmux adapter does not run on native Windows (ADR 0003) |
-| `tests/adapters/tmux/test_tmux_blocking.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_dialog_nobody_may_answer_fails_the_run_even_in_labhq_directories` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_run_without_progress_fails_with_the_reason` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_symlink_out_of_the_data_directory_is_not_trusted` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_enter_is_never_sent_when_the_option_cannot_be_selected` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_only_paths_strictly_inside_the_data_directory_are_labhq_made` | creating a symlink needs a privilege native Windows does not grant by default |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_fails_the_run_in_any_other_directory_without_a_key` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_is_accepted_in_a_directory_labhq_created` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_variable_only_in_the_clients_environment_stays_out_of_the_session` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_worker_sees_no_credentials_even_when_the_caller_has_them` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |

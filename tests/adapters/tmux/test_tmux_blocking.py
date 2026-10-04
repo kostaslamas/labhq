@@ -16,8 +16,6 @@ from tests.adapters.tmux.test_tmux_runs import screen_text
 from tests.runs.conftest import World
 from tests.runs.helpers import events_of, stored_run, use_adapter
 
-pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
-
 
 async def run_in(world: World, cwd: Path, prompt: str) -> tuple[Run, str]:
     cwd.mkdir(parents=True, exist_ok=True)
@@ -57,6 +55,9 @@ def test_a_dialog_in_old_scrollback_does_not_match() -> None:
     assert blocking_screen(CLAUDE_CODE.blocking_screens, scrollback) is None
 
 
+@pytest.mark.posix_only(
+    "creating a symlink needs a privilege native Windows does not grant by default"
+)
 def test_only_paths_strictly_inside_the_data_directory_are_labhq_made(tmp_path: Path) -> None:
     data, mine, theirs = tmp_path / "data", tmp_path / "data" / "callcenter", tmp_path / "repo"
     for path in (mine, theirs):
@@ -70,6 +71,7 @@ def test_only_paths_strictly_inside_the_data_directory_are_labhq_made(tmp_path: 
     assert not created_by_labhq(mine, None)
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_the_trust_dialog_is_accepted_in_a_directory_labhq_created(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -81,6 +83,7 @@ async def test_the_trust_dialog_is_accepted_in_a_directory_labhq_created(
     assert "trusted" in screen
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_the_trust_dialog_fails_the_run_in_any_other_directory_without_a_key(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -93,6 +96,7 @@ async def test_the_trust_dialog_fails_the_run_in_any_other_directory_without_a_k
     assert "not a directory labhq created" in run.exit["errors"][0]
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_a_symlink_out_of_the_data_directory_is_not_trusted(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -108,6 +112,7 @@ async def test_a_symlink_out_of_the_data_directory_is_not_trusted(
     assert "trusted" not in screen
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_a_dialog_nobody_may_answer_fails_the_run_even_in_labhq_directories(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -119,6 +124,7 @@ async def test_a_dialog_nobody_may_answer_fails_the_run_even_in_labhq_directorie
     assert run.exit["errors"] == ["Claude Code is not logged in"]
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_a_run_without_progress_fails_with_the_reason(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
@@ -132,6 +138,7 @@ async def test_a_run_without_progress_fails_with_the_reason(
     assert "no progress for 5s" in run.exit["errors"][0]
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_enter_is_never_sent_when_the_option_cannot_be_selected(
     tmux_world: World, make_adapter: AdapterMaker, tmp_path: Path
 ) -> None:
