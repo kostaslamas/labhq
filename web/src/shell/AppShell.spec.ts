@@ -14,11 +14,12 @@ function shellStrings(root: HTMLElement): string[] {
 }
 
 describe('app shell', () => {
-  it('has exactly four sidebar items, one per area', async () => {
+  it('has one sidebar item per area', async () => {
     const { root } = await renderApp('/today')
     const items = [...root.querySelectorAll('[data-testid="nav-item"]')]
     expect(items.map((item) => item.textContent?.trim())).toEqual([
       'Today',
+      'CEO',
       'Projects',
       'Meetings',
       'Approvals',
@@ -34,7 +35,7 @@ describe('app shell', () => {
 
     expect(document.documentElement.lang).toBe('el')
     expect(greek).toHaveLength(english.length)
-    expect(english.filter((text) => greek.includes(text))).toEqual([])
+    expect(english.filter((text) => greek.includes(text))).toEqual(['CEO'])
     expect(greek).toContain('Σήμερα')
 
     root.querySelector<HTMLButtonElement>('[data-testid="switch-language"]')?.click()
