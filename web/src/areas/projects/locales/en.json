@@ -96,6 +96,7 @@
       "it": "IT"
     },
     "reportsTo": "Reports to",
+    "globalCeo": "The CEO for all projects",
     "nobody": "Nobody",
     "pendingHint": "A new agent waits for your approval before it can start.",
     "submit": "Add agent",

@@ -6,10 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from labhq.adapters import default_registry
 from labhq.cli.context import Context
 from labhq.db.models import Agent
-from labhq.hierarchy import Hierarchy
 from tests.auth.conftest import WRITE
 
 
@@ -40,9 +38,6 @@ async def test_one_ceo_can_be_configured_and_updated_without_losing_its_identity
     }
     assert signed_in.get("/api/org/ceo").json() == first.json()
 
-    hierarchy = Hierarchy(
-        context.sessions, clock=context.clock, adapters=default_registry.adapter_keys()
-    )
     managers = []
     for name in ("site", "shop"):
         created = signed_in.post(
@@ -51,7 +46,14 @@ async def test_one_ceo_can_be_configured_and_updated_without_losing_its_identity
             headers=WRITE,
         )
         assert created.status_code == 201, created.text
-        managers.append((await hierarchy.assign_manager(name)).manager.id)
+        manager = signed_in.post(
+            f"/api/projects/{created.json()['id']}/agents",
+            json={"role": "manager", "title": f"{name} manager", "kind": "codex"},
+            headers=WRITE,
+        )
+        assert manager.status_code == 201, manager.text
+        assert manager.json()["reports_to"] == ceo_id
+        managers.append(manager.json()["id"])
 
     changed = signed_in.put(
         "/api/org/ceo",

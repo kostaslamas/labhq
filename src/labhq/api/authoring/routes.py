@@ -24,7 +24,7 @@ from labhq.api.deps import ClockDep, ContextDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.approvals import ApprovalService
 from labhq.auth.routes import SignedIn
-from labhq.hierarchy import CEO, CREATE_AGENT, HierarchyError, check_reports_to
+from labhq.hierarchy import CEO, CREATE_AGENT, MANAGER, Hierarchy, HierarchyError, check_reports_to
 from labhq.hierarchy.roles import role
 
 router = APIRouter(tags=["authoring"])
@@ -91,8 +91,16 @@ async def project_agents_create(
         role(body.role)
         if body.role == CEO:
             raise HierarchyError("the CEO belongs to no project")
-        if body.reports_to is not None:
-            manager = await work.find_agent(db, body.reports_to)
+        reports_to = body.reports_to
+        if body.role == MANAGER:
+            ceo = await Hierarchy(
+                context.sessions, clock=context.clock, adapters=default_registry.adapter_keys()
+            ).ensure_ceo()
+            if reports_to is not None and reports_to != ceo.id:
+                raise HierarchyError("a project manager reports to the global CEO")
+            reports_to = ceo.id
+        elif reports_to is not None:
+            manager = await work.find_agent(db, reports_to)
             if manager.project_id != project.id:
                 raise work.WorkError(f"agent {manager.id} is not on this project")
             check_reports_to(body.role, manager.role)
@@ -104,7 +112,7 @@ async def project_agents_create(
             role=body.role,
             title=body.title,
             kind=body.kind,
-            reports_to=body.reports_to,
+            reports_to=reports_to,
             budget=body.budget_micros,
         )
     except UnknownAgentChoiceError as error:

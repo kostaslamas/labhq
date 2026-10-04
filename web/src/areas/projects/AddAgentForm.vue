@@ -68,7 +68,8 @@ async function submit(): Promise<void> {
         role: role.value,
         title: title.value.trim(),
         kind: kind.value,
-        reports_to: reportsTo.value === '' ? null : Number(reportsTo.value),
+        reports_to:
+          role.value === 'manager' || reportsTo.value === '' ? null : Number(reportsTo.value),
         budget_micros: micros,
       },
     })
@@ -121,7 +122,10 @@ onMounted(loadKinds)
     </label>
     <label :class="LABEL">
       {{ t('projects.agent.reportsTo') }}
-      <select v-model="reportsTo" :class="FIELD" name="reports_to">
+      <span v-if="role === 'manager'" class="text-sm text-muted">{{
+        t('projects.agent.globalCeo')
+      }}</span>
+      <select v-else v-model="reportsTo" :class="FIELD" name="reports_to">
         <option value="">{{ t('projects.agent.nobody') }}</option>
         <option v-for="person in people" :key="person.id" :value="String(person.id)">
           {{ person.title }} ({{ person.role }})
