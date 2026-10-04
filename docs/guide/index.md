@@ -16,6 +16,8 @@ read the pages below as you need them.
 
 - [Call Center](call-center.md): add the connector to Claude or ChatGPT, the tools, and what
   the Call Center will and will not do.
+- [Tasks and reviews](tasks.md): delegate objectives, split work, review results and make
+  the final decision.
 - [Exposure](exposure.md): a public URL for the connector: quick tunnel, Tailscale Funnel or
   your own domain.
 - [Passkeys](passkeys.md): sign in to the web UI, approve from your phone, and why a passkey
