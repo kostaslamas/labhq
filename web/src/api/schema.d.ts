@@ -484,6 +484,57 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/push/status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Push Status */
+    get: operations['push_status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/push/subscriptions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Push Subscribe */
+    post: operations['push_subscribe']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/push/subscriptions/remove': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Push Unsubscribe */
+    post: operations['push_unsubscribe']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/today': {
     parameters: {
       query?: never
@@ -1161,6 +1212,34 @@ export interface components {
       tasks: components['schemas']['TaskCount'][]
       /** Team */
       team: components['schemas']['TeamMember'][]
+    }
+    /** PushStatus */
+    PushStatus: {
+      /** Active */
+      active: boolean
+      /** Public Key */
+      public_key: string
+    }
+    /**
+     * PushSubscribeBody
+     * @description `PushSubscription.toJSON()` as the browser gives it.
+     */
+    PushSubscribeBody: {
+      /** Endpoint */
+      endpoint: string
+      keys: components['schemas']['PushSubscriptionKeys']
+    }
+    /** PushSubscriptionKeys */
+    PushSubscriptionKeys: {
+      /** Auth */
+      auth: string
+      /** P256Dh */
+      p256dh: string
+    }
+    /** PushUnsubscribeBody */
+    PushUnsubscribeBody: {
+      /** Endpoint */
+      endpoint: string
     }
     /**
      * QuestionStatus
@@ -2227,6 +2306,97 @@ export interface operations {
         content: {
           'application/json': components['schemas']['AddedAgent']
         }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_status: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PushStatus']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_subscribe: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PushSubscribeBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  push_unsubscribe: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PushUnsubscribeBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
       }
       /** @description Error */
       default: {

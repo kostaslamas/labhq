@@ -1659,6 +1659,71 @@
         "title": "ProjectView",
         "type": "object"
       },
+      "PushStatus": {
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "public_key": {
+            "title": "Public Key",
+            "type": "string"
+          }
+        },
+        "required": ["public_key", "active"],
+        "title": "PushStatus",
+        "type": "object"
+      },
+      "PushSubscribeBody": {
+        "description": "`PushSubscription.toJSON()` as the browser gives it.",
+        "properties": {
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "pattern": "^https://",
+            "title": "Endpoint",
+            "type": "string"
+          },
+          "keys": {
+            "$ref": "#/components/schemas/PushSubscriptionKeys"
+          }
+        },
+        "required": ["endpoint", "keys"],
+        "title": "PushSubscribeBody",
+        "type": "object"
+      },
+      "PushSubscriptionKeys": {
+        "properties": {
+          "auth": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Auth",
+            "type": "string"
+          },
+          "p256dh": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "P256Dh",
+            "type": "string"
+          }
+        },
+        "required": ["p256dh", "auth"],
+        "title": "PushSubscriptionKeys",
+        "type": "object"
+      },
+      "PushUnsubscribeBody": {
+        "properties": {
+          "endpoint": {
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Endpoint",
+            "type": "string"
+          }
+        },
+        "required": ["endpoint"],
+        "title": "PushUnsubscribeBody",
+        "type": "object"
+      },
       "QuestionStatus": {
         "enum": ["pending", "answered"],
         "title": "QuestionStatus",
@@ -3267,6 +3332,99 @@
         },
         "summary": "Project Agents Create",
         "tags": ["authoring"]
+      }
+    },
+    "/api/push/status": {
+      "get": {
+        "operationId": "push_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Status",
+        "tags": ["push"]
+      }
+    },
+    "/api/push/subscriptions": {
+      "post": {
+        "operationId": "push_subscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscribeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Subscribe",
+        "tags": ["push"]
+      }
+    },
+    "/api/push/subscriptions/remove": {
+      "post": {
+        "operationId": "push_unsubscribe",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushUnsubscribeBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Push Unsubscribe",
+        "tags": ["push"]
       }
     },
     "/api/today": {
