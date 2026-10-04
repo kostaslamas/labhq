@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { Page } from '@playwright/test'
 
 import { expect, test } from './support/auth.ts'
-import { DATA_DIR_ENV } from './support/server.ts'
+import { DATA_DIR_ENV, seedSummary } from './support/server.ts'
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
 
@@ -181,4 +181,10 @@ test('the seeded project shows its team', async ({ signedInPage: page }) => {
   await card(page, 'atlas').getByTestId('project-link').click()
   await expect(page.getByTestId('team-title').first()).toHaveText('Project manager')
   await expect(page.getByTestId('team-tree')).toContainText('fake')
+})
+
+test('a task link opens the project that owns the task', async ({ signedInPage: page }) => {
+  await page.goto(`/projects?task=${seedSummary().tasks[0]}`)
+  await expect(page).toHaveURL(/\/projects\/\d+$/)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('atlas')
 })

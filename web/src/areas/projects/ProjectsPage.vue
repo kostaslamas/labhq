@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { api, type components } from '@/api'
 import { useLiveTopic } from '@/live'
@@ -11,6 +12,8 @@ import ProjectCard from './ProjectCard.vue'
 type Card = components['schemas']['ProjectCard']
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const cards = ref<Card[]>([])
 const state = ref<'loading' | 'ready' | 'failed'>('loading')
 
@@ -32,7 +35,20 @@ async function load(): Promise<void> {
   state.value = 'ready'
 }
 
-onMounted(load)
+// `/projects?task=<id>` (a link from a meeting's action item) opens the project owning the task.
+async function openTaskProject(): Promise<void> {
+  const task = Number(route.query.task)
+  if (!Number.isSafeInteger(task) || task <= 0) return
+  const { data } = await api.GET('/api/projects/of-task/{task_id}', {
+    params: { path: { task_id: task } },
+  })
+  if (data) await router.replace({ name: 'project', params: { id: data.project_id } })
+}
+
+onMounted(() => {
+  void load()
+  void openTaskProject()
+})
 for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
 </script>
 
