@@ -23,14 +23,14 @@ class MeetingItem(BaseModel):
     channel: str | None
 
 
-class Participant(BaseModel):
+class MeetingAttendee(BaseModel):
     id: int
     # None is the owner.
     agent_id: int | None
     name: str
 
 
-class Message(BaseModel):
+class MeetingMessage(BaseModel):
     id: int
     source: TranscriptSource
     speaker: str
@@ -40,13 +40,13 @@ class Message(BaseModel):
     created_at: datetime
 
 
-class Decision(BaseModel):
+class MeetingDecisionEntry(BaseModel):
     id: int
     position: int
     text: str
 
 
-class ActionItem(BaseModel):
+class MeetingActionEntry(BaseModel):
     id: int
     text: str
     decision_id: int | None
@@ -61,13 +61,13 @@ class MeetingDetail(MeetingItem):
     agenda: str
     end_reason: str | None
     ended_at: datetime | None
-    participants: list[Participant]
-    messages: list[Message]
-    decisions: list[Decision]
-    action_items: list[ActionItem]
+    participants: list[MeetingAttendee]
+    messages: list[MeetingMessage]
+    decisions: list[MeetingDecisionEntry]
+    action_items: list[MeetingActionEntry]
 
 
-class JoinBody(BaseModel):
+class MeetingJoinBody(BaseModel):
     text: Annotated[
         str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_MESSAGE_LENGTH)
     ]

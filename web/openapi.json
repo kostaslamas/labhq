@@ -1,74 +1,6 @@
 {
   "components": {
     "schemas": {
-      "ActionItem": {
-        "properties": {
-          "assignee_agent_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assignee Agent Id"
-          },
-          "assignee_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Assignee Name"
-          },
-          "decision_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Decision Id"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "task_id": {
-            "title": "Task Id",
-            "type": "integer"
-          },
-          "task_status": {
-            "$ref": "#/components/schemas/TaskStatus"
-          },
-          "task_title": {
-            "title": "Task Title",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "text",
-          "decision_id",
-          "assignee_agent_id",
-          "assignee_name",
-          "task_id",
-          "task_title",
-          "task_status"
-        ],
-        "title": "ActionItem",
-        "type": "object"
-      },
       "AgentRef": {
         "properties": {
           "id": {
@@ -315,7 +247,7 @@
             "type": "integer"
           },
           "state": {
-            "$ref": "#/components/schemas/labhq__budgets__decision__Decision"
+            "$ref": "#/components/schemas/Decision"
           },
           "used_percent": {
             "anyOf": [
@@ -410,6 +342,11 @@
         "required": ["id", "name", "rp_id", "transports", "created_at", "last_used_at", "revoked"],
         "title": "Credential",
         "type": "object"
+      },
+      "Decision": {
+        "enum": ["allow", "warn", "stop"],
+        "title": "Decision",
+        "type": "string"
       },
       "DecisionBody": {
         "properties": {
@@ -598,24 +535,124 @@
         "title": "IncidentStatus",
         "type": "string"
       },
-      "JoinBody": {
+      "MeetingActionEntry": {
         "properties": {
+          "assignee_agent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Agent Id"
+          },
+          "assignee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assignee Name"
+          },
+          "decision_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          },
+          "task_status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "task_title": {
+            "title": "Task Title",
+            "type": "string"
+          },
           "text": {
-            "maxLength": 4000,
-            "minLength": 1,
             "title": "Text",
             "type": "string"
           }
         },
-        "required": ["text"],
-        "title": "JoinBody",
+        "required": [
+          "id",
+          "text",
+          "decision_id",
+          "assignee_agent_id",
+          "assignee_name",
+          "task_id",
+          "task_title",
+          "task_status"
+        ],
+        "title": "MeetingActionEntry",
+        "type": "object"
+      },
+      "MeetingAttendee": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["id", "agent_id", "name"],
+        "title": "MeetingAttendee",
+        "type": "object"
+      },
+      "MeetingDecisionEntry": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["id", "position", "text"],
+        "title": "MeetingDecisionEntry",
         "type": "object"
       },
       "MeetingDetail": {
         "properties": {
           "action_items": {
             "items": {
-              "$ref": "#/components/schemas/ActionItem"
+              "$ref": "#/components/schemas/MeetingActionEntry"
             },
             "title": "Action Items",
             "type": "array"
@@ -642,7 +679,7 @@
           },
           "decisions": {
             "items": {
-              "$ref": "#/components/schemas/labhq__api__meetings__schemas__Decision"
+              "$ref": "#/components/schemas/MeetingDecisionEntry"
             },
             "title": "Decisions",
             "type": "array"
@@ -680,14 +717,14 @@
           },
           "messages": {
             "items": {
-              "$ref": "#/components/schemas/Message"
+              "$ref": "#/components/schemas/MeetingMessage"
             },
             "title": "Messages",
             "type": "array"
           },
           "participants": {
             "items": {
-              "$ref": "#/components/schemas/Participant"
+              "$ref": "#/components/schemas/MeetingAttendee"
             },
             "title": "Participants",
             "type": "array"
@@ -799,12 +836,20 @@
         "title": "MeetingItem",
         "type": "object"
       },
-      "MeetingStatus": {
-        "enum": ["requested", "running", "ended", "failed", "cancelled"],
-        "title": "MeetingStatus",
-        "type": "string"
+      "MeetingJoinBody": {
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "MeetingJoinBody",
+        "type": "object"
       },
-      "Message": {
+      "MeetingMessage": {
         "properties": {
           "agent_id": {
             "anyOf": [
@@ -839,8 +884,13 @@
           }
         },
         "required": ["id", "source", "speaker", "agent_id", "text", "created_at"],
-        "title": "Message",
+        "title": "MeetingMessage",
         "type": "object"
+      },
+      "MeetingStatus": {
+        "enum": ["requested", "running", "ended", "failed", "cancelled"],
+        "title": "MeetingStatus",
+        "type": "string"
       },
       "NotificationStatus": {
         "enum": ["pending", "sent", "failed"],
@@ -920,32 +970,6 @@
         },
         "required": ["items", "next_cursor"],
         "title": "Page[ProjectCard]",
-        "type": "object"
-      },
-      "Participant": {
-        "properties": {
-          "agent_id": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Agent Id"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": ["id", "agent_id", "name"],
-        "title": "Participant",
         "type": "object"
       },
       "ProjectCard": {
@@ -1298,25 +1322,6 @@
         "title": "ProjectRef",
         "type": "object"
       },
-      "labhq__api__meetings__schemas__Decision": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "position": {
-            "title": "Position",
-            "type": "integer"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": ["id", "position", "text"],
-        "title": "Decision",
-        "type": "object"
-      },
       "labhq__api__projects__schemas__ProjectRef": {
         "properties": {
           "project_id": {
@@ -1327,11 +1332,6 @@
         "required": ["project_id"],
         "title": "ProjectRef",
         "type": "object"
-      },
-      "labhq__budgets__decision__Decision": {
-        "enum": ["allow", "warn", "stop"],
-        "title": "Decision",
-        "type": "string"
       }
     }
   },
@@ -2100,7 +2100,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/JoinBody"
+                "$ref": "#/components/schemas/MeetingJoinBody"
               }
             }
           },
@@ -2111,7 +2111,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Message"
+                  "$ref": "#/components/schemas/MeetingMessage"
                 }
               }
             },

@@ -8,13 +8,13 @@ from sqlalchemy import select
 from labhq.api.deps import ClockDep, ContextDep, OwnerDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.api.meetings.schemas import (
-    ActionItem,
-    Decision,
-    JoinBody,
+    MeetingActionEntry,
+    MeetingAttendee,
+    MeetingDecisionEntry,
     MeetingDetail,
     MeetingItem,
-    Message,
-    Participant,
+    MeetingJoinBody,
+    MeetingMessage,
 )
 from labhq.api.pagination import Page, PageParamsDep, decode_cursor, encode_cursor
 from labhq.db.models import Meeting, Project
@@ -78,11 +78,11 @@ async def _detail(session: SessionDep, meeting_id: int) -> MeetingDetail:
         end_reason=view.end_reason,
         ended_at=view.ended_at,
         participants=[
-            Participant(id=p.id, agent_id=p.agent_id, name=p.display_name)
+            MeetingAttendee(id=p.id, agent_id=p.agent_id, name=p.display_name)
             for p in view.participants
         ],
         messages=[
-            Message(
+            MeetingMessage(
                 id=e.id,
                 source=e.source,
                 speaker=e.speaker,
@@ -92,9 +92,11 @@ async def _detail(session: SessionDep, meeting_id: int) -> MeetingDetail:
             )
             for e in view.transcript
         ],
-        decisions=[Decision(id=d.id, position=d.position, text=d.text) for d in view.decisions],
+        decisions=[
+            MeetingDecisionEntry(id=d.id, position=d.position, text=d.text) for d in view.decisions
+        ],
         action_items=[
-            ActionItem(
+            MeetingActionEntry(
                 id=i.id,
                 text=i.text,
                 decision_id=i.decision_id,
@@ -120,12 +122,12 @@ async def meetings_get(
 @router.post("/{meeting_id}/messages", status_code=201)
 async def meetings_join(
     meeting_id: MeetingId,
-    body: JoinBody,
+    body: MeetingJoinBody,
     owner: OwnerDep,
     context: ContextDep,
     session: SessionDep,
     clock: ClockDep,
-) -> Message:
+) -> MeetingMessage:
     """Say something as the owner; the next turns of the meeting see it."""
     if await session.get(Meeting, meeting_id) is None:
         raise _not_found(meeting_id)

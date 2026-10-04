@@ -424,24 +424,6 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
-    /** ActionItem */
-    ActionItem: {
-      /** Assignee Agent Id */
-      assignee_agent_id: number | null
-      /** Assignee Name */
-      assignee_name: string | null
-      /** Decision Id */
-      decision_id: number | null
-      /** Id */
-      id: number
-      /** Task Id */
-      task_id: number
-      task_status: components['schemas']['TaskStatus']
-      /** Task Title */
-      task_title: string
-      /** Text */
-      text: string
-    }
     /** AgentRef */
     AgentRef: {
       /** Id */
@@ -527,7 +509,7 @@ export interface components {
       budget_micros: number | null
       /** Spent Micros */
       spent_micros: number
-      state: components['schemas']['labhq__budgets__decision__Decision']
+      state: components['schemas']['Decision']
       /** Used Percent */
       used_percent: number | null
     }
@@ -576,6 +558,11 @@ export interface components {
       /** Transports */
       transports: string[]
     }
+    /**
+     * Decision
+     * @enum {string}
+     */
+    Decision: 'allow' | 'warn' | 'stop'
     /** DecisionBody */
     DecisionBody: {
       /** Credential */
@@ -677,15 +664,46 @@ export interface components {
      * @enum {string}
      */
     IncidentStatus: 'open' | 'resolved'
-    /** JoinBody */
-    JoinBody: {
+    /** MeetingActionEntry */
+    MeetingActionEntry: {
+      /** Assignee Agent Id */
+      assignee_agent_id: number | null
+      /** Assignee Name */
+      assignee_name: string | null
+      /** Decision Id */
+      decision_id: number | null
+      /** Id */
+      id: number
+      /** Task Id */
+      task_id: number
+      task_status: components['schemas']['TaskStatus']
+      /** Task Title */
+      task_title: string
+      /** Text */
+      text: string
+    }
+    /** MeetingAttendee */
+    MeetingAttendee: {
+      /** Agent Id */
+      agent_id: number | null
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+    }
+    /** MeetingDecisionEntry */
+    MeetingDecisionEntry: {
+      /** Id */
+      id: number
+      /** Position */
+      position: number
       /** Text */
       text: string
     }
     /** MeetingDetail */
     MeetingDetail: {
       /** Action Items */
-      action_items: components['schemas']['ActionItem'][]
+      action_items: components['schemas']['MeetingActionEntry'][]
       /** Agenda */
       agenda: string
       /** Channel */
@@ -696,7 +714,7 @@ export interface components {
        */
       created_at: string
       /** Decisions */
-      decisions: components['schemas']['labhq__api__meetings__schemas__Decision'][]
+      decisions: components['schemas']['MeetingDecisionEntry'][]
       /** End Reason */
       end_reason: string | null
       /** Ended At */
@@ -706,9 +724,9 @@ export interface components {
       /** Kind */
       kind: string
       /** Messages */
-      messages: components['schemas']['Message'][]
+      messages: components['schemas']['MeetingMessage'][]
       /** Participants */
-      participants: components['schemas']['Participant'][]
+      participants: components['schemas']['MeetingAttendee'][]
       /** Project Id */
       project_id: number
       /** Project Name */
@@ -738,13 +756,13 @@ export interface components {
       started_at: string | null
       status: components['schemas']['MeetingStatus']
     }
-    /**
-     * MeetingStatus
-     * @enum {string}
-     */
-    MeetingStatus: 'requested' | 'running' | 'ended' | 'failed' | 'cancelled'
-    /** Message */
-    Message: {
+    /** MeetingJoinBody */
+    MeetingJoinBody: {
+      /** Text */
+      text: string
+    }
+    /** MeetingMessage */
+    MeetingMessage: {
       /** Agent Id */
       agent_id: number | null
       /**
@@ -760,6 +778,11 @@ export interface components {
       /** Text */
       text: string
     }
+    /**
+     * MeetingStatus
+     * @enum {string}
+     */
+    MeetingStatus: 'requested' | 'running' | 'ended' | 'failed' | 'cancelled'
     /**
      * NotificationStatus
      * @enum {string}
@@ -785,15 +808,6 @@ export interface components {
       items: components['schemas']['ProjectCard'][]
       /** Next Cursor */
       next_cursor: string | null
-    }
-    /** Participant */
-    Participant: {
-      /** Agent Id */
-      agent_id: number | null
-      /** Id */
-      id: number
-      /** Name */
-      name: string
     }
     /** ProjectCard */
     ProjectCard: {
@@ -971,25 +985,11 @@ export interface components {
       /** Name */
       name: string
     }
-    /** Decision */
-    labhq__api__meetings__schemas__Decision: {
-      /** Id */
-      id: number
-      /** Position */
-      position: number
-      /** Text */
-      text: string
-    }
     /** ProjectRef */
     labhq__api__projects__schemas__ProjectRef: {
       /** Project Id */
       project_id: number
     }
-    /**
-     * Decision
-     * @enum {string}
-     */
-    labhq__budgets__decision__Decision: 'allow' | 'warn' | 'stop'
   }
   responses: never
   parameters: never
@@ -1560,7 +1560,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['JoinBody']
+        'application/json': components['schemas']['MeetingJoinBody']
       }
     }
     responses: {
@@ -1570,7 +1570,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Message']
+          'application/json': components['schemas']['MeetingMessage']
         }
       }
       /** @description Error */
