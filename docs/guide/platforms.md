@@ -69,7 +69,6 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_blocking.py::test_a_run_without_progress_fails_with_the_reason` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_blocking.py::test_a_symlink_out_of_the_data_directory_is_not_trusted` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_blocking.py::test_enter_is_never_sent_when_the_option_cannot_be_selected` | the tmux adapter does not run on native Windows (ADR 0003) |
-| `tests/adapters/tmux/test_tmux_blocking.py::test_only_paths_strictly_inside_the_data_directory_are_labhq_made` | creating a symlink needs a privilege native Windows does not grant by default |
 | `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_fails_the_run_in_any_other_directory_without_a_key` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_is_accepted_in_a_directory_labhq_created` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_variable_only_in_the_clients_environment_stays_out_of_the_session` | the tmux adapter does not run on native Windows (ADR 0003) |
