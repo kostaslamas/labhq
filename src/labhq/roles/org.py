@@ -13,6 +13,7 @@ from labhq.db.enums import AgentStatus
 from labhq.db.models import Agent, Project
 from labhq.hierarchy import CEO, MANAGER, ProposedMember
 from labhq.roles.common import RoleServices, refusing
+from labhq.work import WorkError, add_task, find_project
 
 
 class AssignManager(BaseModel):
@@ -26,6 +27,15 @@ class ProposeTeam(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     members: list[ProposedMember] = Field(min_length=1)
+
+
+class DelegateTask(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    project: str = Field(min_length=1, description="Project name or numeric id.")
+    title: str = Field(min_length=1, max_length=300)
+    description: str = ""
+    priority: int = 0
 
 
 async def list_projects(context: ToolContext, arguments: NoArguments) -> str:
@@ -50,6 +60,32 @@ async def list_projects(context: ToolContext, arguments: NoArguments) -> str:
 
 
 def ceo_tools(services: RoleServices) -> list[AgentToolSpec]:
+    @refusing
+    async def delegate_task(context: ToolContext, arguments: DelegateTask) -> str:
+        async with context.sessions() as db:
+            project = await find_project(db, arguments.project)
+            manager = await db.scalar(
+                select(Agent).where(
+                    Agent.project_id == project.id,
+                    Agent.role == MANAGER,
+                    Agent.status == AgentStatus.ACTIVE,
+                )
+            )
+            if manager is None:
+                raise WorkError(f"project {project.name} has no active manager")
+            task = await add_task(
+                db,
+                context.clock,
+                project=str(project.id),
+                title=arguments.title,
+                description=arguments.description,
+                priority=arguments.priority,
+                assignee=manager.id,
+                reason=f"delegated by CEO agent {context.agent_id}",
+            )
+            await db.commit()
+        return f"Task #{task.id} delegated to {manager.title}; review will return to the CEO."
+
     @refusing
     async def assign_manager(context: ToolContext, arguments: AssignManager) -> str:
         assignment = await services.hierarchy(context).assign_manager(
@@ -82,6 +118,14 @@ def ceo_tools(services: RoleServices) -> list[AgentToolSpec]:
             roles=frozenset({CEO}),
             read_only=False,
             handler=assign_manager,
+        ),
+        AgentToolSpec(
+            name="delegate_task",
+            description="Give a project objective to its active manager and track its review.",
+            input_model=DelegateTask,
+            roles=frozenset({CEO}),
+            read_only=False,
+            handler=delegate_task,
         ),
     ]
 
