@@ -484,6 +484,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/today': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Today Get
+     * @description What was delivered since `since`, and what needs the owner now.
+     */
+    get: operations['today_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/vocabulary': {
     parameters: {
       query?: never
@@ -650,6 +670,28 @@ export interface components {
       /** Used Percent */
       used_percent: number | null
     }
+    /**
+     * BudgetNotice
+     * @description A budget that crossed its warning line in the current period.
+     */
+    BudgetNotice: {
+      /** Budget Micros */
+      budget_micros: number
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+      scope: components['schemas']['BudgetScope']
+      /** Scope Id */
+      scope_id: number
+      /** Spent Micros */
+      spent_micros: number
+    }
     /** BudgetPolicy */
     BudgetPolicy: {
       /**
@@ -662,6 +704,11 @@ export interface components {
       /** Warn Percent */
       warn_percent: number
     }
+    /**
+     * BudgetScope
+     * @enum {string}
+     */
+    BudgetScope: 'agent' | 'project'
     /**
      * CallRequestStatus
      * @enum {string}
@@ -780,6 +827,18 @@ export interface components {
     /** ErrorEnvelope */
     ErrorEnvelope: {
       error: components['schemas']['ErrorBody']
+    }
+    /** ExecutedApproval */
+    ExecutedApproval: {
+      /** Branch */
+      branch: string | null
+      /** Commit */
+      commit: string | null
+      /** Id */
+      id: number
+      status: components['schemas']['ApprovalStatus']
+      /** Type */
+      type: string
     }
     /** Health */
     Health: {
@@ -942,6 +1001,19 @@ export interface components {
       /** Text */
       text: string
     }
+    /** NeedsYou */
+    NeedsYou: {
+      /** Approvals */
+      approvals: components['schemas']['PendingApproval'][]
+      /** Budget Warnings */
+      budget_warnings: components['schemas']['BudgetNotice'][]
+      /** Count */
+      count: number
+      /** Incidents */
+      incidents: components['schemas']['OpenIncident'][]
+      /** Questions */
+      questions: components['schemas']['PendingQuestion'][]
+    }
     /** NewAgentBody */
     NewAgentBody: {
       /** Budget Micros */
@@ -969,6 +1041,21 @@ export interface components {
      * @enum {string}
      */
     NotificationStatus: 'pending' | 'sent' | 'failed'
+    /** OpenIncident */
+    OpenIncident: {
+      /** Host Name */
+      host_name: string
+      /** Id */
+      id: number
+      /**
+       * Opened At
+       * Format: date-time
+       */
+      opened_at: string
+      /** Rule Name */
+      rule_name: string
+      status: components['schemas']['IncidentStatus']
+    }
     /** Page[ApprovalOut] */
     Page_ApprovalOut_: {
       /** Items */
@@ -998,6 +1085,47 @@ export interface components {
       id: number
       /** Name */
       name: string
+    }
+    /** PendingApproval */
+    PendingApproval: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Project Id */
+      project_id: number | null
+      /** Project Name */
+      project_name: string | null
+      risk_class: components['schemas']['RiskClass']
+      status: components['schemas']['ApprovalStatus']
+      /** Task Id */
+      task_id: number | null
+      /** Task Title */
+      task_title: string | null
+      /** Type */
+      type: string
+    }
+    /** PendingQuestion */
+    PendingQuestion: {
+      /** Agent Title */
+      agent_title: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Project Id */
+      project_id: number | null
+      /** Question */
+      question: string
+      status: components['schemas']['QuestionStatus']
+      /** Task Id */
+      task_id: number | null
     }
     /** ProjectCard */
     ProjectCard: {
@@ -1060,6 +1188,19 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** SpendWithoutOutput */
+    SpendWithoutOutput: {
+      /** Agent Id */
+      agent_id: number
+      /** Agent Title */
+      agent_title: string
+      /** Cost Micros */
+      cost_micros: number
+      /** Project Id */
+      project_id: number | null
+      /** Project Name */
+      project_name: string | null
+    }
     /** StepUpBody */
     StepUpBody: {
       /** Purpose */
@@ -1095,6 +1236,48 @@ export interface components {
       /** Role */
       role: string
       status: components['schemas']['AgentStatus']
+      /** Title */
+      title: string
+    }
+    /** Today */
+    Today: {
+      /** Deliverables */
+      deliverables: components['schemas']['TodayDeliverable'][]
+      needs_you: components['schemas']['NeedsYou']
+      /**
+       * Since
+       * Format: date-time
+       */
+      since: string
+      /** Spend Without Output */
+      spend_without_output: components['schemas']['SpendWithoutOutput'][]
+      /**
+       * Until
+       * Format: date-time
+       */
+      until: string
+    }
+    /** TodayDeliverable */
+    TodayDeliverable: {
+      /** Approvals */
+      approvals: components['schemas']['ExecutedApproval'][]
+      /** Branch */
+      branch: string | null
+      /** Commit Count */
+      commit_count: number
+      /** Cost Micros */
+      cost_micros: number
+      /**
+       * Finished At
+       * Format: date-time
+       */
+      finished_at: string
+      /** Project Id */
+      project_id: number
+      /** Project Name */
+      project_name: string
+      /** Task Id */
+      task_id: number
       /** Title */
       title: string
     }
@@ -2043,6 +2226,38 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AddedAgent']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  today_get: {
+    parameters: {
+      query?: {
+        /** @description Start of the window; default: the last 24 hours. */
+        since?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Today']
         }
       }
       /** @description Error */
