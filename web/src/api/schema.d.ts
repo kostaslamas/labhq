@@ -604,13 +604,6 @@ export interface components {
       /** Purpose */
       purpose: string
     }
-    /** TaskRef */
-    TaskRef: {
-      /** Id */
-      id: number
-      /** Title */
-      title: string
-    }
     /**
      * SubscribeBody
      * @description `PushSubscription.toJSON()` as the browser gives it.
@@ -619,6 +612,13 @@ export interface components {
       /** Endpoint */
       endpoint: string
       keys: components['schemas']['PushKeys']
+    }
+    /** TaskRef */
+    TaskRef: {
+      /** Id */
+      id: number
+      /** Title */
+      title: string
     }
     /**
      * TaskStatus
