@@ -17,6 +17,13 @@ def default_ui_dir() -> Path:
     return PACKAGED_UI_DIR if PACKAGED_UI_DIR.is_dir() else SOURCE_UI_DIR
 
 
+def default_repository_browser_roots() -> list[Path]:
+    roots = [Path.home()]
+    if Path("/projects").is_dir():
+        roots.append(Path("/projects"))
+    return roots
+
+
 class ApiSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LABHQ_API_", extra="ignore")
 
@@ -24,6 +31,9 @@ class ApiSettings(BaseSettings):
     ui_dir: Path = Field(default_factory=default_ui_dir)
     default_page_size: int = Field(default=50, gt=0)
     max_page_size: int = Field(default=200, gt=0)
+    # The browser lists the server user's home and /projects when mounted. Override with a
+    # JSON array in LABHQ_API_REPOSITORY_BROWSER_ROOTS when repositories live elsewhere.
+    repository_browser_roots: list[Path] = Field(default_factory=default_repository_browser_roots)
 
 
 def get_api_settings() -> ApiSettings:

@@ -8,6 +8,7 @@ import { Button } from '@/ui'
 import { errorKey } from './authoringErrors'
 import { FIELD, LABEL } from './fieldClasses'
 import { usdToMicros } from './usd'
+import RepositoryBrowser from './RepositoryBrowser.vue'
 
 const emit = defineEmits<{ added: [projectId: number]; cancel: [] }>()
 const { t } = useI18n()
@@ -17,6 +18,12 @@ const repoPath = ref('')
 const budget = ref('')
 const busy = ref(false)
 const failure = ref<string | null>(null)
+const choosing = ref(false)
+
+function selectRepository(path: string): void {
+  repoPath.value = path
+  choosing.value = false
+}
 
 async function submit(): Promise<void> {
   if (busy.value) return
@@ -65,6 +72,10 @@ async function submit(): Promise<void> {
       />
       <span class="text-xs font-normal text-muted">{{ t('projects.add.repoHint') }}</span>
     </label>
+    <Button type="button" variant="outline" class="self-start" @click="choosing = !choosing">
+      {{ t('projects.add.browse') }}
+    </Button>
+    <RepositoryBrowser v-if="choosing" @selected="selectRepository" @close="choosing = false" />
     <label :class="LABEL">
       {{ t('projects.add.budget') }}
       <input

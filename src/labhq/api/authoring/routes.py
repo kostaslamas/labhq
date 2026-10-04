@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from labhq import work
 from labhq.adapters import default_registry
 from labhq.adapters.kinds import UnknownAgentChoiceError, agent_choices
+from labhq.api.authoring.browser import router as browser_router
 from labhq.api.authoring.schemas import (
     AddedAgent,
     AgentKindChoice,
@@ -27,6 +28,7 @@ from labhq.hierarchy import CEO, CREATE_AGENT, HierarchyError, check_reports_to
 from labhq.hierarchy.roles import role
 
 router = APIRouter(tags=["authoring"])
+router.include_router(browser_router)
 
 
 @router.get("/agent-kinds")
