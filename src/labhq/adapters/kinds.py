@@ -38,11 +38,11 @@ class AgentChoice:
     config: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
     locate: Locate | None = None
 
-    def found(self, which: Callable[[str], str | None] = shutil.which) -> str | None:
+    def found(self, which: Callable[[str], str | None] | None = None) -> str | None:
         """Where the binary is on this machine, or None."""
         if self.locate is not None:
             return self.locate()
-        return which(self.binary)
+        return (which or shutil.which)(self.binary)
 
 
 def _claude_binary() -> str | None:
