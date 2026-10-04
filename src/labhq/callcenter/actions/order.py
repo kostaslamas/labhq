@@ -17,7 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.callcenter.answers.refs import approval_ref
 from labhq.clock import Clock
-from labhq.db.models import Project, Task
+from labhq.db.enums import AgentStatus
+from labhq.db.models import Agent, Project, Task
+from labhq.hierarchy.roles import MANAGER
 from labhq.speech import join_sentences, speakable
 from labhq.work import WorkError, add_task, find_project, request_merge
 
@@ -91,6 +93,17 @@ async def order(
         existing = await _existing(db, owner.id, marker)
         if existing is not None:
             return _confirmation(existing, owner)
+        if assignee is None:
+            manager = await db.scalar(
+                select(Agent).where(
+                    Agent.project_id == owner.id,
+                    Agent.role == MANAGER,
+                    Agent.status == AgentStatus.ACTIVE,
+                )
+            )
+            if manager is None:
+                raise WorkError(f"project {owner.name} has no active manager to take the task")
+            assignee = manager.id
         task = await add_task(
             db,
             clock,
