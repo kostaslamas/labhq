@@ -9,6 +9,7 @@ from labhq.work.service import (
     check_repository,
     find_agent,
     find_project,
+    resolve_kind,
 )
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     "find_agent",
     "find_project",
     "request_merge",
+    "resolve_kind",
     "task_branch",
 ]
