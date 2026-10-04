@@ -83,7 +83,9 @@ const empty = computed(() => props.needs.count === 0)
         data-testid="need-incident"
       >
         <div class="flex min-w-0 flex-col gap-1">
-          <span class="font-medium">{{ incident.rule_name }}</span>
+          <RouterLink :to="{ name: 'rules' }" class="font-medium hover:underline">{{
+            incident.rule_name
+          }}</RouterLink>
           <span class="text-sm text-muted">
             {{ t('today.needs.on_host') }} <Mono>{{ incident.host_name }}</Mono>
           </span>
