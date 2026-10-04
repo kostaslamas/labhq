@@ -38,6 +38,8 @@ class EntryView:
     run_id: int | None
     external_ref: str | None
     created_at: datetime
+    # Who said it; None for a system entry. The UI finds the speaker's agent through this.
+    participant_id: int | None = None
 
 
 @dataclass(frozen=True)
@@ -128,6 +130,7 @@ async def read_minutes(db: AsyncSession, meeting_id: int) -> MinutesView:
                 run_id=entry.run_id,
                 external_ref=entry.external_ref,
                 created_at=entry.created_at,
+                participant_id=entry.participant_id,
             )
             for entry in entries
         ),
