@@ -85,6 +85,9 @@ class ApprovalService:
         return approval
 
     async def _announce(self, db: AsyncSession, approval: Approval) -> None:
+        # Imported here: `labhq.api` imports the approvals package at load time.
+        from labhq.api.public_url import approval_link
+
         # Same transaction as the approval, so a committed approval always has its notification.
         await enqueue(
             db,
@@ -93,6 +96,7 @@ class ApprovalService:
             title=f"Approval needed: {approval.type}",
             body=f"A{approval.id}: {approval.type} ({approval.risk_class}) is waiting for you.",
             idempotency_key=f"approval:{approval.id}",
+            click_url=approval_link(approval.id),
             now=self._clock.now(),
         )
 

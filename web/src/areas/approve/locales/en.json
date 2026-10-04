@@ -1,0 +1,9 @@
+{
+  "title": "Approval",
+  "loading": "Loading…",
+  "sign_in_lead": "Sign in with your passkey to see what is waiting for your approval.",
+  "not_enrolled": "No passkey is enrolled on this address yet. Enroll this device first with the link from `labhq passkey enroll`.",
+  "unknown": "There is no approval A{id}.",
+  "failed": "The approval could not be loaded. Check that labhq is running.",
+  "retry": "Try again"
+}
