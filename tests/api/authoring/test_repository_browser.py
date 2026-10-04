@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-import pytest
 from fastapi.testclient import TestClient
 
 
@@ -53,7 +52,6 @@ def test_browse_rejects_paths_outside_roots_and_hidden_directories(
     assert missing.status_code == 404
 
 
-@pytest.mark.posix_only("creating symlinks needs privileges on Windows")
 def test_browse_does_not_follow_a_symlink_outside_the_root(
     signed_in: TestClient, tmp_path: Path
 ) -> None:
