@@ -39,6 +39,10 @@ INSTALL_COMMANDS: dict[str, CiRun] = {
     # #69: .env from .env.example, then compose up until healthy.
     "cp .env.example .env": CiRun(".github/workflows/docker.yml", r"\.env\.example > \.env\b"),
     "docker compose up -d": CiRun(".github/workflows/docker.yml", r"\bdocker compose up\b"),
+    # #131: the same stack under rootless Podman, through the overlay.
+    "podman compose -f compose.yaml -f compose.podman.yaml up -d": CiRun(
+        ".github/workflows/docker.yml", r"\bpodman compose up\b"
+    ),
 }
 PRIMARY_INSTALL_COMMAND = "uvx labhq onboard"
 

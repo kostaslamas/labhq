@@ -1,0 +1,11 @@
+# Podman overlay for compose.yaml (#131). Use both files:
+#   podman compose -f compose.yaml -f compose.podman.yaml up -d
+# See docs/guide/containers.md.
+
+services:
+  labhq:
+    # Rootless Podman maps your own host id to root inside the container and every other
+    # container id to a subordinate id, so files the labhq user writes to /projects would
+    # belong to a stranger on the host. keep-id maps your host id to the same id inside, which
+    # CONTAINER_UID already is. Docker rejects this mode, which is why it is not in compose.yaml.
+    userns_mode: "keep-id:uid=${CONTAINER_UID:-1000},gid=${CONTAINER_GID:-1000}"
