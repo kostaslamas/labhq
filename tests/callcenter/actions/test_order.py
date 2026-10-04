@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.callcenter.actions import order
 from labhq.clock import FakeClock
-from labhq.db.enums import WakeupSource
+from labhq.db.enums import AgentStatus, WakeupSource
 from labhq.db.models import Task, WakeupRequest
 from labhq.speech import speakable
 from tests.db.factories import project_agent_task
@@ -54,7 +54,9 @@ async def test_a_repeat_with_the_same_request_id_creates_nothing(
 
 
 async def test_a_new_request_id_creates_a_new_task(session: AsyncSession, clock: FakeClock) -> None:
-    await project_agent_task(session, clock)
+    _, agent, _ = await project_agent_task(session, clock)
+    agent.role = "manager"
+    agent.status = AgentStatus.ACTIVE
     await session.commit()
     before = await _count(session, Task)
 
@@ -62,7 +64,22 @@ async def test_a_new_request_id_creates_a_new_task(session: AsyncSession, clock:
     await order(session, clock, project="demo", text="Same words", request_id="r2")
 
     assert await _count(session, Task) == before + 2
-    assert await _count(session, WakeupRequest) == 0  # unassigned: nobody to wake
+    assert await _count(session, WakeupRequest) == 2
+    created = list(await session.scalars(select(Task).where(Task.title == "Same words")))
+    assert all(task.assignee_id == agent.id for task in created)
+
+
+async def test_order_without_a_manager_refuses_to_strand_the_task(
+    session: AsyncSession, clock: FakeClock
+) -> None:
+    await project_agent_task(session, clock)
+    await session.commit()
+    before = await _count(session, Task)
+
+    answer = await order(session, clock, project="demo", text="Do it", request_id="r1")
+
+    assert "no active manager" in answer
+    assert await _count(session, Task) == before
 
 
 async def test_an_unknown_project_is_explained_and_creates_nothing(

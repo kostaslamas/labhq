@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters import UnknownAdapterError
 from labhq.clock import Clock
-from labhq.db.enums import AgentStatus, WakeupSource
+from labhq.db.enums import AgentStatus, TaskStatus, WakeupSource
 from labhq.db.models import Agent, Project, Task
 from labhq.scheduler import Wakeup, enqueue
 from labhq.worktrees import GitError
@@ -123,14 +123,22 @@ async def add_task(
     description: str = "",
     assignee: int | None = None,
     priority: int = 0,
+    parent_id: int | None = None,
     reason: str = OPERATOR_REASON,
 ) -> Task:
     owner = await find_project(db, project)
+    if parent_id is not None:
+        parent = await db.get(Task, parent_id)
+        if parent is None or parent.project_id != owner.id:
+            raise WorkError(f"parent task {parent_id} is not in project {owner.name!r}")
+        if parent.status in {TaskStatus.DONE, TaskStatus.CANCELLED}:
+            raise WorkError(f"parent task {parent_id} is {parent.status}")
     if assignee is not None and (await find_agent(db, assignee)).project_id != owner.id:
         raise WorkError(f"agent {assignee} does not belong to project {owner.name!r}")
     now = clock.now()
     task = Task(
         project_id=owner.id,
+        parent_id=parent_id,
         title=title,
         description=description,
         assignee_id=assignee,

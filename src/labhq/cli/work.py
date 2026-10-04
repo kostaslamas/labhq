@@ -8,16 +8,18 @@ from typing import Annotated, Any
 import typer
 from alembic import command
 from alembic.config import Config
+from sqlalchemy import select
 
 from labhq import work
 from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.cli.engine import cli_adapters
-from labhq.db.enums import AgentStatus
-from labhq.db.models import Agent, Approval, Project, Task
+from labhq.db.enums import AgentStatus, TaskStatus
+from labhq.db.models import Agent, Approval, Comment, Project, Task
 from labhq.money import usd_to_micros
 
 # Re-exported: callers and tests that build assignments through the CLI module keep working.
 from labhq.work import assignment as assignment
+from labhq.work.progress import owner_decide
 
 
 def _migrations() -> Path:
@@ -233,6 +235,82 @@ def task_add(
     task = execute(body)
     assigned = f", assigned to agent {task.assignee_id}" if task.assignee_id else ""
     typer.echo(f"task {task.id} {task.title}{assigned}")
+
+
+@task_app.command("accept")
+def task_accept(
+    task_id: Annotated[int, typer.Argument(help="Root objective to close.")],
+    feedback: Annotated[str, typer.Option(help="Why the result meets the objective.")],
+) -> None:
+    """Accept a completed root objective as the owner."""
+
+    async def body(context: Context) -> Task:
+        async with context.sessions() as db:
+            task = await db.get(Task, task_id)
+            if task is None:
+                raise work.WorkError(f"no task {task_id}")
+            await owner_decide(db, context.clock, task, accept=True, feedback=feedback)
+            await db.commit()
+            return task
+
+    task = execute(body)
+    typer.echo(f"task {task.id}: {task.status}")
+
+
+@task_app.command("pending")
+def task_pending() -> None:
+    """List root objectives waiting for the owner's decision."""
+
+    async def body(context: Context) -> list[tuple[Task, Comment | None]]:
+        async with context.sessions() as db:
+            tasks = list(
+                await db.scalars(
+                    select(Task)
+                    .where(
+                        Task.parent_id.is_(None),
+                        Task.status.in_({TaskStatus.IN_REVIEW, TaskStatus.BLOCKED}),
+                    )
+                    .order_by(Task.id)
+                )
+            )
+            return [
+                (
+                    task,
+                    await db.scalar(
+                        select(Comment)
+                        .where(Comment.task_id == task.id)
+                        .order_by(Comment.id.desc())
+                        .limit(1)
+                    ),
+                )
+                for task in tasks
+            ]
+
+    for task, comment in execute(body):
+        detail = f" — {comment.body}" if comment is not None else ""
+        typer.echo(f"T{task.id} [{task.status}] {task.title}{detail}")
+
+
+@task_app.command("return")
+def task_return(
+    task_id: Annotated[int, typer.Argument(help="Root objective to return.")],
+    feedback: Annotated[str, typer.Option(help="What still needs work.")],
+) -> None:
+    """Return an objective to its manager with feedback."""
+    if not feedback.strip():
+        fail("feedback must say what still needs work")
+
+    async def body(context: Context) -> Task:
+        async with context.sessions() as db:
+            task = await db.get(Task, task_id)
+            if task is None:
+                raise work.WorkError(f"no task {task_id}")
+            await owner_decide(db, context.clock, task, accept=False, feedback=feedback)
+            await db.commit()
+            return task
+
+    task = execute(body)
+    typer.echo(f"task {task.id}: returned to agent {task.assignee_id}")
 
 
 @task_app.command("merge")

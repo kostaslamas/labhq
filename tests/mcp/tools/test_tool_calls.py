@@ -10,7 +10,7 @@ from starlette.testclient import TestClient
 import labhq.mcp.tools  # noqa: F401  (registers every tool)
 from labhq.callcenter.answers.refs import approval_ref, question_ref
 from labhq.clock import FakeClock
-from labhq.db.enums import ApprovalStatus, QuestionStatus, RiskClass
+from labhq.db.enums import AgentStatus, ApprovalStatus, QuestionStatus, RiskClass
 from labhq.db.models import Agent, AgentQuestion, Approval, Call, CallRequest, Task
 from labhq.mcp.server import build_app
 from labhq.mcp.tools.registry import default_registry
@@ -112,13 +112,17 @@ async def test_a_heavy_decide_leaves_a_pending_approval_and_executes_nothing(
 async def test_order_creates_a_task_over_http(
     session: AsyncSession, clock: FakeClock, client: TestClient
 ) -> None:
-    await project_agent_task(session, clock)
+    _, agent, _ = await project_agent_task(session, clock)
+    # An order without an assignee goes to the project's active manager.
+    agent.role = "manager"
+    agent.status = AgentStatus.ACTIVE
     await session.commit()
 
     text = call(client, "order", project="demo", text="Write the release notes")
 
     task = await session.scalar(select(Task).where(Task.title == "Write the release notes"))
     assert task is not None
+    assert task.assignee_id == agent.id
     assert f"T{task.id}" in text
 
 
