@@ -81,7 +81,26 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
     def names(role: str) -> set[str]:
         return {spec.name for spec in org.tools.for_agent(role, {})}
 
-    assert names("ceo") == {"list_projects", "assign_manager"}
-    assert names("manager") == {"propose_team", "create_task", "assign_task"}
-    assert names("lead") == {"create_task", "assign_task"}
-    assert names("worker") == set()
+    assert names("ceo") == {
+        "list_projects",
+        "assign_manager",
+        "delegate_task",
+        "task_overview",
+        "review_task",
+    }
+    assert names("manager") == {
+        "propose_team",
+        "create_task",
+        "assign_task",
+        "task_overview",
+        "report_task",
+        "review_task",
+    }
+    assert names("lead") == {
+        "create_task",
+        "assign_task",
+        "task_overview",
+        "report_task",
+        "review_task",
+    }
+    assert names("worker") == {"task_overview", "report_task"}

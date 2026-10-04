@@ -44,9 +44,10 @@ async def test_an_mcp_client_lists_and_calls_the_run_agents_tools(
         called = await client.call_tool("whoami", {"agent_id": team.manager_id})
         missing = await client.call_tool("assign", {})
 
-    assert [tool.name for tool in listed.tools] == ["whoami"]
-    assert listed.tools[0].annotations is not None
-    assert listed.tools[0].annotations.read_only_hint is True
+    assert {tool.name for tool in listed.tools} == {"whoami", "task_overview", "report_task"}
+    whoami = next(tool for tool in listed.tools if tool.name == "whoami")
+    assert whoami.annotations is not None
+    assert whoami.annotations.read_only_hint is True
     text = called.content[0]
     assert text.type == "text"
     assert text.text.startswith(f"You are agent {team.worker_id}, Worker, role worker.")

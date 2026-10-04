@@ -98,8 +98,14 @@ then run the same `uvx` command. On native Windows only the SDK adapter runs (no
    site team to fix the login form"), or add a task:
 
    ```sh
-   labhq task add --project site --title "Fix the login form"
+   labhq task add --project site --title "Fix the login form" --assignee 2
    ```
+
+   Replace `2` with the manager's agent id from the previous step. A task without an
+   assignee stays in the backlog; a voice `order` without an assignee goes to the active
+   project manager. The manager can split it into subtasks, and reports the result to the
+   CEO for review. You close the root task yourself with `labhq task accept <id> --feedback
+   "Accepted"`, or return it with `labhq task return <id> --feedback "What is missing"`.
 
 5. **Approve what is heavy.** When an agent wants to push or merge, a notification reaches
    your phone. Decide with `labhq approvals list` and `labhq approvals approve <id>`.

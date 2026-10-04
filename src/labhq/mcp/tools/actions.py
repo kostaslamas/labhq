@@ -45,8 +45,9 @@ default_registry.register(
     ToolSpec(
         "order",
         "Create a task in a project and wake its assignee. project is the project name, "
-        "text is the owner's instruction in a sentence or two, assignee is an optional "
-        "agent id, request_id is an optional key that makes a retry create nothing twice. "
+        "text is the owner's instruction in a sentence or two. Without assignee it goes "
+        "to the project's active manager; assignee can name another agent id. request_id "
+        "is an optional key that makes a retry create nothing twice. "
         "The answer names the task with a reference like T3. To merge a finished task into "
         "main instead, set merge to its task id and leave text empty: that only requests the "
         "merge, which the owner approves with the passkey.",

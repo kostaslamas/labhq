@@ -86,10 +86,34 @@ async def test_each_roles_run_carries_its_instruction(
 @pytest.mark.parametrize(
     ("role", "tools"),
     [
-        ("ceo", {"whoami", "list_projects", "assign_manager"}),
-        ("manager", {"whoami", "propose_team", "create_task", "assign_task"}),
-        ("lead", {"whoami", "create_task", "assign_task"}),
-        ("worker", {"whoami"}),
+        (
+            "ceo",
+            {
+                "whoami",
+                "list_projects",
+                "assign_manager",
+                "delegate_task",
+                "task_overview",
+                "review_task",
+            },
+        ),
+        (
+            "manager",
+            {
+                "whoami",
+                "propose_team",
+                "create_task",
+                "assign_task",
+                "task_overview",
+                "report_task",
+                "review_task",
+            },
+        ),
+        (
+            "lead",
+            {"whoami", "create_task", "assign_task", "task_overview", "report_task", "review_task"},
+        ),
+        ("worker", {"whoami", "task_overview", "report_task"}),
         (
             "it",
             {

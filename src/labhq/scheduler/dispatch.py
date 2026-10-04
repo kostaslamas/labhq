@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.budgets import BudgetSettings, Decision, check
 from labhq.clock import Clock
-from labhq.db.enums import AgentStatus, RunStatus, WakeupStatus
+from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupStatus
 from labhq.db.models import Agent, Run, Task, WakeupRequest
 from labhq.scheduler.checkout import checkout
 from labhq.scheduler.reaper import LIVE_STATUSES
@@ -119,6 +119,14 @@ async def dispatch_one(
     if request.task_id is not None and not await checkout(session, request.task_id, run.id):
         await session.rollback()
         return Dispatch(Verdict.TASK_HELD)
+    task = await session.get(Task, request.task_id) if request.task_id is not None else None
+    if (
+        task is not None
+        and task.assignee_id == agent.id
+        and task.status in {TaskStatus.BACKLOG, TaskStatus.TODO}
+    ):
+        task.status = TaskStatus.IN_PROGRESS
+        task.updated_at = now
     if not await _mark_dispatched(session, wakeup_id, run.id, now):
         await session.rollback()
         return Dispatch(Verdict.GONE)

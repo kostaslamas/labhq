@@ -19,6 +19,8 @@ SETTINGS = SchedulerSettings(
     heartbeat_limit_seconds=120,
     interrupt_grace_seconds=30,
     tick_seconds=5,
+    # The escalation tests need a limit; production's default is none.
+    max_unreported_runs=3,
 )
 BUDGETS = BudgetSettings()
 

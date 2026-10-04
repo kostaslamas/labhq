@@ -50,7 +50,7 @@ can add one is up to each vendor. Consumer Gemini does not accept custom MCP con
 | `ask_ceo` | write | A question that needs reading and judgement; returns a ticket at once |
 | `get_reply` | read | The answer for an `ask_ceo` ticket, or "still working" |
 | `answer` | write | Your own words as the answer to an agent's question |
-| `order` | write | A new task in a project, which wakes its assignee |
+| `order` | write | A new task in a project; without an assignee, it wakes the active manager |
 | `decide` | write, destructive | Approve or reject a pending approval |
 
 Read tools carry `readOnlyHint`, so apps run them without asking. `decide` carries
