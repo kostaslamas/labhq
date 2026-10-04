@@ -2,7 +2,7 @@
 #
 # labhq in one image (#69): `labhq serve` with its UI, git, tmux, cloudflared and the Claude
 # Code binary. Node only builds the UI into the wheel; the final image carries no Node and no
-# build tools. See docs/guide/docker.md.
+# build tools. See docs/guide/containers.md.
 
 ARG PYTHON_IMAGE=python:3.12-slim-bookworm
 ARG NODE_IMAGE=node:22-bookworm-slim

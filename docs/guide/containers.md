@@ -1,9 +1,19 @@
-# Docker: labhq with `docker compose up`
+# Containers: labhq with Docker or Podman
 
-```sh
-cp .env.example .env      # then set PROJECTS_DIR
-docker compose up -d
-```
+The first install path is still `uvx labhq onboard`, which needs no container engine (see
+[Onboarding](onboarding.md)). Use a container when you want labhq and its agents kept apart
+from your user account. Docker and rootless Podman run the same image from the same
+`compose.yaml`:
+
+| Engine | Command |
+|---|---|
+| Docker | `docker compose up -d` |
+| Podman | `podman compose -f compose.yaml -f compose.podman.yaml up -d` |
+
+Both start from `cp .env.example .env` with `PROJECTS_DIR` set. The rest of this page writes
+`docker compose`; for Podman, replace it with
+`podman compose -f compose.yaml -f compose.podman.yaml`, or set
+`COMPOSE_FILE=compose.yaml:compose.podman.yaml` once and use plain `podman compose`.
 
 That builds one image and starts one container that runs `labhq serve`: the web UI, the API,
 the MCP endpoint for the Call Center, the scheduler and notifications. The container is healthy
@@ -16,8 +26,13 @@ never as root, and compose publishes its port on your machine's `127.0.0.1` only
 
 ## Install
 
-You need Docker Engine 25 or later with the Compose plugin 2.24 or later. Docker Desktop
-ships both.
+You need one of:
+
+- **Docker** Engine 25 or later with the Compose plugin 2.24 or later. Docker Desktop ships
+  both.
+- **Podman** 4.9 or later, rootless, with a compose provider: `podman-compose` 1.5 or later
+  (`pipx install podman-compose`). Set `PODMAN_COMPOSE_PROVIDER=podman-compose` if
+  `podman compose` picks another provider. Podman needs no daemon and no root on the host.
 
 1. Clone the repository and enter it:
 
@@ -50,6 +65,22 @@ there:
 ```sh
 docker compose exec labhq labhq project add site --repo /projects/site
 ```
+
+## Podman
+
+`compose.podman.yaml` adds one setting, `userns_mode: keep-id`. Rootless Podman otherwise
+maps your host id to root in the container, and files the `labhq` user writes to `/projects`
+would belong to an unrelated subordinate id on the host. With `keep-id`, `CONTAINER_UID` and
+`CONTAINER_GID` (set them to `id -u` and `id -g`) are your own ids on both sides, so git
+accepts the repositories and the files agents write belong to you.
+
+- On SELinux hosts (Fedora, RHEL), label the projects directory for containers once:
+  `chcon -Rt container_file_t "$PROJECTS_DIR"`.
+- On macOS and Windows, run `podman machine init && podman machine start` first; the
+  commands are the same.
+- `podman compose ps` shows `healthy` when the healthcheck passes. Without a systemd user
+  session the check does not run on a timer; `podman healthcheck run <container>` runs it
+  once.
 
 ## Model login
 

@@ -12,6 +12,7 @@ on:
       - Dockerfile
       - .dockerignore
       - compose.yaml
+      - compose.podman.yaml
       - .env.example
       - pyproject.toml
       - uv.lock
@@ -100,3 +101,86 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down --volumes
+
+  # The same compose.yaml under rootless Podman (#131), through the compose.podman.yaml overlay.
+  # GitHub's runner ships Podman; podman-compose is the provider because the runner's own
+  # docker-compose would drive the Docker daemon instead.
+  compose-podman:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PODMAN_COMPOSE_PROVIDER: podman-compose
+      COMPOSE_FILE: compose.yaml:compose.podman.yaml
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the compose provider
+        run: |
+          set -euo pipefail
+          podman --version
+          podman info --format 'rootless={{.Host.Security.Rootless}}' | tee /dev/stderr | grep -q 'rootless=true'
+          pipx install podman-compose==1.5.0
+          podman-compose --version
+
+      - name: Configure from .env.example
+        run: |
+          set -euo pipefail
+          projects="${RUNNER_TEMP}/projects"
+          mkdir -p "${projects}"
+          git init --quiet "${projects}/site"
+          sed -e "s|^PROJECTS_DIR=.*|PROJECTS_DIR=${projects}|" \
+            -e "s|^CONTAINER_UID=.*|CONTAINER_UID=$(id -u)|" \
+            -e "s|^CONTAINER_GID=.*|CONTAINER_GID=$(id -g)|" \
+            .env.example > .env
+          echo "PROJECTS=${projects}" >> "${GITHUB_ENV}"
+
+      - name: Build the image
+        run: podman compose build
+
+      - name: podman compose up
+        run: podman compose up -d
+
+      - name: The container turns healthy
+        run: |
+          set -euo pipefail
+          container="$(podman ps --quiet --filter label=io.podman.compose.project=labhq)"
+          test -n "${container}"
+          echo "CONTAINER=${container}" >> "${GITHUB_ENV}"
+          for _ in $(seq 1 120); do
+            health="$(podman inspect --format '{{.State.Health.Status}}' "${container}")"
+            echo "health: ${health}"
+            if [ "${health}" = healthy ]; then exit 0; fi
+            # Without a systemd user timer nothing runs the check on its own.
+            podman healthcheck run "${container}" >/dev/null 2>&1 || true
+            sleep 2
+          done
+          exit 1
+
+      - name: The API answers on loopback only, as the invoking user's id
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error http://127.0.0.1:8787/api/health
+          curl --fail --silent --show-error http://127.0.0.1:8787/ | grep -q '<div id="app">'
+          test "$(podman exec "${CONTAINER}" id -u)" = "$(id -u)"
+          podman port "${CONTAINER}" 8787
+          podman port "${CONTAINER}" 8787 | grep -q '^127.0.0.1:8787$'
+          podman exec "${CONTAINER}" git -C /projects/site status --short
+
+      # The point of keep-id: what the container writes belongs to the invoking user.
+      - name: Data written by the container is owned by the invoking user
+        run: |
+          set -euo pipefail
+          podman exec "${CONTAINER}" touch /projects/site/written-by-container
+          test "$(stat -c %u "${PROJECTS}/site/written-by-container")" = "$(id -u)"
+          data="$(podman volume inspect --format '{{.Mountpoint}}' labhq_data)"
+          owners="$(find "${data}" -type f -printf '%u\n' | sort -u)"
+          echo "data owners: ${owners}"
+          test "${owners}" = "$(id -un)"
+
+      - name: Logs
+        if: always()
+        run: podman compose logs
+
+      - name: Tear down
+        if: always()
+        run: podman compose down --volumes

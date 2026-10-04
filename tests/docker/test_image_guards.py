@@ -22,8 +22,9 @@ DOCKER_FILES = (
     "Dockerfile",
     ".dockerignore",
     "compose.yaml",
+    "compose.podman.yaml",
     ".env.example",
-    "docs/guide/docker.md",
+    "docs/guide/containers.md",
     "docs/checks/docker.md",
 )
 ROOT_USERS = frozenset({"root", "0"})

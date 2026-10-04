@@ -152,7 +152,7 @@ dependencies only from #60.
 | `SECURITY.md`, `CHANGELOG.md`, `cliff.toml`, `tools/changelog.py`, `tools/release_check.py`, `.github/workflows/release.yml`, `.github/workflows/changelog.yml` | #56 Release hygiene |
 | The Codex entry of the `tmux` adapter and its fixtures, `docs/checks/codex-adapter.md` | #57 Codex adapter |
 | `tools/build_web.py`, `.github/workflows/package.yml`, the `[tool.hatch.build]` tables in `pyproject.toml` | #68 UI packaging |
-| `Dockerfile`, `.dockerignore`, `compose.yaml`, `.env.example`, `src/labhq/cli/ready.py`, `.github/workflows/docker.yml`, `docs/guide/docker.md`, `docs/checks/docker.md` | #69 Docker |
+| `Dockerfile`, `.dockerignore`, `compose.yaml`, `compose.podman.yaml`, `.env.example`, `src/labhq/cli/ready.py`, `.github/workflows/docker.yml`, `docs/guide/containers.md`, `docs/checks/docker.md` | #69 Docker |
 | `src/labhq/chat/slack*.py`, `docs/guide/slack.md`, `docs/guide/slack-manifest.yaml`, `docs/checks/slack-meetings.md` | #77 Slack chat adapter |
 | `src/labhq/onboard/discord.py`, `docs/guide/discord.md`, `docs/checks/discord-onboarding.md` | #78 Discord bot onboarding |
 | `README.md`, `docs/guide/` (except pages named above), `docs/media/`, `tools/settings_doc.py`, `tools/doc_links.py`, `.github/workflows/docs.yml` | #80 Launch docs |
