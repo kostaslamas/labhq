@@ -70,6 +70,8 @@ jobs:
           proxy="http://127.0.0.1:$(free_port)"
           export PATH="${work}/bin:${PATH}"
           export LABHQ_DATA_DIR="${work}/data"
+          # Web Push is the default notifier and needs a subscribed phone; this job checks ntfy.
+          export LABHQ_NOTIFY_KIND=ntfy
           export LABHQ_NOTIFY_NTFY_SERVER="http://127.0.0.1:${ntfy_port}"
           export LABHQ_ONBOARD_PORT="$(free_port)"
           export FAKE_TUNNEL_PROXY_PORT="${proxy##*:}"

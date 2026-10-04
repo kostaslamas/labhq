@@ -23,19 +23,19 @@ class PushStatus(BaseModel):
     active: bool
 
 
-class PushKeys(BaseModel):
+class PushSubscriptionKeys(BaseModel):
     p256dh: str = Field(min_length=1, max_length=255)
     auth: str = Field(min_length=1, max_length=255)
 
 
-class SubscribeBody(BaseModel):
+class PushSubscribeBody(BaseModel):
     """`PushSubscription.toJSON()` as the browser gives it."""
 
     endpoint: str = Field(min_length=1, max_length=2048, pattern=r"^https://")
-    keys: PushKeys
+    keys: PushSubscriptionKeys
 
 
-class UnsubscribeBody(BaseModel):
+class PushUnsubscribeBody(BaseModel):
     endpoint: str = Field(min_length=1, max_length=2048)
 
 
@@ -50,7 +50,7 @@ async def push_status(context: ContextDep) -> PushStatus:
 
 @router.post("/subscriptions", status_code=204)
 async def push_subscribe(
-    body: SubscribeBody, owner: SignedIn, db: SessionDep, clock: ClockDep
+    body: PushSubscribeBody, owner: SignedIn, db: SessionDep, clock: ClockDep
 ) -> Response:
     await subscriptions.save(
         db, clock.now(), endpoint=body.endpoint, p256dh=body.keys.p256dh, auth=body.keys.auth
@@ -60,7 +60,7 @@ async def push_subscribe(
 
 
 @router.post("/subscriptions/remove", status_code=204)
-async def push_unsubscribe(body: UnsubscribeBody, owner: SignedIn, db: SessionDep) -> Response:
+async def push_unsubscribe(body: PushUnsubscribeBody, owner: SignedIn, db: SessionDep) -> Response:
     await subscriptions.remove(db, body.endpoint)
     await db.commit()
     return Response(status_code=204)

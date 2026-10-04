@@ -55,8 +55,7 @@ notification that opens labhq when you tap it.
 
    Passing: within a few seconds the phone shows "Approval needed" naming `A<id>`.
 6. Lock the phone, wait for a second approval and tap the notification. Passing: labhq opens
-   in the installed app. Until the phone approval page ships (#67) the notification carries
-   no address of its own and opens the app's start page; after it, it opens `/approve/<id>`.
+   in the installed app on the approval page, `/approve/<id>`.
 7. Turn notifications off on the page and create a third approval. Passing: the phone shows
    nothing, and `uv run labhq notify flush` reports the send as retried, not delivered.
 

@@ -189,6 +189,7 @@ async def test_no_subscription_is_an_error_the_outbox_retries(
         await notifier.send(Message("Title", "Body"))
 
 
+@pytest.mark.posix_only("POSIX file permission bits")
 def test_the_vapid_key_file_is_private_and_stable(tmp_path: Path) -> None:
     first = application_server_key(load_or_create_vapid(tmp_path / "data"))
     path = tmp_path / "data" / KEY_FILENAME
