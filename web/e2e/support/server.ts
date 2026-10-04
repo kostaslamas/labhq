@@ -148,6 +148,12 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
           PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
           LABHQ_DATA_DIR: dataDir,
           LABHQ_API_UI_DIR: uiDir,
+          // Deterministic data: the fake agents never report, and by default an agent that
+          // ends a turn without a report gets another turn without limit, so the scheduler
+          // would keep adding runs and push approvals while the specs count rows. One
+          // unreported run is the seed's own; no stall alert for it.
+          LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS: '1',
+          LABHQ_SCHEDULER_STALL_ALERT_RUNS: '0',
           LABHQ_NOTIFY_KIND: 'ntfy',
           LABHQ_NOTIFY_NTFY_SERVER: `http://${HOST}:${sinkPort}`,
         },
