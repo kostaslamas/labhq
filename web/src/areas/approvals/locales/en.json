@@ -20,7 +20,8 @@
     "delete_project": "Delete a project",
     "create_team": "Create a team",
     "exceed_budget": "Exceed a budget",
-    "host_intervention": "Intervene on a host"
+    "host_intervention": "Intervene on a host",
+    "create_agent": "Add an agent"
   },
   "fields": {
     "type": "Action",

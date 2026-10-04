@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters import UnknownAdapterError
+from labhq.adapters.kinds import choice_named
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, TaskStatus, WakeupSource
 from labhq.db.models import Agent, Project, Task
@@ -67,6 +68,20 @@ async def add_project(
     return project
 
 
+def resolve_kind(
+    kind: str | None, adapter: str | None, config: dict[str, Any] | None
+) -> tuple[str | None, dict[str, Any]]:
+    """The adapter and config an agent kind stands for; without a kind, what was given."""
+    given = dict(config or {})
+    if kind is None:
+        return adapter, given
+    choice = choice_named(kind)
+    if adapter is not None and adapter != choice.adapter:
+        raise WorkError(f"kind {kind!r} runs on adapter {choice.adapter!r}, not {adapter!r}")
+    # The kind decides its own keys; the rest of the caller's config stays.
+    return choice.adapter, {**given, **choice.config}
+
+
 async def add_agent(
     db: AsyncSession,
     clock: Clock,
@@ -75,12 +90,16 @@ async def add_agent(
     project: str,
     role: str,
     title: str,
-    adapter: str,
+    adapter: str | None = None,
+    kind: str | None = None,
     reports_to: int | None = None,
     config: dict[str, Any] | None = None,
     budget: int | None = None,
     status: AgentStatus = AgentStatus.PENDING_APPROVAL,
 ) -> Agent:
+    adapter, config = resolve_kind(kind, adapter, config)
+    if adapter is None:
+        raise WorkError("name the agent's kind or its adapter")
     if adapter not in adapters:
         raise UnknownAdapterError(f"no adapter registered as {adapter!r}")
     owner = await find_project(db, project)
@@ -93,7 +112,7 @@ async def add_agent(
         title=title,
         reports_to=reports_to,
         adapter=adapter,
-        config=config or {},
+        config=config,
         budget_micros=budget,
         status=status,
         created_at=now,

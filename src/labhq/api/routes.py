@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 import labhq
 from labhq.api.approvals import router as approvals_router
+from labhq.api.authoring import router as authoring_router
 from labhq.api.meetings import router as meetings_router
 from labhq.api.projects import router as projects_router
 from labhq.api.rules.routes import router as rules_router
@@ -66,3 +67,4 @@ default_routers.register(approvals_router)
 default_routers.register(projects_router)
 default_routers.register(meetings_router)
 default_routers.register(rules_router)
+default_routers.register(authoring_router)

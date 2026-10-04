@@ -4,6 +4,26 @@
  */
 
 export interface paths {
+  '/api/agent-kinds': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Agent Kinds List
+     * @description Every agent a person can add, with whether its program is installed on this machine.
+     */
+    get: operations['agent_kinds_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/approvals': {
     parameters: {
       query?: never
@@ -393,7 +413,11 @@ export interface paths {
      */
     get: operations['projects_list']
     put?: never
-    post?: never
+    /**
+     * Projects Create
+     * @description Register a git repository on this machine as a project.
+     */
+    post: operations['projects_create']
     delete?: never
     options?: never
     head?: never
@@ -434,6 +458,26 @@ export interface paths {
     get: operations['projects_get']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/projects/{project_id}/agents': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Project Agents Create
+     * @description Add an agent to a project. It starts pending: nothing runs until its approval.
+     */
+    post: operations['project_agents_create']
     delete?: never
     options?: never
     head?: never
@@ -481,6 +525,41 @@ export interface components {
       task_title: string
       /** Text */
       text: string
+    }
+    /** AddedAgent */
+    AddedAgent: {
+      /** Adapter */
+      adapter: string
+      /** Approval Id */
+      approval_id: number
+      /** Budget Micros */
+      budget_micros: number | null
+      /** Id */
+      id: number
+      /** Kind */
+      kind: string
+      /** Project Id */
+      project_id: number
+      /** Reports To */
+      reports_to: number | null
+      /** Role */
+      role: string
+      status: components['schemas']['AgentStatus']
+      /** Title */
+      title: string
+    }
+    /** AgentKindChoice */
+    AgentKindChoice: {
+      /** Adapter */
+      adapter: string
+      /** Available */
+      available: boolean
+      /** Binary */
+      binary: string
+      /** Display Name */
+      display_name: string
+      /** Name */
+      name: string
     }
     /** AgentRef */
     AgentRef: {
@@ -863,6 +942,28 @@ export interface components {
       /** Text */
       text: string
     }
+    /** NewAgentBody */
+    NewAgentBody: {
+      /** Budget Micros */
+      budget_micros?: number | null
+      /** Kind */
+      kind: string
+      /** Reports To */
+      reports_to?: number | null
+      /** Role */
+      role: string
+      /** Title */
+      title: string
+    }
+    /** NewProjectBody */
+    NewProjectBody: {
+      /** Budget Micros */
+      budget_micros?: number | null
+      /** Name */
+      name: string
+      /** Repo Path */
+      repo_path: string
+    }
     /**
      * NotificationStatus
      * @enum {string}
@@ -938,6 +1039,17 @@ export interface components {
      * @enum {string}
      */
     QuestionStatus: 'pending' | 'answered'
+    /** RegisteredProject */
+    RegisteredProject: {
+      /** Budget Micros */
+      budget_micros: number | null
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+      /** Repo Path */
+      repo_path: string
+    }
     /**
      * RiskClass
      * @enum {string}
@@ -1102,6 +1214,35 @@ export interface components {
 }
 export type $defs = Record<string, never>
 export interface operations {
+  agent_kinds_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentKindChoice'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   approvals_list: {
     parameters: {
       query?: {
@@ -1785,6 +1926,39 @@ export interface operations {
       }
     }
   }
+  projects_create: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewProjectBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RegisteredProject']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   projects_of_task: {
     parameters: {
       query?: never
@@ -1834,6 +2008,41 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ProjectView']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  project_agents_create: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['NewAgentBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AddedAgent']
         }
       }
       /** @description Error */

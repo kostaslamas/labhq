@@ -69,6 +69,104 @@
         "title": "ActionItem",
         "type": "object"
       },
+      "AddedAgent": {
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "integer"
+          },
+          "budget_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reports To"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentStatus"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "role",
+          "title",
+          "adapter",
+          "kind",
+          "reports_to",
+          "budget_micros",
+          "status",
+          "approval_id"
+        ],
+        "title": "AddedAgent",
+        "type": "object"
+      },
+      "AgentKindChoice": {
+        "properties": {
+          "adapter": {
+            "title": "Adapter",
+            "type": "string"
+          },
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "binary": {
+            "title": "Binary",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["name", "display_name", "adapter", "binary", "available"],
+        "title": "AgentKindChoice",
+        "type": "object"
+      },
       "AgentRef": {
         "properties": {
           "id": {
@@ -978,6 +1076,89 @@
         "title": "Message",
         "type": "object"
       },
+      "NewAgentBody": {
+        "additionalProperties": false,
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "maximum": 4.611686018427388e18,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "kind": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reports To"
+          },
+          "role": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Role",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["role", "title", "kind"],
+        "title": "NewAgentBody",
+        "type": "object"
+      },
+      "NewProjectBody": {
+        "additionalProperties": false,
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "maximum": 4.611686018427388e18,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "repo_path": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Repo Path",
+            "type": "string"
+          }
+        },
+        "required": ["name", "repo_path"],
+        "title": "NewProjectBody",
+        "type": "object"
+      },
       "NotificationStatus": {
         "enum": ["pending", "sent", "failed"],
         "title": "NotificationStatus",
@@ -1190,6 +1371,36 @@
         "enum": ["pending", "answered"],
         "title": "QuestionStatus",
         "type": "string"
+      },
+      "RegisteredProject": {
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "repo_path": {
+            "title": "Repo Path",
+            "type": "string"
+          }
+        },
+        "required": ["id", "name", "repo_path", "budget_micros"],
+        "title": "RegisteredProject",
+        "type": "object"
       },
       "RiskClass": {
         "enum": ["light", "heavy"],
@@ -1477,6 +1688,40 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/agent-kinds": {
+      "get": {
+        "description": "Every agent a person can add, with whether its program is installed on this machine.",
+        "operationId": "agent_kinds_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentKindChoice"
+                  },
+                  "title": "Response Agent Kinds List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Agent Kinds List",
+        "tags": ["authoring"]
+      }
+    },
     "/api/approvals": {
       "get": {
         "description": "Pending approvals first, then the settled ones, each group newest first.",
@@ -2420,6 +2665,44 @@
         },
         "summary": "Projects List",
         "tags": ["projects"]
+      },
+      "post": {
+        "description": "Register a git repository on this machine as a project.",
+        "operationId": "projects_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProjectBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisteredProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Projects Create",
+        "tags": ["authoring"]
       }
     },
     "/api/projects/of-task/{task_id}": {
@@ -2502,6 +2785,57 @@
         },
         "summary": "Projects Get",
         "tags": ["projects"]
+      }
+    },
+    "/api/projects/{project_id}/agents": {
+      "post": {
+        "description": "Add an agent to a project. It starts pending: nothing runs until its approval.",
+        "operationId": "project_agents_create",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewAgentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AddedAgent"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Project Agents Create",
+        "tags": ["authoring"]
       }
     },
     "/api/vocabulary": {

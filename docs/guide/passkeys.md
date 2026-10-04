@@ -28,6 +28,10 @@ To approve from your phone, set `LABHQ_PUBLIC_URL` to the stable address that re
 sign in on the desktop, and ask for a link for the public address. The page shows it as a QR
 code; scan it with the phone and enroll there.
 
+`labhq serve --public-url <address>` keeps the address in the data directory, as does a
+`LABHQ_PUBLIC_URL` it finds. After that, `labhq passkey enroll` prints a link on the public host
+even from a shell without the variable; the variable, when set, wins.
+
 The public address has to be stable. A Cloudflare quick tunnel gets a new host every time it
 restarts, so a passkey enrolled for it stops working with it, and you would enroll again on
 each restart. A stable URL, such as Tailscale Funnel or your own domain, is the supported way

@@ -20,7 +20,8 @@
     "delete_project": "Διαγραφή έργου",
     "create_team": "Δημιουργία ομάδας",
     "exceed_budget": "Υπέρβαση προϋπολογισμού",
-    "host_intervention": "Παρέμβαση σε μηχάνημα"
+    "host_intervention": "Παρέμβαση σε μηχάνημα",
+    "create_agent": "Προσθήκη agent"
   },
   "fields": {
     "type": "Ενέργεια",

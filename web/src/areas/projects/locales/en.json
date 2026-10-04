@@ -3,7 +3,7 @@
   "loading": "Loading projects…",
   "loadFailed": "The projects could not be loaded.",
   "retry": "Try again",
-  "empty": "No projects yet. Register one with the labhq CLI and it appears here.",
+  "empty": "No projects yet. Add one here, or with the labhq CLI.",
   "back": "All projects",
   "notFound": "There is no project with that id.",
   "card": {
@@ -47,5 +47,51 @@
     "expand": "Show who reports to {name}",
     "collapse": "Hide who reports to {name}"
   },
-  "rulesLink": "Health rules"
+  "rulesLink": "Health rules",
+  "add": {
+    "button": "Add project",
+    "title": "Add a project",
+    "name": "Name",
+    "repo": "Repository path",
+    "repoHint": "The full path of a git repository on this machine, with at least one commit.",
+    "budget": "Monthly budget in USD (optional)",
+    "budgetHint": "For example 25 or 2.50. Leave empty for no limit.",
+    "submit": "Add project",
+    "working": "Adding…",
+    "cancel": "Cancel"
+  },
+  "agent": {
+    "button": "Add agent",
+    "title": "Add an agent",
+    "name": "Title",
+    "kind": "Agent",
+    "missing": "{binary} was not found on this machine",
+    "kindsFailed": "The list of agents could not be loaded.",
+    "role": "Role",
+    "roles": {
+      "manager": "Manager",
+      "lead": "Lead",
+      "worker": "Worker",
+      "it": "IT"
+    },
+    "reportsTo": "Reports to",
+    "nobody": "Nobody",
+    "pendingHint": "A new agent waits for your approval before it can start.",
+    "submit": "Add agent",
+    "waiting": "Agent added. It starts after you approve it.",
+    "review": "Review the approval"
+  },
+  "errors": {
+    "failed": "That did not work. Try again.",
+    "network": "The server could not be reached. Try again.",
+    "budget": "Enter the budget as a plain amount, for example 25 or 2.50.",
+    "not_a_repository": "That path is not a git repository with a commit.",
+    "repo_path_not_absolute": "Give the repository's full path, starting with /.",
+    "project_exists": "A project with that name already exists.",
+    "unknown_kind": "That agent is not one of the listed kinds.",
+    "reporting_line": "That role cannot report to the chosen agent.",
+    "agent_not_valid": "The agent could not be added with those values.",
+    "project_not_found": "This project no longer exists.",
+    "validation_error": "Check the fields and try again."
+  }
 }

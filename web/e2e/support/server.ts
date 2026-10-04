@@ -7,17 +7,20 @@
 
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const BASE_URL_ENV = 'LABHQ_E2E_BASE_URL'
 export const SEED_ENV = 'LABHQ_E2E_SEED'
 // Where the seeded database lives, so `labhq passkey enroll` can run against it (support/auth.ts).
 export const DATA_DIR_ENV = 'LABHQ_E2E_DATA_DIR'
+
+// The tmux agent kind (`aider`) whose program the e2e server finds on its PATH.
+export const FAKE_AGENT_BINARY = 'aider'
 
 const HOST = '127.0.0.1'
 const STARTUP_TIMEOUT_MS = 60_000
@@ -103,6 +106,16 @@ async function stop(server: ChildProcess): Promise<void> {
   clearTimeout(timer)
 }
 
+// A stand-in program named like a registered tmux agent kind; it is looked up, never run.
+async function installFakeAgents(root: string): Promise<string> {
+  const binDir = join(root, 'bin')
+  await mkdir(binDir)
+  const program = join(binDir, FAKE_AGENT_BINARY)
+  await writeFile(program, '#!/bin/sh\nexit 0\n')
+  await chmod(program, 0o755)
+  return binDir
+}
+
 export default async function globalSetup(): Promise<() => Promise<void>> {
   if (!existsSync(join(uiDir, 'index.html'))) {
     throw new Error(`no built UI in ${uiDir}; run \`npx vite build\` in web/ first`)
@@ -119,6 +132,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
 
   try {
     const summary = seed(dataDir)
+    const binDir = await installFakeAgents(root)
     const sinkPort = await listen(sink)
     const port = await freePort()
     const url = `http://${HOST}:${port}`
@@ -129,6 +143,9 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
         cwd: repoRoot,
         env: {
           ...process.env,
+          // An agent kind is offered only when its program is found, so the add-agent form
+          // has one kind to pick on a machine (or CI runner) that has no agent installed.
+          PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
           LABHQ_DATA_DIR: dataDir,
           LABHQ_API_UI_DIR: uiDir,
           LABHQ_NOTIFY_KIND: 'ntfy',

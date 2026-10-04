@@ -1,9 +1,15 @@
-"""Auth settings, read from `LABHQ_AUTH_*` environment variables and `LABHQ_PUBLIC_URL`."""
+"""Auth settings, read from `LABHQ_AUTH_*` environment variables and `LABHQ_PUBLIC_URL`.
+
+Without `LABHQ_PUBLIC_URL`, the address `labhq serve` persisted in the data directory is used.
+"""
 
 from urllib.parse import urlsplit
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from labhq.auth.public_url import load_public_url
+from labhq.settings import Settings
 
 LOCAL_FALLBACK_URL = "http://localhost:8787"
 
@@ -47,4 +53,11 @@ class AuthSettings(BaseSettings):
 
 def get_auth_settings() -> AuthSettings:
     # Not cached: tests change the environment between apps.
-    return AuthSettings()
+    settings = AuthSettings()
+    if settings.public_url is not None:
+        return settings
+    # The shell variable wins; without it, the address the running program persisted.
+    remembered = load_public_url(Settings().data_dir)
+    if remembered is None:
+        return settings
+    return AuthSettings(public_url=remembered)

@@ -11,6 +11,7 @@ from alembic.config import Config
 from sqlalchemy import select
 
 from labhq import work
+from labhq.adapters.kinds import agent_choices
 from labhq.cli.context import CliError, Context, execute, fail, load_settings
 from labhq.cli.engine import cli_adapters
 from labhq.db.enums import AgentStatus, TaskStatus
@@ -29,6 +30,8 @@ def _migrations() -> Path:
 
 
 MIGRATIONS = _migrations()
+DEFAULT_ADAPTER = "fake"
+KIND_HELP = "The agent to run, one of: " + ", ".join(c.name for c in agent_choices()) + "."
 
 project_app = typer.Typer(help="Register git repositories as projects.", no_args_is_help=True)
 agent_app = typer.Typer(help="Add agents and approve new ones.", no_args_is_help=True)
@@ -112,7 +115,8 @@ async def create_agent(
     project: str,
     role: str,
     title: str,
-    adapter: str,
+    adapter: str | None = None,
+    kind: str | None = None,
     reports_to: int | None = None,
     config: dict[str, Any] | None = None,
     budget: int | None = None,
@@ -127,6 +131,7 @@ async def create_agent(
             role=role,
             title=title,
             adapter=adapter,
+            kind=kind,
             reports_to=reports_to,
             config=config,
             budget=budget,
@@ -141,10 +146,13 @@ def agent_add(
     project: Annotated[str, typer.Option(help="Project name or id.")],
     role: Annotated[str, typer.Option(help="The agent's role, for example manager or worker.")],
     title: Annotated[str, typer.Option(help="A human-readable title.")],
-    adapter: Annotated[str, typer.Option(help="Adapter key: fake, claude or tmux.")] = "fake",
-    config: Annotated[
+    kind: Annotated[str | None, typer.Option(help=KIND_HELP)] = None,
+    adapter: Annotated[
         str | None,
-        typer.Option(help='agents.config as JSON, e.g. \'{"agent": "codex"}\' for tmux.'),
+        typer.Option(help="Adapter key (fake, claude, ollama, tmux); derived from --kind."),
+    ] = None,
+    config: Annotated[
+        str | None, typer.Option(help="The rest of agents.config, as a JSON object.")
     ] = None,
     reports_to: Annotated[
         int | None, typer.Option(help="Id of the agent this one reports to.")
@@ -159,7 +167,8 @@ def agent_add(
             project=project,
             role=role,
             title=title,
-            adapter=adapter,
+            adapter=adapter or (None if kind else DEFAULT_ADAPTER),
+            kind=kind,
             reports_to=reports_to,
             config=parse_config(config),
             budget=parse_budget(budget_usd),
