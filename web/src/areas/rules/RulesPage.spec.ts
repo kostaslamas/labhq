@@ -5,7 +5,7 @@ import { FakeSocket } from '@/live/__fixtures__/socket'
 import { resetLiveConnection } from '@/live/useLiveTopic'
 import { renderApp, settle } from '@/shell/__fixtures__/render'
 
-type Rule = components['schemas']['Rule']
+type Rule = components['schemas']['HealthRuleItem']
 
 const rule: Rule = {
   id: 7,

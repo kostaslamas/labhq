@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import type { components } from '../src/api/schema'
 import { expect, test } from './support/auth.ts'
 
-type Rule = components['schemas']['Rule']
+type Rule = components['schemas']['HealthRuleItem']
 
 async function rules(page: Page): Promise<Rule[]> {
   const response = await page.request.get('/api/health/rules')

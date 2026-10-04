@@ -483,17 +483,6 @@
         "title": "Deliverable",
         "type": "object"
       },
-      "EnabledBody": {
-        "properties": {
-          "enabled": {
-            "title": "Enabled",
-            "type": "boolean"
-          }
-        },
-        "required": ["enabled"],
-        "title": "EnabledBody",
-        "type": "object"
-      },
       "EnrollOptionsBody": {
         "properties": {
           "token": {
@@ -604,30 +593,101 @@
         "title": "HealthRuleAction",
         "type": "string"
       },
-      "HostStatus": {
-        "enum": ["unknown", "up", "degraded", "down"],
-        "title": "HostStatus",
-        "type": "string"
-      },
-      "IncidentStatus": {
-        "enum": ["open", "resolved"],
-        "title": "IncidentStatus",
-        "type": "string"
-      },
-      "JoinBody": {
+      "HealthRuleEnabledBody": {
         "properties": {
-          "text": {
-            "maxLength": 4000,
-            "minLength": 1,
-            "title": "Text",
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": ["enabled"],
+        "title": "HealthRuleEnabledBody",
+        "type": "object"
+      },
+      "HealthRuleItem": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/HealthRuleAction"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "title": "Created By",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "host": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Host"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HealthRuleLatest"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "params": {
+            "additionalProperties": true,
+            "title": "Params",
+            "type": "object"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
             "type": "string"
           }
         },
-        "required": ["text"],
-        "title": "JoinBody",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "params",
+          "action",
+          "host",
+          "reason",
+          "created_by",
+          "enabled",
+          "created_at",
+          "updated_at",
+          "latest"
+        ],
+        "title": "HealthRuleItem",
         "type": "object"
       },
-      "LatestResult": {
+      "HealthRuleLatest": {
         "description": "The rule's most recent incident, open or resolved: what it last observed.",
         "properties": {
           "details": {
@@ -661,7 +721,30 @@
           }
         },
         "required": ["incident_id", "status", "opened_at", "resolved_at", "details"],
-        "title": "LatestResult",
+        "title": "HealthRuleLatest",
+        "type": "object"
+      },
+      "HostStatus": {
+        "enum": ["unknown", "up", "degraded", "down"],
+        "title": "HostStatus",
+        "type": "string"
+      },
+      "IncidentStatus": {
+        "enum": ["open", "resolved"],
+        "title": "IncidentStatus",
+        "type": "string"
+      },
+      "JoinBody": {
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "JoinBody",
         "type": "object"
       },
       "MeetingDetail": {
@@ -1112,89 +1195,6 @@
         "enum": ["light", "heavy"],
         "title": "RiskClass",
         "type": "string"
-      },
-      "Rule": {
-        "properties": {
-          "action": {
-            "$ref": "#/components/schemas/HealthRuleAction"
-          },
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "created_by": {
-            "title": "Created By",
-            "type": "string"
-          },
-          "enabled": {
-            "title": "Enabled",
-            "type": "boolean"
-          },
-          "host": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Host"
-          },
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "latest": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/LatestResult"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "params": {
-            "additionalProperties": true,
-            "title": "Params",
-            "type": "object"
-          },
-          "reason": {
-            "title": "Reason",
-            "type": "string"
-          },
-          "type": {
-            "title": "Type",
-            "type": "string"
-          },
-          "updated_at": {
-            "format": "date-time",
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "type",
-          "params",
-          "action",
-          "host",
-          "reason",
-          "created_by",
-          "enabled",
-          "created_at",
-          "updated_at",
-          "latest"
-        ],
-        "title": "Rule",
-        "type": "object"
       },
       "RunStatus": {
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
@@ -2115,7 +2115,7 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/Rule"
+                    "$ref": "#/components/schemas/HealthRuleItem"
                   },
                   "title": "Response Rules List",
                   "type": "array"
@@ -2158,7 +2158,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EnabledBody"
+                "$ref": "#/components/schemas/HealthRuleEnabledBody"
               }
             }
           },
@@ -2169,7 +2169,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Rule"
+                  "$ref": "#/components/schemas/HealthRuleItem"
                 }
               }
             },

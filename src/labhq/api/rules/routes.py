@@ -24,7 +24,7 @@ router = APIRouter(prefix="/health/rules", tags=["rules"])
 RULE_NOT_FOUND_CODE = "rule_not_found"
 
 
-class LatestResult(BaseModel):
+class HealthRuleLatest(BaseModel):
     """The rule's most recent incident, open or resolved: what it last observed."""
 
     incident_id: int
@@ -34,7 +34,7 @@ class LatestResult(BaseModel):
     details: dict[str, Any]
 
 
-class Rule(BaseModel):
+class HealthRuleItem(BaseModel):
     id: int
     name: str
     type: str
@@ -49,16 +49,16 @@ class Rule(BaseModel):
     # Moves on tuning and on enabling or disabling, so for a disabled rule it is when it was
     # switched off.
     updated_at: datetime
-    latest: LatestResult | None
+    latest: HealthRuleLatest | None
 
 
-class EnabledBody(BaseModel):
+class HealthRuleEnabledBody(BaseModel):
     enabled: bool
 
 
-def present(view: RuleView, hosts: dict[int, str]) -> Rule:
+def present(view: RuleView, hosts: dict[int, str]) -> HealthRuleItem:
     rule, latest = view.rule, view.latest
-    return Rule(
+    return HealthRuleItem(
         id=rule.id,
         name=rule.name,
         type=rule.type,
@@ -72,7 +72,7 @@ def present(view: RuleView, hosts: dict[int, str]) -> Rule:
         updated_at=rule.updated_at,
         latest=None
         if latest is None
-        else LatestResult(
+        else HealthRuleLatest(
             incident_id=latest.id,
             status=latest.status,
             opened_at=latest.opened_at,
@@ -87,7 +87,7 @@ async def _host_names(db: AsyncSession) -> dict[int, str]:
 
 
 @router.get("")
-async def rules_list(db: SessionDep) -> list[Rule]:
+async def rules_list(db: SessionDep) -> list[HealthRuleItem]:
     """Every rule with its reason, creator and latest result."""
     hosts = await _host_names(db)
     return [present(view, hosts) for view in await list_rules(db)]
@@ -95,8 +95,8 @@ async def rules_list(db: SessionDep) -> list[Rule]:
 
 @router.post("/{rule_id}/enabled")
 async def rules_set_enabled(
-    rule_id: int, body: EnabledBody, db: SessionDep, clock: ClockDep, owner: OwnerDep
-) -> Rule:
+    rule_id: int, body: HealthRuleEnabledBody, db: SessionDep, clock: ClockDep, owner: OwnerDep
+) -> HealthRuleItem:
     """Enable or disable a rule, recorded with the signed-in owner as `by`."""
     try:
         await set_enabled(db, clock, rule_id, enabled=body.enabled, by=owner.subject)

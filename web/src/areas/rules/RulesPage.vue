@@ -7,7 +7,7 @@ import { useLiveTopic } from '@/live'
 import { StatusBadge } from '@/status'
 import { Button, Mono } from '@/ui'
 
-type Rule = components['schemas']['Rule']
+type Rule = components['schemas']['HealthRuleItem']
 
 const { t, locale } = useI18n()
 

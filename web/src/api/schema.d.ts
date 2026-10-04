@@ -651,11 +651,6 @@ export interface components {
       /** Title */
       title: string
     }
-    /** EnabledBody */
-    EnabledBody: {
-      /** Enabled */
-      enabled: boolean
-    }
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
       /** Token */
@@ -717,26 +712,49 @@ export interface components {
      * @enum {string}
      */
     HealthRuleAction: 'notify' | 'ticket'
-    /**
-     * HostStatus
-     * @enum {string}
-     */
-    HostStatus: 'unknown' | 'up' | 'degraded' | 'down'
-    /**
-     * IncidentStatus
-     * @enum {string}
-     */
-    IncidentStatus: 'open' | 'resolved'
-    /** JoinBody */
-    JoinBody: {
-      /** Text */
-      text: string
+    /** HealthRuleEnabledBody */
+    HealthRuleEnabledBody: {
+      /** Enabled */
+      enabled: boolean
+    }
+    /** HealthRuleItem */
+    HealthRuleItem: {
+      action: components['schemas']['HealthRuleAction']
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Created By */
+      created_by: string
+      /** Enabled */
+      enabled: boolean
+      /** Host */
+      host: string | null
+      /** Id */
+      id: number
+      latest: components['schemas']['HealthRuleLatest'] | null
+      /** Name */
+      name: string
+      /** Params */
+      params: {
+        [key: string]: unknown
+      }
+      /** Reason */
+      reason: string
+      /** Type */
+      type: string
+      /**
+       * Updated At
+       * Format: date-time
+       */
+      updated_at: string
     }
     /**
-     * LatestResult
+     * HealthRuleLatest
      * @description The rule's most recent incident, open or resolved: what it last observed.
      */
-    LatestResult: {
+    HealthRuleLatest: {
       /** Details */
       details: {
         [key: string]: unknown
@@ -751,6 +769,21 @@ export interface components {
       /** Resolved At */
       resolved_at: string | null
       status: components['schemas']['IncidentStatus']
+    }
+    /**
+     * HostStatus
+     * @enum {string}
+     */
+    HostStatus: 'unknown' | 'up' | 'degraded' | 'down'
+    /**
+     * IncidentStatus
+     * @enum {string}
+     */
+    IncidentStatus: 'open' | 'resolved'
+    /** JoinBody */
+    JoinBody: {
+      /** Text */
+      text: string
     }
     /** MeetingDetail */
     MeetingDetail: {
@@ -910,39 +943,6 @@ export interface components {
      * @enum {string}
      */
     RiskClass: 'light' | 'heavy'
-    /** Rule */
-    Rule: {
-      action: components['schemas']['HealthRuleAction']
-      /**
-       * Created At
-       * Format: date-time
-       */
-      created_at: string
-      /** Created By */
-      created_by: string
-      /** Enabled */
-      enabled: boolean
-      /** Host */
-      host: string | null
-      /** Id */
-      id: number
-      latest: components['schemas']['LatestResult'] | null
-      /** Name */
-      name: string
-      /** Params */
-      params: {
-        [key: string]: unknown
-      }
-      /** Reason */
-      reason: string
-      /** Type */
-      type: string
-      /**
-       * Updated At
-       * Format: date-time
-       */
-      updated_at: string
-    }
     /**
      * RunStatus
      * @enum {string}
@@ -1602,7 +1602,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Rule'][]
+          'application/json': components['schemas']['HealthRuleItem'][]
         }
       }
       /** @description Error */
@@ -1627,7 +1627,7 @@ export interface operations {
     }
     requestBody: {
       content: {
-        'application/json': components['schemas']['EnabledBody']
+        'application/json': components['schemas']['HealthRuleEnabledBody']
       }
     }
     responses: {
@@ -1637,7 +1637,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['Rule']
+          'application/json': components['schemas']['HealthRuleItem']
         }
       }
       /** @description Error */
