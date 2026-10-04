@@ -1,0 +1,21 @@
+{
+  "nav": "CEO",
+  "title": "Talk to the CEO",
+  "hint": "Send an objective, ask a question, or follow up on work across your projects.",
+  "setup": "Assign the CEO's main agent on the Projects page before sending a message.",
+  "setupLink": "Configure CEO",
+  "empty": "No messages yet. Start the conversation below.",
+  "you": "You",
+  "ceo": "CEO",
+  "message": "Message to CEO",
+  "placeholder": "What would you like the CEO to do?",
+  "send": "Send message",
+  "sending": "Sending…",
+  "queued": "Waiting for the CEO",
+  "running": "CEO is working on this",
+  "failed": "The CEO could not answer this message. You can try again.",
+  "loadFailed": "The conversation could not be loaded.",
+  "sendFailed": "The message could not be sent. Try again.",
+  "budgetStop": "The CEO's budget is exhausted.",
+  "inactive": "The CEO is not active."
+}

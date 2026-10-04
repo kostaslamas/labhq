@@ -105,6 +105,10 @@ async def test_a_second_run_resumes_the_stored_codex_session_in_the_same_cwd(
     text = screen_text(await events_of(codex_world, second.id))
     assert f"directory: {tmp_path}" in text
     assert "• AURORA-7" in text
+    assert any(
+        event.kind == "final_answer" and event.payload["text"] == "AURORA-7"
+        for event in await events_of(codex_world, second.id)
+    )
     (row,) = await task_sessions(codex_world)
     assert (row.session_id, row.cwd) == (before.session_id_after, str(tmp_path))
 

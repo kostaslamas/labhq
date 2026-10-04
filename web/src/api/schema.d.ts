@@ -424,6 +424,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/org/ceo/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Ceo Messages Get
+     * @description Recent direct messages, including queued and failed turns.
+     */
+    get: operations['ceo_messages_get']
+    put?: never
+    /**
+     * Ceo Messages Post
+     * @description Queue one owner turn through the CEO's normal scheduler, budget and backup path.
+     */
+    post: operations['ceo_messages_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects': {
     parameters: {
       query?: never
@@ -789,6 +813,25 @@ export interface components {
       id: number | null
       /** Primary Kind */
       primary_kind: string | null
+    }
+    /** CeoChatTurn */
+    CeoChatTurn: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Reply */
+      reply: string | null
+      /**
+       * Status
+       * @enum {string}
+       */
+      status: 'queued' | 'running' | 'answered' | 'failed'
+      /** Text */
+      text: string
     }
     /**
      * Credential
@@ -1259,6 +1302,11 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** SendCeoMessage */
+    SendCeoMessage: {
+      /** Text */
+      text: string
+    }
     /** SetCeoAssignment */
     SetCeoAssignment: {
       /** Backup Kind */
@@ -2202,6 +2250,68 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CeoAssignment']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  ceo_messages_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CeoChatTurn'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  ceo_messages_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendCeoMessage']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CeoChatTurn']
         }
       }
       /** @description Error */

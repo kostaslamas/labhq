@@ -80,7 +80,12 @@ async def _enqueue_allowed(
     session: AsyncSession, wakeup: Wakeup, clock: Clock, budget: BudgetCheck
 ) -> EnqueueResult:
 
-    target = await _pending_for(session, wakeup.agent_id, wakeup.task_id)
+    # Direct owner messages are conversation turns: never merge away their words.
+    target = (
+        None
+        if wakeup.source is WakeupSource.OWNER_MESSAGE
+        else await _pending_for(session, wakeup.agent_id, wakeup.task_id)
+    )
     if target is None:
         return await _insert(session, wakeup, clock, Outcome.CREATED, budget)
 

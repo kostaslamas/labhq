@@ -6,6 +6,7 @@ A new source is a new registration. The scheduler never branches on the source i
 from dataclasses import dataclass
 from typing import Protocol
 
+from labhq.ceochat import message_prompt
 from labhq.db.enums import WakeupSource
 from labhq.db.models import Task, WakeupRequest
 
@@ -42,6 +43,16 @@ class TemplateHandler:
             if task.description:
                 lines.append(task.description)
         return "\n".join(lines)
+
+
+@dataclass(frozen=True)
+class OwnerMessageHandler:
+    def validate(self, task_id: int | None) -> None:
+        if task_id is not None:
+            raise InvalidWakeupError("direct owner messages do not belong to a task")
+
+    def prompt(self, request: WakeupRequest, task: Task | None) -> str:
+        return message_prompt(request.reason)
 
 
 class UnknownSourceError(LookupError):
@@ -81,3 +92,4 @@ default_sources.register(
     WakeupSource.APPROVAL_RESOLVED, TemplateHandler(False, "An approval you asked for resolved.")
 )
 default_sources.register(WakeupSource.MEETING, TemplateHandler(False, "A meeting needs you."))
+default_sources.register(WakeupSource.OWNER_MESSAGE, OwnerMessageHandler())

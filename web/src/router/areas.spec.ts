@@ -21,10 +21,11 @@ const withFixture = {
 }
 
 describe('area discovery', () => {
-  it('discovers the four areas in sidebar order', () => {
+  it('discovers the areas in sidebar order', () => {
     const items = navItems(collectAreaRoutes(discoveredAreaRoutes))
     expect(items.map((item) => item.path)).toEqual([
       '/today',
+      '/ceo',
       '/projects',
       '/meetings',
       '/approvals',

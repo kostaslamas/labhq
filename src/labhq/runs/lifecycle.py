@@ -286,6 +286,17 @@ class ActiveRun:
             "num_turns": result.num_turns,
             "errors": result.errors,
         }
+        if result.text:
+            self._seq += 1
+            self._db.add(
+                RunEvent(
+                    run_id=run.id,
+                    seq=self._seq,
+                    kind="final_answer",
+                    payload={"text": result.text},
+                    created_at=now,
+                )
+            )
         tokens = {name: int(result.usage.get(name) or 0) for name in TOKEN_COLUMNS}
         self._db.add(
             CostEvent(

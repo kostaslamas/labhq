@@ -33,6 +33,7 @@ class WakeupSource(StrEnum):
     COMMENT = "comment"
     APPROVAL_RESOLVED = "approval_resolved"
     MEETING = "meeting"
+    OWNER_MESSAGE = "owner_message"
 
 
 class WakeupStatus(StrEnum):
