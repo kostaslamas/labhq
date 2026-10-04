@@ -31,6 +31,7 @@ async def test_fake_run_records_run_events_and_one_cost_row(world: World) -> Non
         (1, "system"),
         (2, "assistant"),
         (3, "result"),
+        (4, "final_answer"),
     ]
 
     costs = await costs_of(world, run.id)

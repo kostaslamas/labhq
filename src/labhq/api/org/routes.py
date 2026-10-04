@@ -1,14 +1,21 @@
-"""Read and set the one CEO's primary and backup agent kinds."""
+"""Configure the one CEO and carry the owner's direct conversation with it."""
+
+from datetime import datetime
+from typing import Annotated, Literal
+from uuid import uuid4
 
 from fastapi import APIRouter
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 
 from labhq.adapters import default_registry
 from labhq.adapters.kinds import UnknownAgentChoiceError
-from labhq.api.deps import ContextDep
+from labhq.api.deps import ContextDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.auth.routes import SignedIn
+from labhq.ceochat import conversation, message_reason
+from labhq.db.enums import AgentStatus, WakeupSource
 from labhq.hierarchy import Hierarchy, HierarchyError
+from labhq.scheduler import Outcome, Wakeup, enqueue
 from labhq.usage.plan import agent_kind, fallback_kind
 
 router = APIRouter(tags=["org"])
@@ -23,6 +30,18 @@ class CeoAssignment(BaseModel):
 class SetCeoAssignment(BaseModel):
     primary_kind: str = Field(min_length=1)
     backup_kind: str | None = None
+
+
+class CeoChatTurn(BaseModel):
+    id: int
+    text: str
+    reply: str | None
+    status: Literal["queued", "running", "answered", "failed"]
+    created_at: datetime
+
+
+class SendCeoMessage(BaseModel):
+    text: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=4000)]
 
 
 def hierarchy(context: ContextDep) -> Hierarchy:
@@ -57,4 +76,54 @@ async def ceo_put(body: SetCeoAssignment, owner: SignedIn, context: ContextDep) 
         id=ceo.id,
         primary_kind=agent_kind(ceo.adapter, ceo.config),
         backup_kind=fallback_kind(ceo.config),
+    )
+
+
+@router.get("/org/ceo/messages")
+async def ceo_messages_get(
+    owner: SignedIn, context: ContextDep, db: SessionDep
+) -> list[CeoChatTurn]:
+    """Recent direct messages, including queued and failed turns."""
+    ceo = await hierarchy(context).current_ceo()
+    if ceo is None:
+        return []
+    return [
+        CeoChatTurn.model_validate(turn, from_attributes=True)
+        for turn in await conversation(db, ceo.id)
+    ]
+
+
+@router.post("/org/ceo/messages", status_code=202)
+async def ceo_messages_post(
+    body: SendCeoMessage, owner: SignedIn, context: ContextDep, db: SessionDep
+) -> CeoChatTurn:
+    """Queue one owner turn through the CEO's normal scheduler, budget and backup path."""
+    ceo = await hierarchy(context).current_ceo()
+    if ceo is None:
+        raise ApiError(409, "ceo_unconfigured", "Assign the CEO on the Projects page first.")
+    if ceo.status is not AgentStatus.ACTIVE:
+        raise ApiError(409, "ceo_inactive", "The CEO is not active.")
+    earlier = await conversation(db, ceo.id)
+    if earlier and earlier[-1].status in {"queued", "running"}:
+        raise ApiError(409, "ceo_busy", "Wait for the CEO's current answer before sending again.")
+    result = await enqueue(
+        db,
+        Wakeup(
+            agent_id=ceo.id,
+            source=WakeupSource.OWNER_MESSAGE,
+            idempotency_key=f"owner-message:{uuid4().hex}",
+            reason=message_reason(body.text, earlier),
+        ),
+        context.clock,
+    )
+    if result.outcome is Outcome.REFUSED:
+        await db.rollback()
+        raise ApiError(409, "ceo_budget_stop", "The CEO's budget is exhausted.")
+    await db.commit()
+    return CeoChatTurn(
+        id=result.request.id,
+        text=body.text,
+        reply=None,
+        status="queued",
+        created_at=result.request.created_at,
     )

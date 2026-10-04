@@ -325,6 +325,7 @@ CODEX = AgentKind(
     # codex-rs/tui chatwidget snapshots: replies and tool calls start with "• "; the
     # "• Working (Ns • esc to interrupt)" status line redraws every second and is not one.
     reply_pattern=r"^• (?!Working \()",
+    reply_key="last_assistant_message",
     tool_launch="codex_mcp",
     source=(
         "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "

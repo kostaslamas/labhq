@@ -608,6 +608,42 @@
         "title": "CeoAssignment",
         "type": "object"
       },
+      "CeoChatTurn": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "reply": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply"
+          },
+          "status": {
+            "enum": ["queued", "running", "answered", "failed"],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["id", "text", "reply", "status", "created_at"],
+        "title": "CeoChatTurn",
+        "type": "object"
+      },
       "Credential": {
         "description": "What the UI may know about a passkey. The public key stays on the server.",
         "properties": {
@@ -1801,6 +1837,19 @@
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
         "title": "RunStatus",
         "type": "string"
+      },
+      "SendCeoMessage": {
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "SendCeoMessage",
+        "type": "object"
       },
       "SetCeoAssignment": {
         "properties": {
@@ -3215,6 +3264,78 @@
           }
         },
         "summary": "Ceo Put",
+        "tags": ["org"]
+      }
+    },
+    "/api/org/ceo/messages": {
+      "get": {
+        "description": "Recent direct messages, including queued and failed turns.",
+        "operationId": "ceo_messages_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CeoChatTurn"
+                  },
+                  "title": "Response Ceo Messages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ceo Messages Get",
+        "tags": ["org"]
+      },
+      "post": {
+        "description": "Queue one owner turn through the CEO's normal scheduler, budget and backup path.",
+        "operationId": "ceo_messages_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCeoMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeoChatTurn"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ceo Messages Post",
         "tags": ["org"]
       }
     },

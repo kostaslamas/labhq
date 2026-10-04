@@ -31,7 +31,12 @@ async def test_racing_enqueues_of_one_key_still_produce_one_request(world: World
 
 @pytest.mark.parametrize("source", list(WakeupSource))
 async def test_every_source_is_registered_and_enqueues(world: World, source: WakeupSource) -> None:
-    result = await world.scheduler.enqueue(on_task(world, f"{source}:1", source=source))
+    wakeup = (
+        Wakeup(agent_id=world.agent_id, source=source, idempotency_key=f"{source}:1")
+        if source is WakeupSource.OWNER_MESSAGE
+        else on_task(world, f"{source}:1", source=source)
+    )
+    result = await world.scheduler.enqueue(wakeup)
     assert result.outcome is Outcome.CREATED
     assert result.request.source is source
     assert sorted(default_sources.sources()) == sorted(WakeupSource)
@@ -52,6 +57,20 @@ async def test_a_timer_wakeup_needs_no_task(world: World) -> None:
     result = await world.scheduler.enqueue(timer)
     assert result.outcome is Outcome.CREATED
     assert result.request.task_id is None
+
+
+async def test_owner_messages_never_coalesce(world: World) -> None:
+    for index in (1, 2):
+        result = await world.scheduler.enqueue(
+            Wakeup(
+                agent_id=world.agent_id,
+                source=WakeupSource.OWNER_MESSAGE,
+                idempotency_key=f"owner:{index}",
+                reason=f"message {index}",
+            )
+        )
+        assert result.outcome is Outcome.CREATED
+    assert [row.reason for row in await wakeups(world)] == ["message 1", "message 2"]
 
 
 async def test_enqueue_leaves_the_transaction_to_the_caller(world: World) -> None:

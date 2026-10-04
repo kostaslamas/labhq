@@ -42,11 +42,11 @@ test('a rule an agent added shows its reason and creator and is disabled from th
   await expect(page.getByTestId(`rule-${seeded.id}`)).toHaveAttribute('data-enabled', 'true')
 })
 
-test('the page speaks Greek and the sidebar still has four items', async ({
+test('the page speaks Greek and the sidebar still has all areas', async ({
   signedInPage: page,
 }) => {
   await page.goto('/projects/infra/rules')
-  await expect(page.getByTestId('nav-item')).toHaveCount(4)
+  await expect(page.getByTestId('nav-item')).toHaveCount(5)
   await page.getByTestId('switch-language').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Κανόνες υγείας')
 })

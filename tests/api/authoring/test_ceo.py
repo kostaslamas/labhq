@@ -6,8 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
+from labhq.adapters import FakeAdapter, FakeScript, default_registry
 from labhq.cli.context import Context
-from labhq.db.models import Agent
+from labhq.db.enums import RunStatus, WakeupStatus
+from labhq.db.models import Agent, Run, RunEvent, WakeupRequest
+from labhq.runs import RunService
+from labhq.scheduler import Scheduler
 from tests.auth.conftest import WRITE
 
 
@@ -127,3 +131,105 @@ def test_an_unavailable_agent_kind_is_refused(
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "ceo_assignment_invalid"
+
+
+async def test_owner_can_talk_to_ceo_and_see_the_answer(
+    signed_in: TestClient, context: Context
+) -> None:
+    assert signed_in.get("/api/org/ceo/messages").json() == []
+    missing = signed_in.post("/api/org/ceo/messages", json={"text": "Hello"}, headers=WRITE)
+    assert missing.status_code == 409
+    assert missing.json()["error"]["code"] == "ceo_unconfigured"
+
+    ceo_id = signed_in.put(
+        "/api/org/ceo", json={"primary_kind": "claude", "backup_kind": "codex"}, headers=WRITE
+    ).json()["id"]
+    sent = signed_in.post(
+        "/api/org/ceo/messages", json={"text": "  How are the projects?  "}, headers=WRITE
+    )
+    assert sent.status_code == 202, sent.text
+    assert (sent.json()["text"], sent.json()["status"]) == ("How are the projects?", "queued")
+    pending = signed_in.get("/api/org/ceo/messages").json()
+    assert pending[0]["id"] == sent.json()["id"]
+    assert pending[0]["reply"] is None
+    busy = signed_in.post("/api/org/ceo/messages", json={"text": "One more"}, headers=WRITE)
+    assert busy.status_code == 409
+    assert busy.json()["error"]["code"] == "ceo_busy"
+
+    async with context.sessions() as db:
+        request = await db.get_one(WakeupRequest, sent.json()["id"])
+        now = context.clock.now()
+        run = Run(
+            agent_id=ceo_id,
+            task_id=None,
+            adapter="claude",
+            status=RunStatus.SUCCEEDED,
+            created_at=now,
+            started_at=now,
+            finished_at=now,
+            heartbeat_at=now,
+        )
+        db.add(run)
+        await db.flush()
+        request.run_id = run.id
+        request.status = WakeupStatus.DISPATCHED
+        db.add(
+            RunEvent(
+                run_id=run.id,
+                seq=1,
+                kind="final_answer",
+                payload={"text": "Both projects are moving."},
+                created_at=now,
+            )
+        )
+        await db.commit()
+
+    answered = signed_in.get("/api/org/ceo/messages").json()
+    assert (answered[0]["reply"], answered[0]["status"]) == (
+        "Both projects are moving.",
+        "answered",
+    )
+    followup = signed_in.post("/api/org/ceo/messages", json={"text": "What next?"}, headers=WRITE)
+    assert followup.status_code == 202, followup.text
+    async with context.sessions() as db:
+        request = await db.get_one(WakeupRequest, followup.json()["id"])
+    assert "Both projects are moving." in request.reason
+    assert "How are the projects?" in request.reason
+
+
+def test_ceo_chat_requires_a_session(app_client: TestClient) -> None:
+    assert app_client.get("/api/org/ceo/messages").status_code == 401
+    assert (
+        app_client.post("/api/org/ceo/messages", json={"text": "Hello"}, headers=WRITE).status_code
+        == 401
+    )
+
+
+async def test_direct_message_runs_through_the_ceo_and_returns_its_real_reply(
+    signed_in: TestClient, context: Context
+) -> None:
+    signed_in.put(
+        "/api/org/ceo", json={"primary_kind": "claude", "backup_kind": "codex"}, headers=WRITE
+    )
+    sent = signed_in.post(
+        "/api/org/ceo/messages", json={"text": "Give me a status update"}, headers=WRITE
+    )
+    assert sent.status_code == 202, sent.text
+    fake = FakeScript(text="The projects are on track.")
+    registry = default_registry.copy()
+    registry.register("claude", lambda: FakeAdapter(fake), replace=True)
+    scheduler = Scheduler(
+        context.sessions,
+        clock=context.clock,
+        runs=RunService(context.sessions, clock=context.clock, registry=registry),
+    )
+
+    report = await scheduler.tick()
+    assert len(report.started) == 1
+    await scheduler.settle()
+
+    assert "Give me a status update" in fake.requests[0].prompt
+    assert fake.requests[0].cwd is not None
+    turns = signed_in.get("/api/org/ceo/messages").json()
+    assert turns[0]["status"] == "answered"
+    assert turns[0]["reply"] == "The projects are on track."

@@ -7,6 +7,8 @@ assignee. A project needs an active manager for that route.
 
 On the Projects page, choose the CEO's main and backup agent. One CEO serves every project.
 Project managers added from the UI report to that CEO automatically.
+Open CEO in the sidebar to send the CEO a direct message and see its answer. Each message
+uses the scheduler, so it waits while the CEO is busy and follows the configured backup.
 The backup runs when the main agent's program is unavailable or its plan usage is paused;
 the CEO keeps the same identity and reporting lines. Removing the backup leaves the main
 agent assigned. Switching agent kinds starts a fresh session while keeping the task's folder.
