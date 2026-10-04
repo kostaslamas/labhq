@@ -111,14 +111,14 @@ def test_every_tool_launch_records_its_source() -> None:
     assert TOOL_LAUNCHES["codex_mcp"].exclusive is None
 
 
-def test_claude_codes_reply_is_its_stop_hooks_last_message(tmp_path: Path) -> None:
+def test_claude_and_codex_replies_use_the_stop_hooks_last_message(tmp_path: Path) -> None:
     adapter = _adapter(tmp_path)
     kind = default_kinds.get("claude-code")
     signal = json.dumps({"session_id": "s", "last_assistant_message": "The build is green."})
 
     assert adapter._reply(kind, signal) == "The build is green."
     assert adapter._reply(kind, "not json") is None
-    assert adapter._reply(default_kinds.get("codex"), signal) is None
+    assert adapter._reply(default_kinds.get("codex"), signal) == "The build is green."
 
 
 def test_a_kind_naming_an_unknown_tool_launch_is_refused() -> None:
