@@ -55,9 +55,6 @@ def test_a_dialog_in_old_scrollback_does_not_match() -> None:
     assert blocking_screen(CLAUDE_CODE.blocking_screens, scrollback) is None
 
 
-@pytest.mark.posix_only(
-    "creating a symlink needs a privilege native Windows does not grant by default"
-)
 def test_only_paths_strictly_inside_the_data_directory_are_labhq_made(tmp_path: Path) -> None:
     data, mine, theirs = tmp_path / "data", tmp_path / "data" / "callcenter", tmp_path / "repo"
     for path in (mine, theirs):
