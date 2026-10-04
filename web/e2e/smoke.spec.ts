@@ -4,6 +4,7 @@ import { expect, test } from './support/auth.ts'
 
 const areas = [
   { path: '/today', en: 'Today', el: 'Σήμερα' },
+  { path: '/ceo', en: 'CEO', el: 'CEO', heading: 'Talk to the CEO' },
   { path: '/projects', en: 'Projects', el: 'Έργα' },
   { path: '/meetings', en: 'Meetings', el: 'Συσκέψεις' },
   { path: '/approvals', en: 'Approvals', el: 'Εγκρίσεις' },
@@ -15,7 +16,7 @@ async function hasNoHorizontalScroll(page: Page): Promise<boolean> {
   )
 }
 
-test('the sidebar has four items and each opens its area without horizontal scroll', async ({
+test('each sidebar item opens its area without horizontal scroll', async ({
   signedInPage: page,
 }) => {
   await page.goto('/')
@@ -26,7 +27,7 @@ test('the sidebar has four items and each opens its area without horizontal scro
   for (const area of areas) {
     await items.filter({ hasText: area.en }).click()
     await expect(page).toHaveURL(new RegExp(`${area.path}$`))
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(area.en)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(area.heading ?? area.en)
     expect(await hasNoHorizontalScroll(page)).toBe(true)
   }
 })
