@@ -8,6 +8,7 @@ import { useLiveTopic } from '@/live'
 import { StatusBadge } from '@/status'
 import { Button, Mono } from '@/ui'
 
+import AddAgentForm from './AddAgentForm.vue'
 import BudgetMeter from './BudgetMeter.vue'
 import DeliverableList from './DeliverableList.vue'
 import TaskCounts from './TaskCounts.vue'
@@ -19,6 +20,14 @@ const props = defineProps<{ id: string }>()
 const { t, locale } = useI18n()
 const view = ref<View | null>(null)
 const state = ref<'loading' | 'ready' | 'missing' | 'failed'>('loading')
+const adding = ref(false)
+const awaiting = ref(false)
+
+async function agentAdded(): Promise<void> {
+  adding.value = false
+  awaiting.value = true
+  await load()
+}
 
 async function load(): Promise<void> {
   const projectId = Number(props.id)
@@ -109,6 +118,33 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           <Mono class="text-sm text-muted">#{{ view.id }}</Mono>
         </h2>
         <TeamTree :team="view.team" />
+        <p
+          v-if="awaiting"
+          role="status"
+          class="flex flex-wrap items-center gap-2 text-sm text-muted"
+          data-testid="agent-waiting"
+        >
+          {{ t('projects.agent.waiting') }}
+          <RouterLink :to="{ name: 'approvals' }" class="text-accent underline">
+            {{ t('projects.agent.review') }}
+          </RouterLink>
+        </p>
+        <AddAgentForm
+          v-if="adding"
+          :project-id="view.id"
+          :team="view.team"
+          @added="agentAdded"
+          @cancel="adding = false"
+        />
+        <Button
+          v-else
+          class="w-fit"
+          variant="outline"
+          data-testid="add-agent"
+          @click="adding = true"
+        >
+          {{ t('projects.agent.button') }}
+        </Button>
       </section>
     </template>
   </section>

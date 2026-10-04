@@ -7,6 +7,7 @@ import { api, type components } from '@/api'
 import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
+import AddProjectForm from './AddProjectForm.vue'
 import ProjectCard from './ProjectCard.vue'
 
 type Card = components['schemas']['ProjectCard']
@@ -16,6 +17,7 @@ const route = useRoute()
 const router = useRouter()
 const cards = ref<Card[]>([])
 const state = ref<'loading' | 'ready' | 'failed'>('loading')
+const adding = ref(false)
 
 // Follows the cursors to the end: a person's projects are a handful, and a grid with a
 // hidden tail would hide a project that is over its budget.
@@ -45,6 +47,12 @@ async function openTaskProject(): Promise<void> {
   if (data) await router.replace({ name: 'project', params: { id: data.project_id } })
 }
 
+// The new project's own page is where its first agent is added.
+async function opened(id: number): Promise<void> {
+  adding.value = false
+  await router.push({ name: 'project', params: { id } })
+}
+
 onMounted(() => {
   void load()
   void openTaskProject()
@@ -54,7 +62,14 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
 
 <template>
   <section class="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-8">
-    <h1 class="text-2xl font-semibold tracking-wide">{{ t('projects.nav') }}</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <h1 class="text-2xl font-semibold tracking-wide">{{ t('projects.nav') }}</h1>
+      <Button v-if="!adding" data-testid="add-project" @click="adding = true">
+        {{ t('projects.add.button') }}
+      </Button>
+    </div>
+
+    <AddProjectForm v-if="adding" class="max-w-xl" @added="opened" @cancel="adding = false" />
 
     <div v-if="state === 'failed'" role="alert" class="flex flex-wrap items-center gap-3">
       <p class="text-status-failed">{{ t('projects.loadFailed') }}</p>
