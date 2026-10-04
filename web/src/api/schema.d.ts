@@ -280,6 +280,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/meetings': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Meetings List
+     * @description Newest first. The cursor is the last id served, so a new meeting never shifts a page.
+     */
+    get: operations['meetings_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/meetings/{meeting_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Meetings Get
+     * @description The whole meeting from the database alone, so it reads the same with chat disconnected.
+     */
+    get: operations['meetings_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/meetings/{meeting_id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Meetings Join
+     * @description Say something as the owner; the next turns of the meeting see it.
+     */
+    post: operations['meetings_join']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects': {
     parameters: {
       query?: never
@@ -364,6 +424,24 @@ export interface paths {
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    /** ActionItem */
+    ActionItem: {
+      /** Assignee Agent Id */
+      assignee_agent_id: number | null
+      /** Assignee Name */
+      assignee_name: string | null
+      /** Decision Id */
+      decision_id: number | null
+      /** Id */
+      id: number
+      /** Task Id */
+      task_id: number
+      task_status: components['schemas']['TaskStatus']
+      /** Task Title */
+      task_title: string
+      /** Text */
+      text: string
+    }
     /** AgentRef */
     AgentRef: {
       /** Id */
@@ -449,7 +527,7 @@ export interface components {
       budget_micros: number | null
       /** Spent Micros */
       spent_micros: number
-      state: components['schemas']['Decision']
+      state: components['schemas']['labhq__budgets__decision__Decision']
       /** Used Percent */
       used_percent: number | null
     }
@@ -498,11 +576,6 @@ export interface components {
       /** Transports */
       transports: string[]
     }
-    /**
-     * Decision
-     * @enum {string}
-     */
-    Decision: 'allow' | 'warn' | 'stop'
     /** DecisionBody */
     DecisionBody: {
       /** Credential */
@@ -604,11 +677,89 @@ export interface components {
      * @enum {string}
      */
     IncidentStatus: 'open' | 'resolved'
+    /** JoinBody */
+    JoinBody: {
+      /** Text */
+      text: string
+    }
+    /** MeetingDetail */
+    MeetingDetail: {
+      /** Action Items */
+      action_items: components['schemas']['ActionItem'][]
+      /** Agenda */
+      agenda: string
+      /** Channel */
+      channel: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Decisions */
+      decisions: components['schemas']['labhq__api__meetings__schemas__Decision'][]
+      /** End Reason */
+      end_reason: string | null
+      /** Ended At */
+      ended_at: string | null
+      /** Id */
+      id: number
+      /** Kind */
+      kind: string
+      /** Messages */
+      messages: components['schemas']['Message'][]
+      /** Participants */
+      participants: components['schemas']['Participant'][]
+      /** Project Id */
+      project_id: number
+      /** Project Name */
+      project_name: string
+      /** Started At */
+      started_at: string | null
+      status: components['schemas']['MeetingStatus']
+    }
+    /** MeetingItem */
+    MeetingItem: {
+      /** Channel */
+      channel: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Kind */
+      kind: string
+      /** Project Id */
+      project_id: number
+      /** Project Name */
+      project_name: string
+      /** Started At */
+      started_at: string | null
+      status: components['schemas']['MeetingStatus']
+    }
     /**
      * MeetingStatus
      * @enum {string}
      */
     MeetingStatus: 'requested' | 'running' | 'ended' | 'failed' | 'cancelled'
+    /** Message */
+    Message: {
+      /** Agent Id */
+      agent_id: number | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      source: components['schemas']['TranscriptSource']
+      /** Speaker */
+      speaker: string
+      /** Text */
+      text: string
+    }
     /**
      * NotificationStatus
      * @enum {string}
@@ -621,12 +772,28 @@ export interface components {
       /** Next Cursor */
       next_cursor: string | null
     }
+    /** Page[MeetingItem] */
+    Page_MeetingItem_: {
+      /** Items */
+      items: components['schemas']['MeetingItem'][]
+      /** Next Cursor */
+      next_cursor: string | null
+    }
     /** Page[ProjectCard] */
     Page_ProjectCard_: {
       /** Items */
       items: components['schemas']['ProjectCard'][]
       /** Next Cursor */
       next_cursor: string | null
+    }
+    /** Participant */
+    Participant: {
+      /** Agent Id */
+      agent_id: number | null
+      /** Id */
+      id: number
+      /** Name */
+      name: string
     }
     /** ProjectCard */
     ProjectCard: {
@@ -717,6 +884,11 @@ export interface components {
       title: string
     }
     /**
+     * TranscriptSource
+     * @enum {string}
+     */
+    TranscriptSource: 'agent' | 'owner' | 'system'
+    /**
      * Vocabulary
      * @description The status values the backend may return, by enum.
      */
@@ -799,11 +971,25 @@ export interface components {
       /** Name */
       name: string
     }
+    /** Decision */
+    labhq__api__meetings__schemas__Decision: {
+      /** Id */
+      id: number
+      /** Position */
+      position: number
+      /** Text */
+      text: string
+    }
     /** ProjectRef */
     labhq__api__projects__schemas__ProjectRef: {
       /** Project Id */
       project_id: number
     }
+    /**
+     * Decision
+     * @enum {string}
+     */
+    labhq__budgets__decision__Decision: 'allow' | 'warn' | 'stop'
   }
   responses: never
   parameters: never
@@ -1285,6 +1471,106 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Health']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  meetings_list: {
+    parameters: {
+      query?: {
+        /** @description Opaque; from `next_cursor`. */
+        cursor?: string | null
+        /** @description Rows per page. */
+        limit?: number | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Page_MeetingItem_']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  meetings_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        meeting_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MeetingDetail']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  meetings_join: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        meeting_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['JoinBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Message']
         }
       }
       /** @description Error */

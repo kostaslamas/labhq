@@ -23,8 +23,16 @@ from labhq.cli.engine import FAKE_ADAPTER, Engine
 from labhq.cli.work import create_agent, create_project, create_task, migrate
 from labhq.clock import Clock, SystemClock
 from labhq.db import create_engine, session_factory
-from labhq.db.enums import AgentStatus
-from labhq.db.models import CostEvent, HealthRule
+from labhq.db.enums import AgentStatus, MeetingStatus, TranscriptSource
+from labhq.db.models import (
+    CostEvent,
+    HealthRule,
+    Meeting,
+    MeetingActionItem,
+    MeetingDecision,
+    MeetingParticipant,
+    MeetingTranscriptEntry,
+)
 from labhq.health.collector import Reading, collect_local
 from labhq.health.incidents import evaluate_rules
 from labhq.money import usd_to_micros
@@ -51,6 +59,7 @@ class Seeded:
     approvals: dict[str, int]
     question: int
     incident: int
+    meetings: dict[str, int]
 
 
 async def _work(context: Context, root: Path) -> tuple[list[int], list[int], list[int]]:
@@ -129,6 +138,72 @@ async def _incident(context: Context) -> int:
     return changes[0].incident.id
 
 
+async def _meetings(
+    context: Context, project_id: int, agents: list[int], task_id: int
+) -> dict[str, int]:
+    """A running standup with its conversation, and an ended planning meeting with minutes.
+
+    Rows are written directly: running a meeting is Phase 3's job and needs a model.
+    """
+    now = context.clock.now()
+    async with context.sessions() as db:
+        standup = Meeting(
+            project_id=project_id,
+            kind="standup",
+            agenda="What is blocked, and what ships today?",
+            status=MeetingStatus.RUNNING,
+            created_at=now,
+            started_at=now,
+        )
+        planning = Meeting(
+            project_id=project_id,
+            kind="planning",
+            agenda="Plan the greeting work.",
+            status=MeetingStatus.ENDED,
+            created_at=now,
+            started_at=now,
+            ended_at=now,
+        )
+        db.add_all([standup, planning])
+        await db.flush()
+        seats = {
+            (meeting.id, agent_id): MeetingParticipant(
+                meeting_id=meeting.id, agent_id=agent_id, display_name=name
+            )
+            for meeting in (standup, planning)
+            for agent_id, name in zip(agents[:2], ("Project manager", "Worker"), strict=True)
+        }
+        db.add_all(seats.values())
+        await db.flush()
+        for agent_id, text in (
+            (agents[1], "The HELLO file is written. " + "A very long unbroken word: " + "x" * 300),
+            (agents[0], "Nothing is blocked. Ship it today."),
+        ):
+            db.add(
+                MeetingTranscriptEntry(
+                    meeting_id=standup.id,
+                    participant_id=seats[(standup.id, agent_id)].id,
+                    source=TranscriptSource.AGENT,
+                    text=text,
+                    created_at=now,
+                )
+            )
+        decision = MeetingDecision(meeting_id=planning.id, text="Greet in Greek too", position=1)
+        db.add(decision)
+        await db.flush()
+        db.add(
+            MeetingActionItem(
+                meeting_id=planning.id,
+                decision_id=decision.id,
+                text="Add a HELLO file",
+                assignee_agent_id=agents[1],
+                task_id=task_id,
+            )
+        )
+        await db.commit()
+        return {"standup": standup.id, "planning": planning.id}
+
+
 async def seed(context: Context) -> Seeded:
     """Fill an empty, migrated database. Repositories go under `data_dir/repos`."""
     root = context.settings.data_dir / "repos"
@@ -154,6 +229,7 @@ async def seed(context: Context) -> Seeded:
         approvals={"heavy": report.approvals[0].id, "light": light.id},
         question=await _question(context, agents[1], tasks[0]),
         incident=await _incident(context),
+        meetings=await _meetings(context, projects[0], agents, tasks[0]),
     )
 
 
