@@ -9,8 +9,13 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class NotifySettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LABHQ_NOTIFY_", extra="ignore")
 
-    # A key of `labhq.notify.registry.notifiers`; ntfy needs no account.
-    kind: str = "ntfy"
+    # A key of `labhq.notify.registry.notifiers`; Web Push needs no account or third party.
+    kind: str = "webpush"
+    # The VAPID `sub` claim: how a push service can reach the sender. py_vapid accepts only a
+    # mailto: address or an https URL without a path, so the default is a host alone.
+    webpush_subject: str = "https://github.com"
+    # How long a push service keeps a push for a phone that is off; an approval goes stale.
+    webpush_ttl_seconds: int = Field(default=3600, ge=0)
     ntfy_server: str = "https://ntfy.sh"
     # Unset: a random topic is generated once and kept in the data directory.
     ntfy_topic: str | None = None

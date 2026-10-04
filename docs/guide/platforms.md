@@ -111,6 +111,7 @@ and CI fails when it does not match them.
 | `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |
 | `tests/mcp/test_server.py::test_token_file_is_0600_and_stable` | POSIX file permission bits |
 | `tests/notify/test_channels.py::test_the_generated_topic_is_random_and_kept` | POSIX file permission bits |
+| `tests/notify/test_webpush.py::test_the_vapid_key_file_is_private_and_stable` | POSIX file permission bits |
 | `tests/onboard/test_discord.py::test_the_token_file_is_owner_only_and_the_token_is_never_shown` | POSIX file permission bits |
 | `tests/onboard/test_failures.py::test_a_notification_ntfy_rejects_fails_on_the_notifications_step` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_failures.py::test_a_tunnel_that_does_not_answer_fails_on_the_public_url_step` | the fake cloudflared is a /bin/sh wrapper |
@@ -118,6 +119,7 @@ and CI fails when it does not match them.
 | `tests/onboard/test_first_run.py::test_first_run_reaches_a_verified_system_without_any_account` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_the_model_notice_appears_on_the_first_run_only` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_the_qr_code_encodes_exactly_the_printed_connector_url` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_with_web_push_the_notifications_step_asks_for_a_device_instead_of_failing` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_without_no_serve_the_program_takes_over_the_port_behind_the_same_tunnel` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_model.py::test_a_logged_in_claude_verifies` | the fake claude is a shebang script |
 | `tests/onboard/test_model.py::test_only_the_logged_in_answer_counts` | the fake claude is a shebang script |

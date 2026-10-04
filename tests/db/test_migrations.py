@@ -52,7 +52,12 @@ PHASE_3_TABLES = {
     "chat_outbox",
 }
 # Passkeys and web sessions (issue #62).
-PHASE_4_TABLES = {"passkey_credentials", "web_sessions", "webauthn_challenges"}
+PHASE_4_TABLES = {
+    "passkey_credentials",
+    "push_subscriptions",
+    "web_sessions",
+    "webauthn_challenges",
+}
 ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES | PHASE_4_TABLES
 
 
@@ -66,7 +71,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0011"]
+    assert heads == ["0012"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:

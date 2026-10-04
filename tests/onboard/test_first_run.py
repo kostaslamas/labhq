@@ -136,3 +136,19 @@ def process_is_alive(pid: int) -> bool:
     except ProcessLookupError:
         return False
     return True
+
+
+@pytest.mark.posix_only("the fake cloudflared is a /bin/sh wrapper")
+def test_with_web_push_the_notifications_step_asks_for_a_device_instead_of_failing(
+    tunnel: Tunnel, cli: Cli, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LABHQ_NOTIFY_KIND", "webpush")
+
+    result = onboard()
+
+    assert result.exit_code == 0, result.output
+    output = plain(result.output)
+    assert "webpush is ready; no device has enabled it yet" in output
+    assert "add it to the Home Screen first" in output
+    assert cli.rows("SELECT kind FROM notifications") == []
+    assert output.rstrip().endswith(READY)

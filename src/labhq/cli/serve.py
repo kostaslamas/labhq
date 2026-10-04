@@ -98,7 +98,9 @@ def serve(
         settings = NotifySettings()
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT_SECONDS) as client:
             try:
-                notifier = build_notifier(settings, client, context.settings.data_dir)
+                notifier = build_notifier(
+                    settings, client, context.settings.data_dir, sessions=context.sessions
+                )
             except NotifyError as error:
                 fail(str(error))
             services = Services(

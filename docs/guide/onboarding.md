@@ -19,21 +19,23 @@ then does what it can by itself, and asks you only for what it cannot do.
 | Database | Creates the data directory and runs the migrations | Nothing |
 | Connector token | Issues the MCP connector token, stored with mode 0600 | Nothing |
 | Public URL | Starts the MCP server and a Cloudflare quick tunnel to it | Install `cloudflared` if it is missing |
-| Notifications | Keeps a random ntfy topic and sends one test notification | Install the ntfy app and subscribe from the QR code |
+| Notifications | Prepares Web Push; with `LABHQ_NOTIFY_KIND=ntfy` keeps a random ntfy topic and sends one test notification | Open the web app on your phone and enable notifications (on iOS, add it to the Home Screen first) |
 | Model login | Checks that Claude Code is logged in, or that `ANTHROPIC_API_KEY` is set | Log in to Claude Code once, or set the key |
 
 Before anything else it also reports whether `cloudflared`, `tailscale` and a Discord token
 (`LABHQ_DISCORD_TOKEN`) are present.
 
 Before it says `labhq is ready.` it checks the whole path: one MCP `initialize` call through
-the public URL, and one test notification that ntfy accepts through labhq's outbox. If a check
+the public URL, and, once a device is subscribed (or with ntfy or Telegram), one test
+notification that the notifier accepts through labhq's outbox. Before any device has
+subscribed to Web Push, onboarding says so and does not fail. If a check
 fails, onboarding names the step, exits non-zero and never says ready.
 
 At the end it prints:
 
 - the connector URL, and a QR code of exactly that URL, to add as a custom connector in
   Claude or ChatGPT on your phone;
-- the ntfy subscribe link, and a QR code of it, to open in the ntfy app;
+- with ntfy, the subscribe link and a QR code of it, to open in the ntfy app;
 - anything left for later, such as the model login.
 
 Then it keeps serving in the foreground: the MCP server, the scheduler and notifications, behind
