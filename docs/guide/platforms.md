@@ -65,6 +65,12 @@ and CI fails when it does not match them.
 | `tests/adapters/test_codex_usage.py::test_an_invented_codex_reading_is_recorded_as_failed_never_zero` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_codex_usage.py::test_the_usage_screen_of_a_codex_run_is_recorded_as_readings` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/test_contract.py::test_adapter_honours_the_contract` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_dialog_nobody_may_answer_fails_the_run_even_in_labhq_directories` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_run_without_progress_fails_with_the_reason` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_a_symlink_out_of_the_data_directory_is_not_trusted` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_enter_is_never_sent_when_the_option_cannot_be_selected` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_fails_the_run_in_any_other_directory_without_a_key` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_blocking.py::test_the_trust_dialog_is_accepted_in_a_directory_labhq_created` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_variable_only_in_the_clients_environment_stays_out_of_the_session` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_worker_sees_no_credentials_even_when_the_caller_has_them` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |
@@ -97,6 +103,9 @@ and CI fails when it does not match them.
 | `tests/expose/test_serve.py::test_failed_proof_stops_the_tunnel_and_raises` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/expose/test_serve.py::test_running_server_answers_json_not_sse_and_the_url_is_announced_once` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/expose/test_serve.py::test_unverified_tunnel_never_announces` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve_command.py::test_off_a_terminal_the_token_never_reaches_stdout` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve_command.py::test_serve_expose_prints_the_public_url_and_serves_the_full_program` | the fake cloudflared is a shebang script that waits on signal.pause |
+| `tests/expose/test_serve_command.py::test_serve_expose_that_cannot_be_proved_stops_the_program_and_prints_no_url` | the fake cloudflared is a shebang script that waits on signal.pause |
 | `tests/health/test_local_commands.py::test_the_certificate_script_reads_a_file_on_disk` | the certificate probe is a POSIX shell script |
 | `tests/mcp/test_internal.py::test_the_call_center_in_tmux_has_no_shell_and_no_file_tool` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/mcp/test_server.py::test_cli_token_shows_rotates_and_logs_nothing` | POSIX file permission bits |

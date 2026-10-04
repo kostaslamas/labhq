@@ -1,11 +1,14 @@
 """Serve the app and expose it: the tunnel opens only once the server answers locally."""
 
+import asyncio
 import threading
 from collections.abc import Callable
+from typing import Protocol
 
 import uvicorn
 from starlette.types import ASGIApp
 
+from labhq.clock import Clock
 from labhq.expose.base import Exposure, ExposureAdapter, ExposureError
 from labhq.expose.verify import connector_url, verify_connector
 
@@ -59,3 +62,43 @@ def serve_exposed(
             exposure.close()
         server.should_exit = True
         thread.join()
+
+
+class StartedServer(Protocol):
+    @property
+    def started(self) -> bool: ...
+
+
+async def expose_running(
+    server: StartedServer,
+    *,
+    port: int,
+    secret: str,
+    adapter: ExposureAdapter,
+    announce: Callable[[str], None],
+    clock: Clock,
+    verify: Verifier = verify_connector,
+) -> None:
+    """Expose a server another task runs, once it answers; hold the exposure until cancelled.
+
+    `serve_exposed` owns a server of its own; `labhq serve` already runs one inside the
+    program, so this opens the tunnel next to it. A failure raises `ExposureError`, and the
+    caller must stop the program: a server that was meant to be public never stays private.
+    """
+    while not server.started:
+        await clock.sleep(0.05)
+    opened: list[Exposure] = []
+
+    def open_it() -> str:
+        exposure, url = open_verified(adapter, port, secret, verify=verify)
+        opened.append(exposure)
+        return url
+
+    try:
+        # The tunnel binary and the proof block, so they run off the event loop.
+        url = await asyncio.to_thread(open_it)
+        announce(url)
+        await asyncio.Event().wait()
+    finally:
+        for exposure in opened:
+            exposure.close()

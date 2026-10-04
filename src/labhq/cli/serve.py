@@ -1,5 +1,7 @@
 """`labhq serve`: the API, the MCP server and the background loops in one process."""
 
+import asyncio
+import sys
 from typing import Annotated
 
 import httpx
@@ -9,6 +11,7 @@ import uvicorn
 from labhq.callcenter.calls import SchedulerInterrupter
 from labhq.cli.context import Context, execute, fail
 from labhq.cli.engine import Engine
+from labhq.expose import ExposureError, expose_running, exposures, verify_connector
 from labhq.mcp.auth import ensure_token
 from labhq.mcp.server import build_app
 from labhq.mcp.tools.calls import attach_interrupter
@@ -18,9 +21,27 @@ from labhq.notify import Dispatcher, NotifyError, NotifySettings, build_notifier
 HTTP_TIMEOUT_SECONDS = 10.0
 
 
+def _is_terminal() -> bool:
+    return sys.stdout.isatty()
+
+
+def _announce(url: str, secret: str) -> None:
+    """Print the connector URL; off a terminal (a systemd journal) the token stays out of it."""
+    if _is_terminal():
+        typer.echo(f"Connector URL: {url}")
+        return
+    typer.echo(
+        f"Connector URL: {url.removesuffix(secret)} (run `labhq mcp token` to see the token)"
+    )
+
+
 def serve(
     host: Annotated[str, typer.Option(help="Interface to bind.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8787,
+    expose: Annotated[
+        str | None,
+        typer.Option(help="Publish the server through this exposure, for example quick-tunnel."),
+    ] = None,
 ) -> None:
     """Run the API and MCP server, the scheduler, notifications and status ingestion until stopped.
 
@@ -40,6 +61,9 @@ def serve(
         get_program_settings,
     )
 
+    if expose is not None and expose not in exposures:
+        fail(f"unknown exposure {expose!r}; available: {', '.join(exposures)}")
+
     async def body(context: Context) -> None:
         secret = ensure_token(context.settings.data_dir)
         settings = NotifySettings()
@@ -57,26 +81,52 @@ def serve(
             # No access log: the secret path would land in it.
             mcp_app = build_app(default_registry, secret)
             api_settings = get_api_settings()
-            config = uvicorn.Config(
-                create_server_app(context, mcp_app, settings=api_settings),
-                host=host,
-                port=port,
-                access_log=False,
+            server = ProgramServer(
+                uvicorn.Config(
+                    create_server_app(context, mcp_app, settings=api_settings),
+                    host=host,
+                    port=port,
+                    access_log=False,
+                )
             )
             program = Program(
                 services,
                 default_loops,
-                ProgramServer(config),
+                server,
                 clock=context.clock,
                 settings=get_program_settings(),
             )
-            typer.echo(f"Connector URL: http://{host}:{port}/mcp/{secret}")
+            exposing = None
+            if expose is None:
+                _announce(f"http://{host}:{port}/mcp/{secret}", secret)
+            else:
+                exposing = asyncio.create_task(
+                    expose_running(
+                        server,
+                        port=port,
+                        secret=secret,
+                        adapter=exposures.get(expose)(),
+                        announce=lambda url: _announce(url, secret),
+                        clock=context.clock,
+                        verify=verify_connector,
+                    )
+                )
+                # A failed exposure stops the program rather than leaving a private server.
+                exposing.add_done_callback(
+                    lambda task: None if task.cancelled() else program.request_stop()
+                )
             if absent := ui_absent_reason(api_settings):
                 typer.echo(absent, err=True)
             try:
                 await program.run()
             except ProgramError as error:
                 fail(str(error))
+            finally:
+                if exposing is not None:
+                    exposing.cancel()
+                    results = await asyncio.gather(exposing, return_exceptions=True)
+                    if isinstance(results[0], ExposureError):
+                        fail(str(results[0]))
 
     try:
         execute(body)

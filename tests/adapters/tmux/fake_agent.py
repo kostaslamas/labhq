@@ -4,7 +4,10 @@ It prints its session and working directory, acts on the words of its prompt, pr
 turn-end marker and then idles like an interactive agent, answering `/usage`.
 
 Prompt words: `ENV` reports what the worker can see of credentials; `PUSH` tries to publish
-(through the push guard hook first when `--hook` is given); `WAIT` blocks until Ctrl-C.
+(through the push guard hook first when `--hook` is given); `WAIT` blocks until Ctrl-C;
+`TRUST` shows Claude Code's folder-trust dialog and goes on only when Down and Enter select
+the trust option; `LOGIN` shows a login dialog nobody may answer; `STALL` prints once and
+then goes quiet.
 """
 
 import argparse
@@ -13,6 +16,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 TURN_END = "LABHQ-FAKE-TURN-END"
@@ -48,6 +52,56 @@ def push(hook: str | None) -> None:
     print(f"push-exit={result.returncode}")
 
 
+# The screen of the end-to-end run that found the hang (2026-10-03), as the pane showed it.
+TRUST_DIALOG = """\
+Accessing workspace: {cwd}
+
+Quick safety check: Is this a project you created or one you trust? (Like your own code,
+a well-known open source project, or work from your team). If not, take a moment to
+review what's in this folder first.
+
+Claude Code'll be able to read, edit, and execute files here.
+
+{options}
+
+Enter to confirm \u00b7 Esc to cancel"""
+MARK = "\u276f"
+LOGIN_DIALOG = "Select login method:\n \u276f 1. Claude account\n   2. Anthropic Console"
+
+
+def trust_dialog() -> None:
+    """Claude Code 2.1.288: unnumbered options, cursor on "No, exit", Down moves it."""
+    # Imported here: `termios` does not exist on native Windows, where the test module is
+    # still collected (and reported as a known limitation) before its posix_only mark applies.
+    import tty
+
+    options = ["No, exit", "Yes, I trust this folder"]
+    chosen = 0
+    tty.setcbreak(sys.stdin.fileno())
+    while True:
+        lines = [f" {MARK} {o}" if n == chosen else f"   {o}" for n, o in enumerate(options)]
+        print(TRUST_DIALOG.format(cwd=Path.cwd(), options="\n".join(lines)), flush=True)
+        key = sys.stdin.read(1)
+        if key == "\x1b":
+            chosen = min(chosen + 1, 1) if sys.stdin.read(2) in ("[B", "OB") else chosen
+        elif key in ("\r", "\n"):
+            break
+    if chosen != 1:
+        print("exiting without trust", flush=True)
+        sys.exit(1)
+    print("trusted", flush=True)
+
+
+def login_dialog() -> None:
+    print(LOGIN_DIALOG, flush=True)
+    threading.Event().wait()
+
+
+def stall() -> None:
+    print("starting", flush=True)
+    threading.Event().wait()
+
+
 def wait_for_interrupt() -> None:
     print("waiting", flush=True)
     try:
@@ -68,6 +122,9 @@ def main() -> None:
     actions = {
         "ENV": report_environment,
         "WAIT": wait_for_interrupt,
+        "TRUST": trust_dialog,
+        "LOGIN": login_dialog,
+        "STALL": stall,
         "PUSH": lambda: push(args.hook),
     }
     for word in args.prompt.split():

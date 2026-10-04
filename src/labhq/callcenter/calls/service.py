@@ -13,6 +13,7 @@ an `ask` that finds no worker starts one.
 import asyncio
 import logging
 from dataclasses import dataclass, field
+from datetime import timedelta
 from enum import StrEnum
 from pathlib import Path
 
@@ -36,6 +37,10 @@ from labhq.db.models import Call, CallRequest
 from labhq.runs import RunService, RunStartError
 
 log = logging.getLogger(__name__)
+
+# A voice client gives up on a tool call after about a minute; stay under that.
+MAX_WAIT_SECONDS = 50.0
+POLL_SECONDS = 1.0
 
 OVER_BUDGET = "The Call Center is over its budget for now, so I cannot look into that."
 FAILED = "The Call Center could not finish that one. Please ask again."
@@ -112,6 +117,16 @@ class CallCenter:
         # A restart loses workers, not requests: a pending ticket gets its worker back.
         self._ensure_worker(call_id)
         return Reply(TicketState.WORKING)
+
+    async def wait_for_reply(self, ticket: str, wait_seconds: float) -> Reply:
+        """`reply`, polled until the answer is in or `wait_seconds` (at most 50) have passed."""
+        deadline = self.clock.now() + timedelta(seconds=min(max(wait_seconds, 0), MAX_WAIT_SECONDS))
+        while True:
+            reply = await self.reply(ticket)
+            remaining = (deadline - self.clock.now()).total_seconds()
+            if reply.state is not TicketState.WORKING or remaining <= 0:
+                return reply
+            await self.clock.sleep(min(POLL_SECONDS, remaining))
 
     async def settle(self) -> None:
         """Wait until every call's worker has answered everything it was given."""

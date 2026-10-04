@@ -43,4 +43,6 @@ def test_descriptions_state_the_rules() -> None:
     assert "T3" in specs["order"].description
     assert "get_reply" in specs["ask_ceo"].description
     assert "same ticket" in specs["get_reply"].description
+    assert "never ask again" in specs["get_reply"].description
+    assert "wait_seconds" in specs["ask_ceo"].description
     assert "asks which one" in specs["meeting_minutes"].description

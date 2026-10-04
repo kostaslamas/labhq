@@ -39,6 +39,12 @@ from labhq.adapters.tmux.agents import (
     SessionIdSource,
     default_python,
 )
+from labhq.adapters.tmux.blocking import (
+    BlockingScreen,
+    blocking_screen,
+    created_by_labhq,
+    selected_line,
+)
 from labhq.adapters.tmux.environment import session_environment
 from labhq.adapters.tmux.server import TmuxServer
 from labhq.adapters.tmux.tools import TOOL_LAUNCHES, ToolServer
@@ -53,6 +59,8 @@ FINAL_SCREEN_LINES = 80
 OWN_TOOLS_SERVER = "labhq"
 AGENT_TOOLS_SERVER = "labhq-agent"
 SETTINGS_PREFIX = "LABHQ_"
+BLOCKED_REASON = "blocked_dialog"
+STALLED_REASON = "no_progress"
 
 
 class TmuxAgentConfig(BaseModel):
@@ -67,6 +75,9 @@ class TmuxAgentConfig(BaseModel):
     interrupt_settle_seconds: float = Field(default=3.0, gt=0)
     usage_settle_seconds: float = Field(default=2.0, gt=0)
     usage_timeout_seconds: float = Field(default=30.0, gt=0)
+    # A turn whose screen does not change for this long is stuck on something unseen. A
+    # working agent redraws its spinner every second, so a quiet pane is not a thinking one.
+    no_progress_seconds: float = Field(default=300.0, gt=0)
 
 
 def guard_hook_command(python: str) -> str:
@@ -124,12 +135,19 @@ class TmuxAdapter:
         clock: Clock,
         environ: Mapping[str, str] | None = None,
         python: str | None = None,
+        owned_root: Path | None = None,
     ) -> None:
         self._server = server
         self._kinds = kinds
         self._clock = clock
         self._environ = environ if environ is not None else os.environ
         self._python = python or default_python()
+        # Directories under this root were created by labhq; only there may a trust
+        # dialog be answered for the agent.
+        self._owned_root = owned_root
+        self._cwd: Path | None = None
+        # (terminal reason, message) once the run cannot go on without a person.
+        self._blocked: tuple[str, str] | None = None
         self._name: str | None = None
         self._kind: AgentKind | None = None
         self._config: TmuxAgentConfig | None = None
@@ -158,6 +176,7 @@ class TmuxAdapter:
         shutil.rmtree(run_dir, ignore_errors=True)
         run_dir.mkdir(parents=True)
         self._name, self._kind, self._config, self._run_dir = name, kind, config, run_dir
+        self._cwd = request.cwd
         argv = self._argv(kind, request, run_dir)
         await asyncio.to_thread(
             self._server.new_session,
@@ -174,6 +193,8 @@ class TmuxAdapter:
         quiet = timedelta(seconds=config.quiescence_seconds)
         settle = timedelta(seconds=config.interrupt_settle_seconds)
         replied: set[str] = set()
+        answered: set[str] = set()
+        stalled = timedelta(seconds=config.no_progress_seconds)
         while True:
             await self._clock.sleep(config.poll_seconds)
             screen = await asyncio.to_thread(self._server.capture, name)
@@ -190,9 +211,19 @@ class TmuxAdapter:
                 break
             if turn_ended(watch, kind, now, quiet):
                 break
+            if await self._answer_or_block(kind, screen, answered):
+                break
+            if now - watch.last_change_at >= stalled:
+                self._blocked = (
+                    STALLED_REASON,
+                    f"the agent showed no progress for {config.no_progress_seconds:g}s",
+                )
+                break
             if self._interrupted and quiescent(watch, now, settle):
                 break
-        async for event in self._after_turn(watch.screen, alive=not state.dead):
+        async for event in self._after_turn(
+            watch.screen, alive=not state.dead and self._blocked is None
+        ):
             yield event
         self._result = self._final_result(kind, watch, state.exit_status, state.dead)
         yield AdapterEvent(
@@ -304,6 +335,46 @@ class TmuxAdapter:
                 break
         return "\n".join(screen_delta(before, watch.screen))
 
+    async def _answer_or_block(self, kind: AgentKind, screen: str, answered: set[str]) -> bool:
+        """Answer a trust dialog of a directory labhq created; True if the run is now blocked."""
+        found = blocking_screen(kind.blocking_screens, screen)
+        if found is None or found.name in answered:
+            return False
+        if found.accept_option is not None and self._cwd is not None:
+            if created_by_labhq(self._cwd, self._owned_root):
+                answered.add(found.name)
+                if await self._choose(found, found.accept_option):
+                    return False
+                self._blocked = (
+                    BLOCKED_REASON,
+                    f"{found.reason}, and {found.accept_option!r} could not be selected",
+                )
+                return True
+            self._blocked = (
+                BLOCKED_REASON,
+                f"{found.reason}, and {self._cwd} is not a directory labhq created",
+            )
+            return True
+        self._blocked = (BLOCKED_REASON, found.reason)
+        return True
+
+    async def _choose(self, dialog: BlockingScreen, option: str) -> bool:
+        """Move the cursor to `option`, looking at the pane after every press, then confirm.
+
+        Enter is sent only with the cursor on the option: on any other option it would
+        answer the dialog the wrong way.
+        """
+        name, _, _ = self._started()
+        for _ in range(dialog.max_presses + 1):
+            screen = await asyncio.to_thread(self._server.capture, name)
+            line = selected_line(screen)
+            if line is not None and option in line:
+                await asyncio.to_thread(self._server.send_keys, name, dialog.confirm_key)
+                return True
+            await asyncio.to_thread(self._server.send_keys, name, dialog.select_key)
+            await self._clock.sleep(self._started()[2].poll_seconds)
+        return False
+
     def _final_result(
         self, kind: AgentKind, watch: Watch, exit_status: int | None, dead: bool
     ) -> AdapterResult:
@@ -316,6 +387,16 @@ class TmuxAdapter:
                 session_id=stored,
                 terminal_reason=INTERRUPT_REASON,
                 num_turns=1,
+            )
+        if self._blocked is not None:
+            terminal_reason, message = self._blocked
+            return AdapterResult(
+                subtype="error_blocked",
+                is_error=True,
+                session_id=stored,
+                terminal_reason=terminal_reason,
+                num_turns=1,
+                errors=[message],
             )
         failed = dead and exit_status not in (0, None)
         errors = [f"the agent exited with status {exit_status}"] if failed else []
