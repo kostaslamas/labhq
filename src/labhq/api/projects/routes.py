@@ -14,10 +14,10 @@ from labhq.api.projects.queries import (
     task_counts,
     team_tree,
 )
-from labhq.api.projects.schemas import BudgetPolicy, ProjectCard, ProjectView
+from labhq.api.projects.schemas import BudgetPolicy, ProjectCard, ProjectRef, ProjectView
 from labhq.budgets import get_budget_settings, period_start
 from labhq.db.enums import TaskStatus
-from labhq.db.models import CostEvent, Project
+from labhq.db.models import CostEvent, Project, Task
 
 NOT_FOUND_CODE = "project_not_found"
 
@@ -53,6 +53,15 @@ async def projects_list(
             )
         )
     return Page(items=cards, next_cursor=cursor)
+
+
+@router.get("/of-task/{task_id}")
+async def projects_of_task(task_id: int, session: SessionDep) -> ProjectRef:
+    """The project that owns a task, so a link to a task can open its project."""
+    project_id = await session.scalar(select(Task.project_id).where(Task.id == task_id))
+    if project_id is None:
+        raise ApiError(404, "task_not_found", "There is no task with that id.")
+    return ProjectRef(project_id=project_id)
 
 
 @router.get("/{project_id}")

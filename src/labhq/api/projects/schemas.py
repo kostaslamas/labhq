@@ -75,3 +75,7 @@ class ProjectView(BaseModel):
     # The latest deliverables, newest first; `deliverables_total` counts all done tasks.
     deliverables: list[Deliverable]
     deliverables_total: int
+
+
+class ProjectRef(BaseModel):
+    project_id: int

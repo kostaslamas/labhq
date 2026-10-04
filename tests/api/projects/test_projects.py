@@ -316,3 +316,18 @@ async def test_projects_need_a_session(client: httpx.AsyncClient) -> None:
     response = await client.get("/api/projects", headers={OWNER_HEADER: ""})
 
     assert response.status_code == 401
+
+
+async def test_a_task_id_finds_its_project(
+    client: httpx.AsyncClient, session: AsyncSession, clock: FakeClock
+) -> None:
+    project = await add_project(session, clock, "atlas")
+    task = await add_task(session, clock, project, "Something")
+    await session.commit()
+
+    found = await client.get(f"/api/projects/of-task/{task.id}")
+    missing = await client.get("/api/projects/of-task/999")
+
+    assert found.json() == {"project_id": project.id}
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "task_not_found"
