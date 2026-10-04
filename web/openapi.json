@@ -124,7 +124,7 @@
           "project": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/ProjectRef"
+                "$ref": "#/components/schemas/labhq__api__approvals__schemas__ProjectRef"
               },
               {
                 "type": "null"
@@ -633,21 +633,6 @@
         "title": "ProjectCard",
         "type": "object"
       },
-      "ProjectRef": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "integer"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": ["id", "name"],
-        "title": "ProjectRef",
-        "type": "object"
-      },
       "ProjectStatus": {
         "enum": ["active", "paused", "archived"],
         "title": "ProjectStatus",
@@ -939,6 +924,32 @@
         "enum": ["pending", "dispatched", "refused", "cancelled"],
         "title": "WakeupStatus",
         "type": "string"
+      },
+      "labhq__api__approvals__schemas__ProjectRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": ["id", "name"],
+        "title": "ProjectRef",
+        "type": "object"
+      },
+      "labhq__api__projects__schemas__ProjectRef": {
+        "properties": {
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          }
+        },
+        "required": ["project_id"],
+        "title": "ProjectRef",
+        "type": "object"
       }
     }
   },
@@ -1642,6 +1653,47 @@
           }
         },
         "summary": "Projects List",
+        "tags": ["projects"]
+      }
+    },
+    "/api/projects/of-task/{task_id}": {
+      "get": {
+        "description": "The project that owns a task, so a link to a task can open its project.",
+        "operationId": "projects_of_task",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/labhq__api__projects__schemas__ProjectRef"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Projects Of Task",
         "tags": ["projects"]
       }
     },
