@@ -72,7 +72,7 @@ test('a seeded standup shows its agenda, conversation, and the minutes link to t
   const item = page.getByTestId('action-items').locator('li')
   await expect(item).toContainText('Add a HELLO file')
   await item.getByRole('link').click()
-  await expect(page).toHaveURL(/\/projects\?task=\d+$/)
+  await expect(page).toHaveURL(/\/projects\/\d+$/)
 })
 
 test('an entry written by another process appears without a refresh', async ({
