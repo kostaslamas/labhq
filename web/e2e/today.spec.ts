@@ -80,30 +80,33 @@ function write(action: 'deliver' | 'ask' | 'cancel' | 'incident' | 'resolve', id
 test.describe.configure({ mode: 'serial' })
 
 let incident = 0
+let mine = 0
 test.afterAll(() => {
   if (incident) write('resolve', incident)
+  if (mine) write('cancel', mine)
 })
+
+const DELIVERED = 'Write the README'
 
 test('Today shows what was delivered and what needs you, never agents at work', async ({
   signedInPage: page,
 }) => {
-  // The second seeded task has no run; delivering it leaves the first task's spend without output.
+  // Other specs share this database: every assertion below counts only what this one wrote.
   write('deliver', seedSummary().tasks[1]!)
   incident = Number(write('incident', 0))
+  mine = Number(write('ask', 0))
   await page.goto('/today')
 
-  await expect(page.getByTestId('deliverable')).toHaveCount(1)
-  await expect(page.getByTestId('deliverable')).toContainText('Write the README')
-  await expect(page.getByTestId('deliverable')).toContainText('labhq/task-')
-  await expect(page.getByTestId('need-approval')).toHaveCount(2)
-  await expect(page.getByTestId('need-question')).toHaveCount(1)
-  await expect(page.getByTestId('need-incident')).toHaveCount(1)
+  const delivered = page.getByTestId('deliverable').filter({ hasText: DELIVERED })
+  await expect(delivered).toHaveCount(1)
+  await expect(delivered).toContainText('labhq/task-')
+  await expect(page.getByTestId('need-approval').filter({ hasText: `#${mine}` })).toHaveCount(1)
+  await expect(page.getByTestId('need-question').first()).toBeVisible()
+  const ownIncident = page.getByTestId('need-incident').filter({ hasText: 'Spec rule' })
+  await expect(ownIncident).toHaveCount(1)
   // An open incident leads to the rule that raised it.
-  await expect(page.getByTestId('need-incident').getByRole('link')).toHaveAttribute(
-    'href',
-    '/projects/infra/rules',
-  )
-  await expect(page.getByTestId('spend-warning')).toHaveCount(1)
+  await expect(ownIncident.getByRole('link')).toHaveAttribute('href', /\/rules$/)
+  await expect(page.getByTestId('spend-warning').first()).toBeVisible()
 
   // Results, not activity (plan §8.2.1): no running-agent list and no "working" label.
   const body = page.locator('main')
@@ -111,8 +114,9 @@ test('Today shows what was delivered and what needs you, never agents at work', 
   await expect(body).not.toContainText(/agents? (at work|running)/i)
   await expect(page.locator('[data-state="working"]')).toHaveCount(0)
 
-  await expect(page).toHaveScreenshot('today.png', {
-    fullPage: true,
+  // Only the delivered list is pixel-compared: it is what this spec wrote. The page's height
+  // and the other lists depend on what the specs before it left in the shared seed.
+  await expect(page.getByTestId('delivered')).toHaveScreenshot('today-delivered.png', {
     mask: [page.locator('time')],
     maxDiffPixelRatio: 0.02,
   })
@@ -120,8 +124,7 @@ test('Today shows what was delivered and what needs you, never agents at work', 
 
 test('spend without a deliverable is a warning with its amount', async ({ signedInPage: page }) => {
   await page.goto('/today')
-  const warning = page.getByTestId('spend-warning')
-  await expect(warning).toHaveCount(1)
+  const warning = page.getByTestId('spend-warning').first()
   await expect(warning).toContainText('delivered nothing')
   await expect(warning.locator('[data-mono]')).toHaveText(/^\$\d[\d,]*\.\d{2,6}$/)
 })
@@ -132,7 +135,6 @@ test('a new pending approval raises the needs-you count without a refresh', asyn
   await page.goto('/today')
   const count = page.getByTestId('needs-count')
   const approvals = page.getByTestId('need-approval')
-  // Other specs share the seeded database, so count from what is there, not a fixed number.
   await expect(count).toHaveText(/^\d+$/)
   const before = Number(await count.textContent())
   const approvalsBefore = await approvals.count()
@@ -141,6 +143,7 @@ test('a new pending approval raises the needs-you count without a refresh', asyn
   try {
     await expect(count).toHaveText(String(before + 1))
     await expect(approvals).toHaveCount(approvalsBefore + 1)
+    await expect(approvals.filter({ hasText: `#${approval}` })).toHaveCount(1)
   } finally {
     write('cancel', approval)
   }
@@ -150,7 +153,7 @@ test('a new pending approval raises the needs-you count without a refresh', asyn
 test('the page does not scroll sideways at 1280 by 800', async ({ signedInPage: page }) => {
   await page.setViewportSize({ width: 1280, height: 800 })
   await page.goto('/today')
-  await expect(page.getByTestId('deliverable')).toHaveCount(1)
+  await expect(page.getByTestId('deliverable').filter({ hasText: DELIVERED })).toHaveCount(1)
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   )
