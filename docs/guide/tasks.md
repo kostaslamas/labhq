@@ -25,7 +25,9 @@ Returning a task wakes its manager with your feedback. Only your `task accept` c
 root task. Merge and push remain separate heavy actions that need their own approval.
 
 If an assigned agent ends a turn without handing off or reporting a blocker, the scheduler
-gives it another turn. After `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` turns (three by default),
-the task is marked blocked and sent to its reviewer. A reviewer that repeatedly ends a turn
-without deciding triggers an owner notification. Budget and agent approvals can still pause
+gives it another turn, and keeps doing so until the task is resolved: the CEO and the
+managers do not stop on their own. Only the agent's budget and the plan-usage cap stop it.
+Set `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` to a positive number to stop after that many
+silent turns instead: the task is then marked blocked and sent to its reviewer, and a
+reviewer that keeps ending turns without deciding triggers an owner notification. Budget and agent approvals can still pause
 work; the task stays visible instead of being called done.

@@ -15,6 +15,11 @@ PARKED = frozenset(
 TERMINAL = frozenset({RunStatus.SUCCEEDED, RunStatus.FAILED, RunStatus.TIMED_OUT})
 
 
+def _limit_reached(attempts: int, limit: int) -> bool:
+    """0 means no limit: the agent keeps getting turns until the task is resolved."""
+    return limit > 0 and attempts >= limit
+
+
 async def continue_task(
     db: AsyncSession, clock: Clock, run_id: int, *, max_unreported_runs: int
 ) -> None:
@@ -36,7 +41,7 @@ async def continue_task(
     if await _pending(db, run):
         return
     attempts = await _attempts(db, run, task)
-    if attempts >= max_unreported_runs:
+    if _limit_reached(attempts, max_unreported_runs):
         from labhq.work.progress import report_task, reviewer
         from labhq.work.service import WorkError
 
@@ -126,7 +131,7 @@ async def _continue_review(
     if acted is not None or await _pending(db, run):
         return
     attempts = await _attempts(db, run, task)
-    if attempts >= max_unreported_runs:
+    if _limit_reached(attempts, max_unreported_runs):
         await notify_owner(
             db,
             kind="task_review_stalled",

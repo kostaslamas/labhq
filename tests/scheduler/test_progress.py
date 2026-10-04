@@ -99,3 +99,37 @@ async def test_a_reviewer_who_ends_without_deciding_is_retried_then_escalated(wo
     async with world.sessions() as db:
         notices = list(await db.scalars(select(Notification)))
     assert len(notices) == 1
+
+
+async def test_without_a_limit_an_unreported_task_keeps_getting_turns(world: World) -> None:
+    async with world.sessions() as db:
+        task = await db.get_one(Task, world.task_id)
+        task.assignee_id = world.agent_id
+        task.status = TaskStatus.IN_PROGRESS
+        await db.commit()
+
+    for _ in range(10):
+        async with world.sessions() as db:
+            for wakeup in await db.scalars(select(WakeupRequest)):
+                wakeup.status = WakeupStatus.DISPATCHED
+            run = Run(
+                agent_id=world.agent_id,
+                task_id=world.task_id,
+                adapter="fake",
+                status=RunStatus.SUCCEEDED,
+                created_at=world.clock.now(),
+                started_at=world.clock.now(),
+            )
+            db.add(run)
+            await db.flush()
+            await continue_task(db, world.clock, run.id, max_unreported_runs=0)
+            await db.commit()
+        task = await get_task(world, world.task_id)
+        assert task.status is TaskStatus.IN_PROGRESS
+        async with world.sessions() as db:
+            pending = list(
+                await db.scalars(
+                    select(WakeupRequest).where(WakeupRequest.status == WakeupStatus.PENDING)
+                )
+            )
+        assert any(w.agent_id == world.agent_id and w.task_id == world.task_id for w in pending)

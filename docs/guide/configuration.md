@@ -319,7 +319,7 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_HEARTBEAT_LIMIT_SECONDS` | `int` | `300` | A run silent for this long has lost its owner. The scheduler beats live runs on every tick, so the limit only has to outlast a few ticks, not a long tool call. |
 | `LABHQ_SCHEDULER_INTERRUPT_GRACE_SECONDS` | `int` | `30` | Time a timed-out run gets to honour its interrupt before it is abandoned. |
 | `LABHQ_SCHEDULER_TICK_SECONDS` | `float` | `5.0` |  |
-| `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `3` | An agent that ends without a handoff gets another turn, then escalates. |
+| `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `0` | An agent that ends a turn without a handoff gets another turn. 0 keeps it going until the task is resolved (the owner's choice); its budget and the plan-usage cap still stop it. A positive limit marks the task blocked and sends it to the reviewer instead. |
 
 ## `labhq.settings.Settings`
 
