@@ -14,6 +14,12 @@ from labhq.settings import sqlite_url
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
+@pytest.fixture(autouse=True)
+def isolated_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test reads the developer's own data directory (a persisted public URL, say)."""
+    monkeypatch.setenv("LABHQ_DATA_DIR", str(tmp_path / "isolated-data"))
+
+
 @pytest.fixture
 def clock() -> FakeClock:
     return FakeClock(datetime(2026, 10, 2, 9, 0, tzinfo=UTC))

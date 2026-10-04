@@ -1,11 +1,15 @@
 """`labhq serve`: the API, the MCP server and the background loops in one process."""
 
+from pathlib import Path
 from typing import Annotated
 
 import httpx
 import typer
 import uvicorn
+from pydantic import ValidationError
 
+from labhq.auth.public_url import load_public_url, store_public_url
+from labhq.auth.settings import AuthSettings
 from labhq.callcenter.calls import SchedulerInterrupter
 from labhq.cli.context import Context, execute, fail
 from labhq.cli.engine import Engine
@@ -18,9 +22,33 @@ from labhq.notify import Dispatcher, NotifyError, NotifySettings, build_notifier
 HTTP_TIMEOUT_SECONDS = 10.0
 
 
+def remember_public_url(data_dir: Path, given: str | None) -> None:
+    """Persist the address from `--public-url`, or from `LABHQ_PUBLIC_URL` when set."""
+    try:
+        settings = AuthSettings(public_url=given) if given else AuthSettings()
+    except ValidationError as error:
+        fail(f"--public-url is not usable: {error.errors()[0]['msg']}")
+    if settings.public_url is None or settings.public_url == load_public_url(data_dir):
+        return
+    try:
+        store_public_url(data_dir, settings.public_url)
+    except OSError as error:
+        fail(f"cannot store the public URL: {error.strerror or error}")
+
+
 def serve(
     host: Annotated[str, typer.Option(help="Interface to bind.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8787,
+    public_url: Annotated[
+        str | None,
+        typer.Option(
+            help=(
+                "The address you reach labhq on from outside, for example "
+                "https://labhq.example.org. "
+                "Kept in the data directory, so `labhq passkey enroll` links to it."
+            )
+        ),
+    ] = None,
 ) -> None:
     """Run the API and MCP server, the scheduler, notifications and status ingestion until stopped.
 
@@ -41,6 +69,7 @@ def serve(
     )
 
     async def body(context: Context) -> None:
+        remember_public_url(context.settings.data_dir, public_url)
         secret = ensure_token(context.settings.data_dir)
         settings = NotifySettings()
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT_SECONDS) as client:

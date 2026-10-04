@@ -16,7 +16,12 @@ passkey_app = typer.Typer(help="Passkeys for the web UI.", no_args_is_help=True)
 def enroll(
     url: Annotated[
         str | None,
-        typer.Option(help="Address the browser will use. Default: LABHQ_PUBLIC_URL or localhost."),
+        typer.Option(
+            help=(
+                "Address the browser will use. Default: LABHQ_PUBLIC_URL, else the address "
+                "`labhq serve` keeps, else localhost."
+            )
+        ),
     ] = None,
 ) -> None:
     """Print a single-use link that enrolls a passkey on the address it names.
