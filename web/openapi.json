@@ -265,6 +265,50 @@
         "title": "Budget",
         "type": "object"
       },
+      "BudgetNotice": {
+        "description": "A budget that crossed its warning line in the current period.",
+        "properties": {
+          "budget_micros": {
+            "title": "Budget Micros",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/BudgetScope"
+          },
+          "scope_id": {
+            "title": "Scope Id",
+            "type": "integer"
+          },
+          "spent_micros": {
+            "title": "Spent Micros",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "scope",
+          "scope_id",
+          "name",
+          "spent_micros",
+          "budget_micros",
+          "created_at"
+        ],
+        "title": "BudgetNotice",
+        "type": "object"
+      },
       "BudgetPolicy": {
         "properties": {
           "period_start": {
@@ -284,6 +328,11 @@
         "required": ["warn_percent", "stop_percent", "period_start"],
         "title": "BudgetPolicy",
         "type": "object"
+      },
+      "BudgetScope": {
+        "enum": ["agent", "project"],
+        "title": "BudgetScope",
+        "type": "string"
       },
       "CallRequestStatus": {
         "enum": ["pending", "answered", "failed", "expired"],
@@ -384,42 +433,6 @@
         "title": "DecisionBody",
         "type": "object"
       },
-      "Deliverable": {
-        "description": "A done task and what it produced.",
-        "properties": {
-          "branch": {
-            "title": "Branch",
-            "type": "string"
-          },
-          "commits": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Commits",
-            "type": "array"
-          },
-          "cost_micros": {
-            "title": "Cost Micros",
-            "type": "integer"
-          },
-          "done_at": {
-            "format": "date-time",
-            "title": "Done At",
-            "type": "string"
-          },
-          "task_id": {
-            "title": "Task Id",
-            "type": "integer"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": ["task_id", "title", "branch", "commits", "cost_micros", "done_at"],
-        "title": "Deliverable",
-        "type": "object"
-      },
       "EnrollOptionsBody": {
         "properties": {
           "token": {
@@ -514,6 +527,46 @@
         "title": "ErrorEnvelope",
         "type": "object"
       },
+      "ExecutedApproval": {
+        "properties": {
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "commit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Commit"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": ["id", "type", "status", "branch", "commit"],
+        "title": "ExecutedApproval",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "version": {
@@ -540,10 +593,76 @@
         "title": "MeetingStatus",
         "type": "string"
       },
+      "NeedsYou": {
+        "properties": {
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/PendingApproval"
+            },
+            "title": "Approvals",
+            "type": "array"
+          },
+          "budget_warnings": {
+            "items": {
+              "$ref": "#/components/schemas/BudgetNotice"
+            },
+            "title": "Budget Warnings",
+            "type": "array"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "incidents": {
+            "items": {
+              "$ref": "#/components/schemas/OpenIncident"
+            },
+            "title": "Incidents",
+            "type": "array"
+          },
+          "questions": {
+            "items": {
+              "$ref": "#/components/schemas/PendingQuestion"
+            },
+            "title": "Questions",
+            "type": "array"
+          }
+        },
+        "required": ["count", "approvals", "questions", "incidents", "budget_warnings"],
+        "title": "NeedsYou",
+        "type": "object"
+      },
       "NotificationStatus": {
         "enum": ["pending", "sent", "failed"],
         "title": "NotificationStatus",
         "type": "string"
+      },
+      "OpenIncident": {
+        "properties": {
+          "host_name": {
+            "title": "Host Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "opened_at": {
+            "format": "date-time",
+            "title": "Opened At",
+            "type": "string"
+          },
+          "rule_name": {
+            "title": "Rule Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/IncidentStatus"
+          }
+        },
+        "required": ["id", "status", "rule_name", "host_name", "opened_at"],
+        "title": "OpenIncident",
+        "type": "object"
       },
       "Page_ApprovalOut_": {
         "properties": {
@@ -595,6 +714,143 @@
         "title": "Page[ProjectCard]",
         "type": "object"
       },
+      "PendingApproval": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          },
+          "risk_class": {
+            "$ref": "#/components/schemas/RiskClass"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ApprovalStatus"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Title"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "risk_class",
+          "status",
+          "created_at",
+          "task_id",
+          "task_title",
+          "project_id",
+          "project_name"
+        ],
+        "title": "PendingApproval",
+        "type": "object"
+      },
+      "PendingQuestion": {
+        "properties": {
+          "agent_title": {
+            "title": "Agent Title",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionStatus"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "question",
+          "agent_title",
+          "task_id",
+          "project_id",
+          "created_at"
+        ],
+        "title": "PendingQuestion",
+        "type": "object"
+      },
       "ProjectCard": {
         "properties": {
           "budget": {
@@ -607,7 +863,7 @@
           "latest_deliverable": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/Deliverable"
+                "$ref": "#/components/schemas/labhq__api__projects__schemas__Deliverable"
               },
               {
                 "type": "null"
@@ -645,7 +901,7 @@
           },
           "deliverables": {
             "items": {
-              "$ref": "#/components/schemas/Deliverable"
+              "$ref": "#/components/schemas/labhq__api__projects__schemas__Deliverable"
             },
             "title": "Deliverables",
             "type": "array"
@@ -711,6 +967,47 @@
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
         "title": "RunStatus",
         "type": "string"
+      },
+      "SpendWithoutOutput": {
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "integer"
+          },
+          "agent_title": {
+            "title": "Agent Title",
+            "type": "string"
+          },
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "project_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Name"
+          }
+        },
+        "required": ["agent_id", "agent_title", "project_id", "project_name", "cost_micros"],
+        "title": "SpendWithoutOutput",
+        "type": "object"
       },
       "StepUpBody": {
         "properties": {
@@ -792,6 +1089,40 @@
         },
         "required": ["id", "role", "title", "adapter", "status", "budget", "reports"],
         "title": "TeamMember",
+        "type": "object"
+      },
+      "Today": {
+        "properties": {
+          "deliverables": {
+            "items": {
+              "$ref": "#/components/schemas/labhq__api__today__schemas__Deliverable"
+            },
+            "title": "Deliverables",
+            "type": "array"
+          },
+          "needs_you": {
+            "$ref": "#/components/schemas/NeedsYou"
+          },
+          "since": {
+            "format": "date-time",
+            "title": "Since",
+            "type": "string"
+          },
+          "spend_without_output": {
+            "items": {
+              "$ref": "#/components/schemas/SpendWithoutOutput"
+            },
+            "title": "Spend Without Output",
+            "type": "array"
+          },
+          "until": {
+            "format": "date-time",
+            "title": "Until",
+            "type": "string"
+          }
+        },
+        "required": ["since", "until", "deliverables", "needs_you", "spend_without_output"],
+        "title": "Today",
         "type": "object"
       },
       "Vocabulary": {
@@ -940,6 +1271,42 @@
         "title": "ProjectRef",
         "type": "object"
       },
+      "labhq__api__projects__schemas__Deliverable": {
+        "description": "A done task and what it produced.",
+        "properties": {
+          "branch": {
+            "title": "Branch",
+            "type": "string"
+          },
+          "commits": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Commits",
+            "type": "array"
+          },
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
+          "done_at": {
+            "format": "date-time",
+            "title": "Done At",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["task_id", "title", "branch", "commits", "cost_micros", "done_at"],
+        "title": "Deliverable",
+        "type": "object"
+      },
       "labhq__api__projects__schemas__ProjectRef": {
         "properties": {
           "project_id": {
@@ -949,6 +1316,70 @@
         },
         "required": ["project_id"],
         "title": "ProjectRef",
+        "type": "object"
+      },
+      "labhq__api__today__schemas__Deliverable": {
+        "properties": {
+          "approvals": {
+            "items": {
+              "$ref": "#/components/schemas/ExecutedApproval"
+            },
+            "title": "Approvals",
+            "type": "array"
+          },
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "commit_count": {
+            "title": "Commit Count",
+            "type": "integer"
+          },
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
+          "finished_at": {
+            "format": "date-time",
+            "title": "Finished At",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "title",
+          "project_id",
+          "project_name",
+          "finished_at",
+          "branch",
+          "commit_count",
+          "approvals",
+          "cost_micros"
+        ],
+        "title": "Deliverable",
         "type": "object"
       }
     }
@@ -1736,6 +2167,57 @@
         },
         "summary": "Projects Get",
         "tags": ["projects"]
+      }
+    },
+    "/api/today": {
+      "get": {
+        "description": "What was delivered since `since`, and what needs the owner now.",
+        "operationId": "today_get",
+        "parameters": [
+          {
+            "description": "Start of the window; default: the last 24 hours.",
+            "in": "query",
+            "name": "since",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Start of the window; default: the last 24 hours.",
+              "title": "Since"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Today"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Today Get",
+        "tags": ["today"]
       }
     },
     "/api/vocabulary": {

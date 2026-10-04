@@ -340,6 +340,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/today': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Today Get
+     * @description What was delivered since `since`, and what needs the owner now.
+     */
+    get: operations['today_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/vocabulary': {
     parameters: {
       query?: never
@@ -453,6 +473,28 @@ export interface components {
       /** Used Percent */
       used_percent: number | null
     }
+    /**
+     * BudgetNotice
+     * @description A budget that crossed its warning line in the current period.
+     */
+    BudgetNotice: {
+      /** Budget Micros */
+      budget_micros: number
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Name */
+      name: string
+      scope: components['schemas']['BudgetScope']
+      /** Scope Id */
+      scope_id: number
+      /** Spent Micros */
+      spent_micros: number
+    }
     /** BudgetPolicy */
     BudgetPolicy: {
       /**
@@ -465,6 +507,11 @@ export interface components {
       /** Warn Percent */
       warn_percent: number
     }
+    /**
+     * BudgetScope
+     * @enum {string}
+     */
+    BudgetScope: 'agent' | 'project'
     /**
      * CallRequestStatus
      * @enum {string}
@@ -517,27 +564,6 @@ export interface components {
       /** Note */
       note?: string | null
     }
-    /**
-     * Deliverable
-     * @description A done task and what it produced.
-     */
-    Deliverable: {
-      /** Branch */
-      branch: string
-      /** Commits */
-      commits: string[]
-      /** Cost Micros */
-      cost_micros: number
-      /**
-       * Done At
-       * Format: date-time
-       */
-      done_at: string
-      /** Task Id */
-      task_id: number
-      /** Title */
-      title: string
-    }
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
       /** Token */
@@ -589,6 +615,18 @@ export interface components {
     ErrorEnvelope: {
       error: components['schemas']['ErrorBody']
     }
+    /** ExecutedApproval */
+    ExecutedApproval: {
+      /** Branch */
+      branch: string | null
+      /** Commit */
+      commit: string | null
+      /** Id */
+      id: number
+      status: components['schemas']['ApprovalStatus']
+      /** Type */
+      type: string
+    }
     /** Health */
     Health: {
       /** Version */
@@ -609,11 +647,39 @@ export interface components {
      * @enum {string}
      */
     MeetingStatus: 'requested' | 'running' | 'ended' | 'failed' | 'cancelled'
+    /** NeedsYou */
+    NeedsYou: {
+      /** Approvals */
+      approvals: components['schemas']['PendingApproval'][]
+      /** Budget Warnings */
+      budget_warnings: components['schemas']['BudgetNotice'][]
+      /** Count */
+      count: number
+      /** Incidents */
+      incidents: components['schemas']['OpenIncident'][]
+      /** Questions */
+      questions: components['schemas']['PendingQuestion'][]
+    }
     /**
      * NotificationStatus
      * @enum {string}
      */
     NotificationStatus: 'pending' | 'sent' | 'failed'
+    /** OpenIncident */
+    OpenIncident: {
+      /** Host Name */
+      host_name: string
+      /** Id */
+      id: number
+      /**
+       * Opened At
+       * Format: date-time
+       */
+      opened_at: string
+      /** Rule Name */
+      rule_name: string
+      status: components['schemas']['IncidentStatus']
+    }
     /** Page[ApprovalOut] */
     Page_ApprovalOut_: {
       /** Items */
@@ -628,12 +694,53 @@ export interface components {
       /** Next Cursor */
       next_cursor: string | null
     }
+    /** PendingApproval */
+    PendingApproval: {
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Project Id */
+      project_id: number | null
+      /** Project Name */
+      project_name: string | null
+      risk_class: components['schemas']['RiskClass']
+      status: components['schemas']['ApprovalStatus']
+      /** Task Id */
+      task_id: number | null
+      /** Task Title */
+      task_title: string | null
+      /** Type */
+      type: string
+    }
+    /** PendingQuestion */
+    PendingQuestion: {
+      /** Agent Title */
+      agent_title: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Project Id */
+      project_id: number | null
+      /** Question */
+      question: string
+      status: components['schemas']['QuestionStatus']
+      /** Task Id */
+      task_id: number | null
+    }
     /** ProjectCard */
     ProjectCard: {
       budget: components['schemas']['Budget']
       /** Id */
       id: number
-      latest_deliverable: components['schemas']['Deliverable'] | null
+      latest_deliverable: components['schemas']['labhq__api__projects__schemas__Deliverable'] | null
       /** Name */
       name: string
       /** Open Tasks */
@@ -649,7 +756,7 @@ export interface components {
     ProjectView: {
       budget: components['schemas']['Budget']
       /** Deliverables */
-      deliverables: components['schemas']['Deliverable'][]
+      deliverables: components['schemas']['labhq__api__projects__schemas__Deliverable'][]
       /** Deliverables Total */
       deliverables_total: number
       /** Id */
@@ -678,6 +785,19 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** SpendWithoutOutput */
+    SpendWithoutOutput: {
+      /** Agent Id */
+      agent_id: number
+      /** Agent Title */
+      agent_title: string
+      /** Cost Micros */
+      cost_micros: number
+      /** Project Id */
+      project_id: number | null
+      /** Project Name */
+      project_name: string | null
+    }
     /** StepUpBody */
     StepUpBody: {
       /** Purpose */
@@ -715,6 +835,24 @@ export interface components {
       status: components['schemas']['AgentStatus']
       /** Title */
       title: string
+    }
+    /** Today */
+    Today: {
+      /** Deliverables */
+      deliverables: components['schemas']['labhq__api__today__schemas__Deliverable'][]
+      needs_you: components['schemas']['NeedsYou']
+      /**
+       * Since
+       * Format: date-time
+       */
+      since: string
+      /** Spend Without Output */
+      spend_without_output: components['schemas']['SpendWithoutOutput'][]
+      /**
+       * Until
+       * Format: date-time
+       */
+      until: string
     }
     /**
      * Vocabulary
@@ -799,10 +937,55 @@ export interface components {
       /** Name */
       name: string
     }
+    /**
+     * Deliverable
+     * @description A done task and what it produced.
+     */
+    labhq__api__projects__schemas__Deliverable: {
+      /** Branch */
+      branch: string
+      /** Commits */
+      commits: string[]
+      /** Cost Micros */
+      cost_micros: number
+      /**
+       * Done At
+       * Format: date-time
+       */
+      done_at: string
+      /** Task Id */
+      task_id: number
+      /** Title */
+      title: string
+    }
     /** ProjectRef */
     labhq__api__projects__schemas__ProjectRef: {
       /** Project Id */
       project_id: number
+    }
+    /** Deliverable */
+    labhq__api__today__schemas__Deliverable: {
+      /** Approvals */
+      approvals: components['schemas']['ExecutedApproval'][]
+      /** Branch */
+      branch: string | null
+      /** Commit Count */
+      commit_count: number
+      /** Cost Micros */
+      cost_micros: number
+      /**
+       * Finished At
+       * Format: date-time
+       */
+      finished_at: string
+      /** Project Id */
+      project_id: number
+      /** Project Name */
+      project_name: string
+      /** Task Id */
+      task_id: number
+      /** Title */
+      title: string
     }
   }
   responses: never
@@ -1381,6 +1564,38 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ProjectView']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  today_get: {
+    parameters: {
+      query?: {
+        /** @description Start of the window; default: the last 24 hours. */
+        since?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Today']
         }
       }
       /** @description Error */
