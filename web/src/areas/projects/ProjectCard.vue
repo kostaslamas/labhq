@@ -29,6 +29,15 @@ const { t } = useI18n()
       <StatusBadge :state="uiState('project_status', card.status)" />
     </div>
 
+    <RouterLink
+      v-if="card.name === 'infra'"
+      :to="{ name: 'rules' }"
+      class="text-sm text-muted underline hover:text-foreground"
+      data-testid="rules-link"
+    >
+      {{ t('projects.rulesLink') }}
+    </RouterLink>
+
     <BudgetMeter :budget="card.budget" />
 
     <section class="flex flex-col gap-1.5">

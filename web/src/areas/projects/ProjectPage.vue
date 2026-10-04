@@ -69,6 +69,14 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
       <header class="flex flex-wrap items-center gap-3">
         <h1 class="min-w-0 break-words text-2xl font-semibold tracking-wide">{{ view.name }}</h1>
         <StatusBadge :state="uiState('project_status', view.status)" />
+        <RouterLink
+          v-if="view.name === 'infra'"
+          :to="{ name: 'rules' }"
+          class="text-sm text-muted underline hover:text-foreground"
+          data-testid="rules-link"
+        >
+          {{ t('projects.rulesLink') }}
+        </RouterLink>
       </header>
 
       <section class="glass flex flex-col gap-3 rounded-xl border border-line p-5">

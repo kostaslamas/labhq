@@ -46,5 +46,6 @@
     "collapseAll": "Collapse all",
     "expand": "Show who reports to {name}",
     "collapse": "Hide who reports to {name}"
-  }
+  },
+  "rulesLink": "Health rules"
 }
