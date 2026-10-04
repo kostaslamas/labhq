@@ -98,9 +98,14 @@ def test_claude_code_starts_with_an_assigned_session_and_its_settings(tmp_path: 
 
 
 def test_a_stored_session_of_the_same_kind_is_resumed(tmp_path: Path) -> None:
+    assert "--yolo" in _argv("codex", None, tmp_path)
+    continuation = default_kinds.get("codex").continue_
+    assert continuation is not None and "--yolo" in continuation
     argv = _argv("codex", "codex:0199a213", tmp_path)
     assert argv[0] == "codex"
     assert argv[1] == "-c"
+    assert "--yolo" in argv
+    assert "--dangerously-bypass-approvals-and-sandbox" not in argv
     assert argv[argv.index("resume") :][-4:] == ["--no-alt-screen", "--", "0199a213", "Fix it"]
     assert "--resume" in _argv("gemini", "gemini:abc", tmp_path)
     assert "--restore-chat-history" in _argv("aider", "aider:.aider.chat.history.md", tmp_path)

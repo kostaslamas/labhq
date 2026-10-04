@@ -265,9 +265,9 @@ CLAUDE_CODE = AgentKind(
 # Paths below are in openai/codex at main 86a54b05, checked 2026-10-03. The contract runs
 # against tests/adapters/fake_codex.py; docs/checks/codex-adapter.md runs it for real.
 CODEX_FLAGS = (
-    # codex-rs/utils/cli/src/shared_options.rs: no approvals, no sandbox; labhq's worktree,
+    # Codex's --yolo aliases bypassing approvals and the sandbox; labhq's worktree,
     # push URL and environment are the boundary instead (ADR 0003).
-    "--dangerously-bypass-approvals-and-sandbox",
+    "--yolo",
     # Same file: run the session-flag hooks of `codex_config` without persisted trust.
     "--dangerously-bypass-hook-trust",
     # codex-rs/tui/src/cli.rs: inline mode keeps the transcript in the pane's scrollback.
