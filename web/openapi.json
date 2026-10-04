@@ -393,6 +393,64 @@
         "title": "AuthStatus",
         "type": "object"
       },
+      "BrowserFolder": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": ["name", "path"],
+        "title": "BrowserFolder",
+        "type": "object"
+      },
+      "BrowserListing": {
+        "properties": {
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/BrowserFolder"
+            },
+            "title": "Folders",
+            "type": "array"
+          },
+          "parent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent"
+          },
+          "path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path"
+          },
+          "roots": {
+            "items": {
+              "$ref": "#/components/schemas/BrowserFolder"
+            },
+            "title": "Roots",
+            "type": "array"
+          }
+        },
+        "required": ["roots", "path", "parent", "folders"],
+        "title": "BrowserListing",
+        "type": "object"
+      },
       "Budget": {
         "description": "One budget level as `labhq.budgets` reads it, for the current period.",
         "properties": {
@@ -3267,6 +3325,55 @@
         },
         "summary": "Project Agents Create",
         "tags": ["authoring"]
+      }
+    },
+    "/api/repository-browser": {
+      "get": {
+        "description": "List visible directories only; the create route still validates the chosen repo.",
+        "operationId": "repository_browser_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 4096,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Path"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BrowserListing"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Repository Browser Get",
+        "tags": ["authoring", "authoring"]
       }
     },
     "/api/today": {

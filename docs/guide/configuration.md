@@ -59,6 +59,7 @@ API settings, read from `LABHQ_API_*` environment variables.
 | `LABHQ_API_UI_DIR` | `Path` | *computed* | The built desktop UI. Served at `/` only when it exists; the API works without it. |
 | `LABHQ_API_DEFAULT_PAGE_SIZE` | `int` | `50` |  |
 | `LABHQ_API_MAX_PAGE_SIZE` | `int` | `200` |  |
+| `LABHQ_API_REPOSITORY_BROWSER_ROOTS` | `list[Path]` | *computed* | The browser lists the server user's home and /projects when mounted. Override with a JSON array in LABHQ_API_REPOSITORY_BROWSER_ROOTS when repositories live elsewhere. |
 
 ## `labhq.approvals.gates.settings.GateSettings`
 

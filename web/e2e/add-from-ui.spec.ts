@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import { basename, dirname, resolve } from 'node:path'
 
 import type { components } from '../src/api/schema'
 import { expect, test } from './support/auth.ts'
@@ -32,7 +33,12 @@ test('a project and an agent added in the UI appear, and the agent starts only a
   await page.goto('/projects')
   await page.getByTestId('add-project').click()
   await page.getByLabel('Name').fill(NAME)
-  await page.getByLabel('Repository path').fill(repoRoot)
+  await page.getByRole('button', { name: 'Browse server folders' }).click()
+  const browser = page.getByTestId('repository-browser')
+  await browser.getByRole('button', { name: dirname(repoRoot) }).click()
+  await browser.getByRole('button', { name: `${basename(repoRoot)}/` }).click()
+  await browser.getByTestId('browser-select').click()
+  await expect(page.getByLabel('Repository path')).toHaveValue(resolve(repoRoot))
   await page.getByLabel('Monthly budget in USD (optional)').fill('2.50')
   await page.getByTestId('add-project-submit').click()
 

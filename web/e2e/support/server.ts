@@ -11,7 +11,7 @@ import { chmod, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
-import { delimiter, join } from 'node:path'
+import { delimiter, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const BASE_URL_ENV = 'LABHQ_E2E_BASE_URL'
@@ -154,6 +154,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
           // unreported run is the seed's own; no stall alert for it.
           LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS: '1',
           LABHQ_SCHEDULER_STALL_ALERT_RUNS: '0',
+          LABHQ_API_REPOSITORY_BROWSER_ROOTS: JSON.stringify([dirname(repoRoot)]),
           LABHQ_NOTIFY_KIND: 'ntfy',
           LABHQ_NOTIFY_NTFY_SERVER: `http://${HOST}:${sinkPort}`,
         },

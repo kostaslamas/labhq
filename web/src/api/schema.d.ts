@@ -484,6 +484,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/repository-browser': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Repository Browser Get
+     * @description List visible directories only; the create route still validates the chosen repo.
+     */
+    get: operations['repository_browser_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/today': {
     parameters: {
       query?: never
@@ -653,6 +673,24 @@ export interface components {
       authenticated: boolean
       /** Enrolled */
       enrolled: boolean
+    }
+    /** BrowserFolder */
+    BrowserFolder: {
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+    }
+    /** BrowserListing */
+    BrowserListing: {
+      /** Folders */
+      folders: components['schemas']['BrowserFolder'][]
+      /** Parent */
+      parent: string | null
+      /** Path */
+      path: string | null
+      /** Roots */
+      roots: components['schemas']['BrowserFolder'][]
     }
     /**
      * Budget
@@ -2226,6 +2264,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AddedAgent']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  repository_browser_get: {
+    parameters: {
+      query?: {
+        path?: string | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BrowserListing']
         }
       }
       /** @description Error */

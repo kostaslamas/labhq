@@ -50,6 +50,7 @@ def test_agent_kinds_list_every_registered_kind_with_its_adapter_and_availabilit
 
 def test_the_routes_need_a_session(app_client: TestClient, repo: Path) -> None:
     assert app_client.get("/api/agent-kinds").status_code == 401
+    assert app_client.get("/api/repository-browser").status_code == 401
     assert add_project(app_client, repo).status_code == 401
     assert add_agent(app_client, 1).status_code == 401
 

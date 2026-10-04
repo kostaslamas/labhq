@@ -51,6 +51,9 @@ there:
 docker compose exec labhq labhq project add site --repo /projects/site
 ```
 
+You can also use **Add project** in the web UI and choose **Browse server folders**. The
+picker shows `/projects` inside the container, then fills in the repository path for you.
+
 ## Model login
 
 labhq never handles your login (ADR 0001). The agents run the Claude Code binary in the
