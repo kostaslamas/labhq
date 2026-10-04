@@ -400,6 +400,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/org/ceo': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Ceo Get
+     * @description The global CEO assignment, or empty fields before it has been configured.
+     */
+    get: operations['ceo_get']
+    /**
+     * Ceo Put
+     * @description Configure one CEO for all projects without replacing its identity or team.
+     */
+    put: operations['ceo_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects': {
     parameters: {
       query?: never
@@ -757,6 +781,15 @@ export interface components {
      * @enum {string}
      */
     CallStatus: 'open' | 'closed'
+    /** CeoAssignment */
+    CeoAssignment: {
+      /** Backup Kind */
+      backup_kind: string | null
+      /** Id */
+      id: number | null
+      /** Primary Kind */
+      primary_kind: string | null
+    }
     /**
      * Credential
      * @description What the UI may know about a passkey. The public key stays on the server.
@@ -1226,6 +1259,13 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** SetCeoAssignment */
+    SetCeoAssignment: {
+      /** Backup Kind */
+      backup_kind?: string | null
+      /** Primary Kind */
+      primary_kind: string
+    }
     /** SpendWithoutOutput */
     SpendWithoutOutput: {
       /** Agent Id */
@@ -2100,6 +2140,68 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Message']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  ceo_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CeoAssignment']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  ceo_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetCeoAssignment']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CeoAssignment']
         }
       }
       /** @description Error */

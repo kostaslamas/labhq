@@ -8,6 +8,7 @@ import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
 import AddProjectForm from './AddProjectForm.vue'
+import CeoAssignmentForm from './CeoAssignmentForm.vue'
 import ProjectCard from './ProjectCard.vue'
 
 type Card = components['schemas']['ProjectCard']
@@ -70,6 +71,8 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
     </div>
 
     <AddProjectForm v-if="adding" class="max-w-xl" @added="opened" @cancel="adding = false" />
+
+    <CeoAssignmentForm />
 
     <div v-if="state === 'failed'" role="alert" class="flex flex-wrap items-center gap-3">
       <p class="text-status-failed">{{ t('projects.loadFailed') }}</p>

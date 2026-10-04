@@ -110,9 +110,11 @@ async function stop(server: ChildProcess): Promise<void> {
 async function installFakeAgents(root: string): Promise<string> {
   const binDir = join(root, 'bin')
   await mkdir(binDir)
-  const program = join(binDir, FAKE_AGENT_BINARY)
-  await writeFile(program, '#!/bin/sh\nexit 0\n')
-  await chmod(program, 0o755)
+  for (const binary of [FAKE_AGENT_BINARY, 'claude', 'codex']) {
+    const program = join(binDir, binary)
+    await writeFile(program, '#!/bin/sh\nexit 0\n')
+    await chmod(program, 0o755)
+  }
   return binDir
 }
 

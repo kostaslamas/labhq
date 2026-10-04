@@ -85,6 +85,7 @@ class RunService:
         resume_session_id: str | None = None,
         tools: Sequence[AgentTool] = (),
         config: dict[str, Any] | None = None,
+        adapter: str | None = None,
         tools_server: Sequence[str] = (),
     ) -> "ActiveRun":
         """Start a run. `run_id` adopts a queued run instead of creating one.
@@ -98,8 +99,9 @@ class RunService:
         db = self._sessions()
         try:
             agent = await db.get_one(Agent, agent_id)
+            selected_adapter = adapter or agent.adapter
             task = await db.get_one(Task, task_id) if task_id is not None else None
-            stored = await _stored_session(db, agent, task_id)
+            stored = await _stored_session(db, agent, task_id, selected_adapter)
             if cwd is None and stored is not None and stored.cwd:
                 # Sessions are stored per working directory; resume needs the same one.
                 cwd = Path(stored.cwd)
@@ -111,7 +113,7 @@ class RunService:
             agent_tool_specs = self._agent_tools.for_agent(agent.role, agent.config)
             now = self._clock.now()
             run = await _queued_run(db, run_id, agent_id, task_id, now)
-            run.adapter = agent.adapter
+            run.adapter = selected_adapter
             run.status = RunStatus.RUNNING
             run.session_id_before = resume_session_id or (stored.session_id if stored else None)
             run.started_at = run.heartbeat_at = now
@@ -131,7 +133,7 @@ class RunService:
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(
-                db, self._clock, self._registry.create(agent.adapter), run, self._memory, memory
+                db, self._clock, self._registry.create(selected_adapter), run, self._memory, memory
             )
             await active.begin(request, project_id)
         except BaseException:
@@ -335,7 +337,7 @@ async def _queued_run(
 
 
 async def _stored_session(
-    db: AsyncSession, agent: Agent, task_id: int | None
+    db: AsyncSession, agent: Agent, task_id: int | None, adapter: str
 ) -> AgentTaskSession | None:
     if task_id is None:
         return None
@@ -344,6 +346,6 @@ async def _stored_session(
         select(AgentTaskSession).where(
             AgentTaskSession.agent_id == agent.id,
             AgentTaskSession.task_id == task_id,
-            AgentTaskSession.adapter == agent.adapter,
+            AgentTaskSession.adapter == adapter,
         )
     )

@@ -48,6 +48,19 @@
     "collapse": "Hide who reports to {name}"
   },
   "rulesLink": "Health rules",
+  "ceo": {
+    "title": "CEO for all projects",
+    "hint": "Choose the main agent and a backup. The backup takes over when the main agent is unavailable or its plan is paused.",
+    "primary": "Main agent",
+    "backup": "Backup agent",
+    "noBackup": "No backup",
+    "unavailable": "not installed",
+    "save": "Save CEO assignment",
+    "saving": "Saving…",
+    "saved": "CEO assignment saved.",
+    "failed": "The CEO assignment could not be saved.",
+    "loadFailed": "The CEO assignment could not be loaded."
+  },
   "add": {
     "button": "Add project",
     "title": "Add a project",

@@ -18,6 +18,7 @@ from typing import Any
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labhq.adapters.kinds import UnknownAgentChoiceError, choice_named
 from labhq.budgets import BudgetSettings, Decision, check
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupStatus
@@ -27,7 +28,7 @@ from labhq.scheduler.reaper import LIVE_STATUSES
 from labhq.scheduler.settings import AgentLimits, SchedulerSettings
 from labhq.scheduler.sources import SourceRegistry
 from labhq.usage import UsageSettings, check_agent
-from labhq.usage.plan import fallback_kind
+from labhq.usage.plan import FALLBACK_ADAPTER_KEY, agent_kind, fallback_kind
 
 # Sessions do not move between CLIs; the fallback starts from what the task left behind.
 TAKEOVER_NOTE = (
@@ -58,6 +59,7 @@ class Dispatch:
     timeout_seconds: int = 0
     # Laid over `agents.config` for this run, e.g. the fallback agent kind.
     config: dict[str, Any] = field(default_factory=dict)
+    adapter: str | None = None
 
 
 async def pending_wakeup_ids(session: AsyncSession) -> list[int]:
@@ -107,10 +109,13 @@ async def dispatch_one(
         await session.commit()
         return Dispatch(Verdict.PLAN_PAUSED)
 
+    selected_adapter = agent.config.get(FALLBACK_ADAPTER_KEY) if overrides else None
+    if not isinstance(selected_adapter, str) or not selected_adapter:
+        selected_adapter = agent.adapter
     run = Run(
         agent_id=agent.id,
         task_id=request.task_id,
-        adapter=agent.adapter,
+        adapter=selected_adapter,
         status=RunStatus.QUEUED,
         created_at=now,
     )
@@ -144,6 +149,7 @@ async def dispatch_one(
         prompt=f"{prompt}\n{TAKEOVER_NOTE}" if overrides else prompt,
         timeout_seconds=limits.timeout_seconds,
         config=overrides,
+        adapter=selected_adapter,
     )
 
 
@@ -152,13 +158,27 @@ async def _plan_overrides(
 ) -> dict[str, Any] | None:
     """{} to run as configured, the fallback kind to run on instead, or None to wait."""
     plan = await check_agent(session, agent, clock, settings)
-    if plan.decision is not Decision.STOP:
-        return {}
     fallback = fallback_kind(agent.config)
+    primary_missing = fallback is not None and not _kind_installed(
+        agent_kind(agent.adapter, agent.config)
+    )
+    if plan.decision is not Decision.STOP and not primary_missing:
+        return {}
     if fallback is None:
+        return None
+    if not _kind_installed(fallback):
         return None
     other = await check_agent(session, agent, clock, settings, kind=fallback)
     return None if other.decision is Decision.STOP else {"agent": fallback}
+
+
+def _kind_installed(name: str) -> bool:
+    try:
+        choice = choice_named(name)
+    except UnknownAgentChoiceError:
+        # Custom adapters and test doubles manage their own availability.
+        return True
+    return choice.found() is not None
 
 
 async def _live_runs(session: AsyncSession, agent_id: int) -> int:

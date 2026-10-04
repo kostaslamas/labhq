@@ -238,6 +238,7 @@ class Scheduler:
                 prompt=dispatch.prompt,
                 run_id=run_id,
                 config=dispatch.config or None,
+                adapter=dispatch.adapter,
             )
         except RunStartError:
             # Already recorded as failed by the run service; only the task is ours to free.

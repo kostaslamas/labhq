@@ -14,6 +14,7 @@ import labhq
 from labhq.api.approvals import router as approvals_router
 from labhq.api.authoring import router as authoring_router
 from labhq.api.meetings import router as meetings_router
+from labhq.api.org import router as org_router
 from labhq.api.projects import router as projects_router
 from labhq.api.rules.routes import router as rules_router
 from labhq.api.today.router import router as today_router
@@ -69,4 +70,5 @@ default_routers.register(projects_router)
 default_routers.register(meetings_router)
 default_routers.register(rules_router)
 default_routers.register(authoring_router)
+default_routers.register(org_router)
 default_routers.register(today_router)
