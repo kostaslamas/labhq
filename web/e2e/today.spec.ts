@@ -98,6 +98,11 @@ test('Today shows what was delivered and what needs you, never agents at work', 
   await expect(page.getByTestId('need-approval')).toHaveCount(2)
   await expect(page.getByTestId('need-question')).toHaveCount(1)
   await expect(page.getByTestId('need-incident')).toHaveCount(1)
+  // An open incident leads to the rule that raised it.
+  await expect(page.getByTestId('need-incident').getByRole('link')).toHaveAttribute(
+    'href',
+    '/projects/infra/rules',
+  )
   await expect(page.getByTestId('spend-warning')).toHaveCount(1)
 
   // Results, not activity (plan §8.2.1): no running-agent list and no "working" label.
@@ -126,16 +131,20 @@ test('a new pending approval raises the needs-you count without a refresh', asyn
 }) => {
   await page.goto('/today')
   const count = page.getByTestId('needs-count')
-  await expect(count).toHaveText('4')
+  const approvals = page.getByTestId('need-approval')
+  // Other specs share the seeded database, so count from what is there, not a fixed number.
+  await expect(count).toHaveText(/^\d+$/)
+  const before = Number(await count.textContent())
+  const approvalsBefore = await approvals.count()
 
   const approval = Number(write('ask', 0))
   try {
-    await expect(count).toHaveText('5')
-    await expect(page.getByTestId('need-approval')).toHaveCount(3)
+    await expect(count).toHaveText(String(before + 1))
+    await expect(approvals).toHaveCount(approvalsBefore + 1)
   } finally {
     write('cancel', approval)
   }
-  await expect(count).toHaveText('4')
+  await expect(count).toHaveText(String(before))
 })
 
 test('the page does not scroll sideways at 1280 by 800', async ({ signedInPage: page }) => {
