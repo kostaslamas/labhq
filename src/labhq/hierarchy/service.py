@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters import UnknownAdapterError
+from labhq.adapters.kinds import AgentChoice, choice_named
 from labhq.approvals import ApprovalService
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, ApprovalStatus
@@ -26,6 +27,7 @@ from labhq.hierarchy.team import (
     check_team_size,
     find_manager,
 )
+from labhq.usage.plan import FALLBACK_ADAPTER_KEY, FALLBACK_KEY
 from labhq.work import find_project
 
 CEO_TITLE = "CEO"
@@ -86,6 +88,50 @@ class Hierarchy:
             db.add(ceo)
             await db.commit()
         return ceo
+
+    async def current_ceo(self) -> Agent | None:
+        async with self._sessions() as db:
+            return await _current_ceo(db)
+
+    async def configure_ceo(self, primary: str, backup: str | None) -> Agent:
+        """Set the agent kinds of the one CEO shared by every project."""
+        if backup == primary:
+            raise HierarchyError("the CEO's backup must differ from its primary agent")
+        first = self._available_choice(primary)
+        second = self._available_choice(backup) if backup is not None else None
+        async with self._sessions() as db:
+            ceo = await _current_ceo(db)
+            now = self._clock.now()
+            if ceo is None:
+                ceo = Agent(
+                    project_id=None,
+                    role=CEO,
+                    title=CEO_TITLE,
+                    reports_to=None,
+                    status=AgentStatus.ACTIVE,
+                    created_at=now,
+                )
+                db.add(ceo)
+            config = dict(ceo.config or {})
+            for key in ("agent", FALLBACK_KEY, FALLBACK_ADAPTER_KEY):
+                config.pop(key, None)
+            config.update(first.config)
+            if second is not None:
+                config[FALLBACK_KEY] = second.name
+                config[FALLBACK_ADAPTER_KEY] = second.adapter
+            ceo.adapter = first.adapter
+            ceo.config = config
+            ceo.updated_at = now
+            await db.commit()
+        return ceo
+
+    def _available_choice(self, name: str) -> AgentChoice:
+        choice = choice_named(name)
+        if choice.adapter not in self._adapters:
+            raise HierarchyError(f"agent kind {name!r} cannot run on this server")
+        if choice.found() is None:
+            raise HierarchyError(f"agent kind {name!r} is not installed on this server")
+        return choice
 
     async def assign_manager(
         self, project: str, *, adapter: str | None = None, title: str | None = None

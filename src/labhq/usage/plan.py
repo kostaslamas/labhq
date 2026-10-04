@@ -26,6 +26,7 @@ from labhq.usage.settings import UsageSettings, get_usage_settings
 
 LIMIT_WINDOW = "limit_notice"
 FALLBACK_KEY = "fallback_agent"
+FALLBACK_ADAPTER_KEY = "fallback_adapter"
 
 
 def _tmux_kind(config: Mapping[str, Any]) -> str | None:

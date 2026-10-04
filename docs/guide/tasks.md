@@ -5,6 +5,12 @@ CEO; the CEO uses `delegate_task` to give the objective to that project's active
 The voice `order` tool also sends a task to the active manager when you do not name an
 assignee. A project needs an active manager for that route.
 
+On the Projects page, choose the CEO's main and backup agent. One CEO serves every project.
+Project managers added from the UI report to that CEO automatically.
+The backup runs when the main agent's program is unavailable or its plan usage is paused;
+the CEO keeps the same identity and reporting lines. Removing the backup leaves the main
+agent assigned. Switching agent kinds starts a fresh session while keeping the task's folder.
+
 Managers and leads split their assigned task with `create_task`. A child created during a
 task run is linked to that task automatically; they can also name its parent explicitly.
 Assign each child to a team member. In Git projects, each task runs in its own worktree; in

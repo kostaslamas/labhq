@@ -8,6 +8,7 @@ from labhq.api.app import create_app
 from labhq.api.approvals import router as approvals_router
 from labhq.api.authoring import router as authoring_router
 from labhq.api.deps import ResolverRegistry
+from labhq.api.org import router as org_router
 from labhq.api.routes import RouterRegistry, health_router
 from labhq.api.settings import ApiSettings
 from labhq.auth.resolver import resolve_session
@@ -38,6 +39,7 @@ def app_client(context: Context, tmp_path: Path) -> Iterator[TestClient]:
     routers.register(router)
     routers.register(approvals_router)
     routers.register(authoring_router)
+    routers.register(org_router)
     app = create_app(
         context,
         routers=routers,

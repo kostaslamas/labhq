@@ -568,6 +568,46 @@
         "title": "CallStatus",
         "type": "string"
       },
+      "CeoAssignment": {
+        "properties": {
+          "backup_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Kind"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "primary_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Primary Kind"
+          }
+        },
+        "required": ["id", "primary_kind", "backup_kind"],
+        "title": "CeoAssignment",
+        "type": "object"
+      },
       "Credential": {
         "description": "What the UI may know about a passkey. The public key stays on the server.",
         "properties": {
@@ -1761,6 +1801,29 @@
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
         "title": "RunStatus",
         "type": "string"
+      },
+      "SetCeoAssignment": {
+        "properties": {
+          "backup_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backup Kind"
+          },
+          "primary_kind": {
+            "minLength": 1,
+            "title": "Primary Kind",
+            "type": "string"
+          }
+        },
+        "required": ["primary_kind"],
+        "title": "SetCeoAssignment",
+        "type": "object"
       },
       "SpendWithoutOutput": {
         "properties": {
@@ -3085,6 +3148,74 @@
         },
         "summary": "Meetings Join",
         "tags": ["meetings"]
+      }
+    },
+    "/api/org/ceo": {
+      "get": {
+        "description": "The global CEO assignment, or empty fields before it has been configured.",
+        "operationId": "ceo_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeoAssignment"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ceo Get",
+        "tags": ["org"]
+      },
+      "put": {
+        "description": "Configure one CEO for all projects without replacing its identity or team.",
+        "operationId": "ceo_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetCeoAssignment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CeoAssignment"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ceo Put",
+        "tags": ["org"]
       }
     },
     "/api/projects": {

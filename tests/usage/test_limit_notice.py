@@ -2,10 +2,12 @@
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
 from sqlalchemy import select
 
+from labhq.adapters import FakeAdapter, FakeScript
 from labhq.db.enums import RunStatus
-from labhq.db.models import Run, RunEvent, UsageReading
+from labhq.db.models import AgentTaskSession, Run, RunEvent, UsageReading
 from labhq.scheduler import Verdict
 from labhq.scheduler.dispatch import TAKEOVER_NOTE
 from labhq.usage.collect import UsageCollector
@@ -157,6 +159,92 @@ async def test_with_a_fallback_the_paused_task_continues_on_the_other_kind(world
     assert request.config["agent"] == "fake-b"
     assert request.config["fallback_agent"] == "fake-b"
     assert TAKEOVER_NOTE in request.prompt
+
+
+async def test_a_backup_on_another_adapter_starts_without_the_primary_session(world: World) -> None:
+    backup = FakeScript()
+    world.registry.register("backup", lambda: FakeAdapter(backup))
+    scheduler = await on_kind(
+        world,
+        {"agent": "fake-a", "fallback_agent": "fake-b", "fallback_adapter": "backup"},
+    )
+    async with world.sessions() as db:
+        db.add(
+            AgentTaskSession(
+                agent_id=world.agent_id,
+                task_id=world.task_id,
+                adapter="tmux",
+                session_id="primary-session",
+                cwd=None,
+                created_at=world.clock.now(),
+                updated_at=world.clock.now(),
+            )
+        )
+        await db.commit()
+    run_id = await finished_run(world, "fake-a", {"screen_final": {"text": screen(NOTICE)}})
+    await collector(world, FakeExtractor(ANSWERS[NOTICE])).collect([run_id])
+
+    await scheduler.enqueue(on_task(world, "after-limit"))
+    report = await scheduler.tick()
+    await scheduler.settle()
+
+    assert len(report.started) == 1
+    assert world.fake.requests == []
+    assert len(backup.requests) == 1
+    assert backup.requests[0].resume_session_id is None
+    async with world.sessions() as db:
+        run = await db.get_one(Run, report.started[0])
+    assert run.adapter == "backup"
+
+
+async def test_two_tmux_kinds_do_not_share_a_session(world: World) -> None:
+    scheduler = await on_kind(world, {"agent": "fake-a", "fallback_agent": "fake-b"})
+    async with world.sessions() as db:
+        db.add(
+            AgentTaskSession(
+                agent_id=world.agent_id,
+                task_id=world.task_id,
+                adapter="tmux:fake-a",
+                session_id="primary-session",
+                cwd=None,
+                created_at=world.clock.now(),
+                updated_at=world.clock.now(),
+            )
+        )
+        await db.commit()
+    run_id = await finished_run(world, "fake-a", {"screen_final": {"text": screen(NOTICE)}})
+    await collector(world, FakeExtractor(ANSWERS[NOTICE])).collect([run_id])
+
+    await scheduler.enqueue(on_task(world, "after-limit"))
+    report = await scheduler.tick()
+    await scheduler.settle()
+
+    assert len(report.started) == 1
+    assert world.fake.requests[-1].resume_session_id is None
+    async with world.sessions() as db:
+        session = await db.scalar(select(AgentTaskSession))
+    assert session is not None
+    assert session.adapter == "tmux:fake-b"
+
+
+async def test_a_missing_primary_program_uses_the_backup(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    backup = FakeScript()
+    world.registry.register("backup", lambda: FakeAdapter(backup))
+    monkeypatch.setattr("labhq.adapters.kinds.shutil.which", lambda _: None)
+    scheduler = await on_kind(
+        world,
+        {"agent": "codex", "fallback_agent": "fake-b", "fallback_adapter": "backup"},
+    )
+
+    await scheduler.enqueue(on_task(world, "primary-not-installed"))
+    report = await scheduler.tick()
+    await scheduler.settle()
+
+    assert len(report.started) == 1
+    assert world.fake.requests == []
+    assert len(backup.requests) == 1
 
 
 async def test_a_fallback_past_its_own_share_does_not_start_either(world: World) -> None:
