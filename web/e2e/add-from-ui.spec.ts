@@ -1,30 +1,45 @@
 import { fileURLToPath } from 'node:url'
-import { basename, dirname, resolve } from 'node:path'
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { basename, dirname, join, resolve } from 'node:path'
 
 import type { components } from '../src/api/schema'
 import { expect, test } from './support/auth.ts'
 
 type ProjectView = components['schemas']['ProjectView']
 
-// Any git repository with a commit on this machine; the server only reads its HEAD.
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url))
 const NAME = 'zz-e2e-added'
 
 test.describe.configure({ mode: 'serial' })
 
-test('a repository that is not a git repository with a commit is refused in words', async ({
-  signedInPage: page,
-}) => {
+test('a path that is not a directory is refused in words', async ({ signedInPage: page }) => {
   await page.goto('/projects')
   await page.getByTestId('add-project').click()
   await page.getByLabel('Name').fill('zz-e2e-refused')
-  await page.getByLabel('Repository path').fill('/nonexistent/labhq-e2e')
+  await page.getByLabel('Project folder').fill('/nonexistent/labhq-e2e')
   await page.getByTestId('add-project-submit').click()
 
   await expect(page.getByTestId('form-error')).toHaveText(
-    'That path is not a git repository with a commit.',
+    'That path is not an existing, readable folder.',
   )
   await expect(page).toHaveURL(/\/projects$/)
+})
+
+test('a plain folder can become a project without Git', async ({ signedInPage: page }) => {
+  const folder = await mkdtemp(join(tmpdir(), 'labhq-e2e-plain-'))
+  try {
+    await page.goto('/projects')
+    await page.getByTestId('add-project').click()
+    await page.getByLabel('Name').fill('zz-e2e-plain')
+    await page.getByLabel('Project folder').fill(folder)
+    await page.getByTestId('add-project-submit').click()
+
+    await expect(page).toHaveURL(/\/projects\/\d+$/)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('zz-e2e-plain')
+  } finally {
+    await rm(folder, { recursive: true, force: true })
+  }
 })
 
 test('a project and an agent added in the UI appear, and the agent starts only after approval', async ({
@@ -38,7 +53,7 @@ test('a project and an agent added in the UI appear, and the agent starts only a
   await browser.getByRole('button', { name: dirname(repoRoot) }).click()
   await browser.getByRole('button', { name: `${basename(repoRoot)}/` }).click()
   await browser.getByTestId('browser-select').click()
-  await expect(page.getByLabel('Repository path')).toHaveValue(resolve(repoRoot))
+  await expect(page.getByLabel('Project folder')).toHaveValue(resolve(repoRoot))
   await page.getByLabel('Monthly budget in USD (optional)').fill('2.50')
   await page.getByTestId('add-project-submit').click()
 

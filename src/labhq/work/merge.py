@@ -16,7 +16,7 @@ from labhq.approvals.merge import DEFAULT_TARGET
 from labhq.clock import Clock
 from labhq.db.enums import ApprovalStatus
 from labhq.db.models import Approval, Project, Task
-from labhq.work.service import WorkError
+from labhq.work.service import WorkError, has_git_commit
 from labhq.worktrees import GitError
 from labhq.worktrees.git import run_git
 from labhq.worktrees.manager import BRANCH_PREFIX, branch_name
@@ -77,6 +77,8 @@ async def request_merge(
     if task is None:
         raise WorkError(f"no task {task_id}")
     project = await db.get_one(Project, task.project_id)
+    if not await asyncio.to_thread(has_git_commit, Path(project.repo_path)):
+        raise WorkError(f"project {project.name!r} has no Git branch to merge")
     payload = await asyncio.to_thread(_pin, Path(project.repo_path), task, target, remote)
     existing = await _pending_duplicate(db, task.id, payload)
     if existing is not None:

@@ -3156,7 +3156,7 @@
         "tags": ["projects"]
       },
       "post": {
-        "description": "Register a git repository on this machine as a project.",
+        "description": "Register an existing directory on this machine as a project.",
         "operationId": "projects_create",
         "requestBody": {
           "content": {
@@ -3329,7 +3329,7 @@
     },
     "/api/repository-browser": {
       "get": {
-        "description": "List visible directories only; the create route still validates the chosen repo.",
+        "description": "List visible directories only; the create route validates the chosen folder.",
         "operationId": "repository_browser_get",
         "parameters": [
           {

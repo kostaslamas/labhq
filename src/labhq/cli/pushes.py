@@ -18,6 +18,7 @@ from labhq.cli.workspace import project_worktrees
 from labhq.db.enums import ApprovalStatus, RunStatus
 from labhq.db.models import Approval, Project, Run, Task
 from labhq.settings import Settings
+from labhq.work import has_git_commit
 from labhq.worktrees.git import run_git
 
 PUSH_REMOTE = "origin"
@@ -33,6 +34,8 @@ async def _push_target(db: AsyncSession, settings: Settings, run: Run) -> tuple[
         return None
     task = await db.get_one(Task, run.task_id)
     project = await db.get_one(Project, task.project_id)
+    if not await asyncio.to_thread(has_git_commit, Path(project.repo_path)):
+        return None
     worktrees = project_worktrees(settings, project)
     worktree = await asyncio.to_thread(worktrees.find, task.id)
     if worktree is None:

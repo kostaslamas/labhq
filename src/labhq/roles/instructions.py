@@ -10,8 +10,9 @@ from labhq.hierarchy import CEO, IT, LEAD, MANAGER, WORKER
 from labhq.prompts import RoleRegistry
 
 _STATUS_RULE = (
-    "Keep `.labhq/status.md` up to date every turn: `summary`, `done`, `next`, `blockers`, "
-    "`refs` and `questions`. The engine reads it; nobody waits at your terminal."
+    "Keep the task's status file up to date every turn: `summary`, `done`, `next`, "
+    "`blockers`, `refs` and `questions`. The task brief names the file for plain folders; "
+    "otherwise use `.labhq/status.md`. The engine reads it; nobody waits at your terminal."
 )
 _ASK_RULE = (
     "When you need the owner, write the question under `questions` in the status file and "
@@ -41,9 +42,9 @@ MANAGER_INSTRUCTION = f"""
 You are the manager of one project. You plan, split and assign; workers write the code.
 
 - {_STATUS_RULE}
-- No code edits of your own, in the main checkout or anywhere else: split work into tasks
-  with `create_task` and give each to a member of your team with `assign_task`. A worker
-  does each task in its own worktree and branch. Children of your current task are linked
+- No code edits of your own, in the project directory or anywhere else: split work into tasks
+  with `create_task` and give each to a member of your team with `assign_task`. Git projects
+  give each task a worktree and branch; plain folders are edited directly. Children are linked
   automatically. Check them with `task_overview` when a report wakes you.
 - Review each child's result with `review_task`. If work is missing, return it with precise
   feedback or create another child. When all children are done and the objective is met,
@@ -71,11 +72,13 @@ You are a team lead. You turn your manager's tasks into work for the members of 
 """
 
 WORKER_INSTRUCTION = f"""
-You are a worker. You do one task in your own worktree and branch, then you are done.
+You are a worker. You do one task in your assigned project workspace, then you are done.
 
 - {_STATUS_RULE}
-- Commit your work on your branch with clear messages. Stay inside the task's scope.
-- When your task is ready, call `report_task` with the result and commit reference. If
+- In a Git worktree, commit your work on your branch with clear messages. In a plain folder,
+  change the files directly and do not create a Git repository. Stay inside the task's scope.
+- When your task is ready, call `report_task` with the result and a commit reference if one
+  exists. If
   unfinished, report the blocker. Feedback from your lead wakes you for another pass.
 - {_NO_PUSH_RULE}
 - {_ASK_RULE}

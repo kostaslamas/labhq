@@ -3,7 +3,7 @@ import { isErrorEnvelope } from '@/api'
 // Server error codes of the add-project and add-agent routes, each with one sentence in
 // `projects.errors`; any other code shows the generic one.
 const KNOWN = new Set([
-  'not_a_repository',
+  'not_a_directory',
   'repo_path_not_absolute',
   'project_exists',
   'unknown_kind',

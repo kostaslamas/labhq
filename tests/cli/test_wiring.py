@@ -11,12 +11,13 @@ from labhq.cli import workspace
 from labhq.cli.context import Context
 from labhq.cli.engine import Engine
 from labhq.cli.fake_worker import WORK_FILE, CommittingFakeAdapter
+from labhq.cli.statuses import ingest_statuses
 from labhq.cli.work import assignment, create_agent, create_project, create_task
-from labhq.cli.workspace import PRE_TOOL_USE, WARNING_EVENT, run_hooks
+from labhq.cli.workspace import PRE_TOOL_USE, WARNING_EVENT, plain_status_path, run_hooks
 from labhq.clock import FakeClock
 from labhq.db import create_engine, session_factory
 from labhq.db.enums import AgentStatus
-from labhq.db.models import RunEvent, Task
+from labhq.db.models import RunEvent, StatusUpdate, Task
 from labhq.economy import RtkHook, rtk_hook
 from labhq.economy.rtk import RTK_MISSING
 from labhq.guards import deny_publishing
@@ -98,6 +99,58 @@ async def test_a_second_run_on_the_task_reuses_its_worktree(context: Context, re
     assert first.cwd == second.cwd
     # A new commit on the same branch is a new push to approve; the old one stays pending.
     assert len(report.approvals) == 1
+
+
+async def test_a_plain_folder_runs_directly_without_a_push_approval(
+    context: Context, tmp_path: Path
+) -> None:
+    folder = tmp_path / "ordinary-project"
+    folder.mkdir()
+    script = FakeScript()
+    registry = default_registry.copy()
+    registry.register("fake", lambda: CommittingFakeAdapter(script), replace=True)
+    task_id = await assigned_task(context, folder)
+
+    report = await Engine(context, registry).run_pass()
+
+    [request] = script.requests
+    assert request.cwd == folder
+    assert str(plain_status_path(task_id)) in request.prompt
+    assert (folder / WORK_FILE).is_file()
+    assert [run.status for run in report.runs] == ["succeeded"]
+    assert report.approvals == []
+
+    status_dir = folder / plain_status_path(task_id).parent
+    status_dir.mkdir(parents=True)
+    (status_dir / "status.md").write_text("summary: Folder work complete.\n", encoding="utf-8")
+    assert (
+        len(
+            await ingest_statuses(
+                context.sessions, context.clock, context.settings, report.finished
+            )
+        )
+        == 1
+    )
+    async with context.sessions() as db:
+        update = await db.scalar(select(StatusUpdate))
+    assert update is not None
+    assert update.fields["summary"] == "Folder work complete."
+
+
+async def test_a_subfolder_of_a_git_project_is_used_as_the_selected_folder(
+    context: Context, repo: Path
+) -> None:
+    folder = repo / "selected"
+    folder.mkdir()
+    script = FakeScript()
+    registry = default_registry.copy()
+    registry.register("fake", lambda: CommittingFakeAdapter(script), replace=True)
+    await assigned_task(context, folder)
+
+    report = await Engine(context, registry).run_pass()
+
+    assert script.requests[0].cwd == folder
+    assert report.approvals == []
 
 
 @pytest.mark.parametrize(

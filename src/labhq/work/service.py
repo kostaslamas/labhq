@@ -5,6 +5,7 @@ or a voice caller can act on are `WorkError`s with a message that says what is w
 """
 
 from collections.abc import Collection
+from os import scandir
 from pathlib import Path
 from typing import Any
 
@@ -45,13 +46,28 @@ async def find_agent(db: AsyncSession, agent_id: int) -> Agent:
     return agent
 
 
-def check_repository(path: Path) -> Path:
-    resolved = path.expanduser().resolve()
+def check_project_directory(path: Path) -> Path:
     try:
-        run_git("rev-parse", "--verify", "HEAD", cwd=resolved)
-    except (GitError, OSError) as error:
-        raise WorkError(f"{resolved} is not a git repository with a commit") from error
+        resolved = path.expanduser().resolve()
+    except (OSError, RuntimeError) as error:
+        raise WorkError(f"{path} is not an accessible directory") from error
+    if not resolved.is_dir():
+        raise WorkError(f"{resolved} is not an existing directory")
+    try:
+        with scandir(resolved):
+            pass
+    except OSError as error:
+        raise WorkError(f"{path} is not a readable directory") from error
     return resolved
+
+
+def has_git_commit(path: Path) -> bool:
+    try:
+        root = run_git("rev-parse", "--show-toplevel", cwd=path).strip()
+        run_git("rev-parse", "--verify", "HEAD", cwd=path)
+    except (GitError, OSError):
+        return False
+    return Path(root).resolve() == path.resolve()
 
 
 async def add_project(

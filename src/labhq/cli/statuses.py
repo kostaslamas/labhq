@@ -3,14 +3,16 @@
 import asyncio
 import logging
 from collections.abc import Iterable
+from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.callcenter.status import IngestResult, ingest_status
-from labhq.cli.workspace import project_worktrees
+from labhq.cli.workspace import plain_status_path, project_worktrees
 from labhq.clock import Clock
 from labhq.db.models import Project, Run, Task
 from labhq.settings import Settings
+from labhq.work import has_git_commit
 from labhq.worktrees import GitError
 
 log = logging.getLogger(__name__)
@@ -31,6 +33,20 @@ async def ingest_statuses(
                 continue
             task = await db.get_one(Task, run.task_id)
             project = await db.get_one(Project, task.project_id)
+            folder = Path(project.repo_path)
+            if folder.is_dir() and not await asyncio.to_thread(has_git_commit, folder):
+                result = await ingest_status(
+                    db,
+                    clock,
+                    agent_id=run.agent_id,
+                    task_id=task.id,
+                    worktree=folder,
+                    relative_path=plain_status_path(task.id),
+                )
+                await db.commit()
+                if result.changed:
+                    changed.append(result)
+                continue
             try:
                 worktree = await asyncio.to_thread(
                     project_worktrees(settings, project).find, task.id
