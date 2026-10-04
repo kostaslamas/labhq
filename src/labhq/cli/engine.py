@@ -6,6 +6,7 @@ from sqlalchemy import select
 
 from labhq.adapters import AdapterRegistry, default_registry
 from labhq.approvals import ApprovalService
+from labhq.ceochat_retry import retry_limited_messages
 from labhq.cli.context import Context
 from labhq.cli.fake_worker import CommittingFakeAdapter
 from labhq.cli.pushes import request_pushes
@@ -74,6 +75,7 @@ class Engine:
     ) -> None:
         self._context = context
         usage_settings = get_usage_settings()
+        self._usage_settings = usage_settings
         scheduler_settings = settings or get_scheduler_settings()
         self._tick_seconds = scheduler_settings.tick_seconds
         self.runs = WorkspaceRunService(
@@ -137,6 +139,9 @@ class Engine:
             report.runs += list(runs)
         # Before anything else reads the finished runs: a limit notice holds new runs.
         await self.usage.collect(finished)
+        await retry_limited_messages(
+            self._context.sessions, self._context.clock, finished, self._usage_settings
+        )
         await ingest_statuses(
             self._context.sessions, self._context.clock, self._context.settings, finished
         )

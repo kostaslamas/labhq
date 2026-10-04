@@ -6,8 +6,10 @@ import pytest
 from sqlalchemy import select
 
 from labhq.adapters import FakeAdapter, FakeScript
-from labhq.db.enums import RunStatus
-from labhq.db.models import AgentTaskSession, Run, RunEvent, UsageReading
+from labhq.ceochat import conversation, message_reason
+from labhq.ceochat_retry import retry_limited_messages
+from labhq.db.enums import RunStatus, WakeupSource, WakeupStatus
+from labhq.db.models import AgentTaskSession, Run, RunEvent, UsageReading, WakeupRequest
 from labhq.scheduler import Verdict
 from labhq.scheduler.dispatch import TAKEOVER_NOTE
 from labhq.usage.collect import UsageCollector
@@ -15,7 +17,7 @@ from labhq.usage.extractors import ExtractorRegistry
 from tests.scheduler.conftest import World
 from tests.scheduler.helpers import on_task
 from tests.usage.extracting import ANSWERS, FakeExtractor, screen
-from tests.usage.plan_world import PLAN, notifications, on_kind
+from tests.usage.plan_world import PLAN, add_reading, notifications, on_kind
 
 NOTICE = "claude_limit_notice.txt"
 RESETS_AT = datetime(2026, 10, 2, 15, 0, tzinfo=UTC)
@@ -159,6 +161,59 @@ async def test_with_a_fallback_the_paused_task_continues_on_the_other_kind(world
     assert request.config["agent"] == "fake-b"
     assert request.config["fallback_agent"] == "fake-b"
     assert TAKEOVER_NOTE in request.prompt
+
+
+async def test_a_failed_owner_message_retries_once_on_the_backup(world: World) -> None:
+    scheduler = await on_kind(world, {"agent": "fake-a", "fallback_agent": "fake-b"})
+    async with world.sessions() as db:
+        now = world.clock.now()
+        run = Run(
+            agent_id=world.agent_id,
+            adapter="tmux",
+            status=RunStatus.FAILED,
+            created_at=now,
+            finished_at=now,
+        )
+        db.add(run)
+        await db.flush()
+        request = WakeupRequest(
+            agent_id=world.agent_id,
+            source=WakeupSource.OWNER_MESSAGE,
+            status=WakeupStatus.DISPATCHED,
+            idempotency_key="owner-message:test",
+            reason=message_reason("What projects do we have?", []),
+            run_id=run.id,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(request)
+        db.add(
+            RunEvent(run_id=run.id, seq=1, kind="agent", payload={"kind": "fake-a"}, created_at=now)
+        )
+        await db.commit()
+        request_id = request.id
+        first_run_id = run.id
+    await add_reading(world, "fake-a", 100, resets_at=world.clock.now() + timedelta(hours=1))
+
+    assert await retry_limited_messages(world.sessions, world.clock, [first_run_id], PLAN) == [
+        request_id
+    ]
+    assert await retry_limited_messages(world.sessions, world.clock, [first_run_id], PLAN) == []
+    async with world.sessions() as db:
+        turn = await db.get_one(WakeupRequest, request_id)
+        assert (turn.status, turn.run_id) == (WakeupStatus.PENDING, None)
+
+    report = await scheduler.tick()
+    assert len(report.started) == 1
+    await scheduler.settle()
+    assert world.fake.requests[-1].config["agent"] == "fake-b"
+    async with world.sessions() as db:
+        (turn,) = await conversation(db, world.agent_id)
+    assert (turn.id, turn.text, turn.status) == (
+        request_id,
+        "What projects do we have?",
+        "answered",
+    )
 
 
 async def test_a_backup_on_another_adapter_starts_without_the_primary_session(world: World) -> None:
