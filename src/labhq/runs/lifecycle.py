@@ -35,6 +35,7 @@ from labhq.prompts import PromptRegistry
 from labhq.prompts import default_registry as builtin_prompts
 from labhq.runs.status import status_for
 from labhq.settings import Settings
+from labhq.usage.plan import agent_kind
 
 TOKEN_COLUMNS = (
     "input_tokens",
@@ -45,6 +46,11 @@ TOKEN_COLUMNS = (
 
 MEMORY_EVENT = "memory_updated"
 WARNING_EVENT = "warning"
+
+
+def session_adapter(adapter: str, config: dict[str, Any]) -> str:
+    """Name the CLI kind too: two tmux programs cannot resume each other's sessions."""
+    return f"tmux:{agent_kind(adapter, config)}" if adapter == "tmux" else adapter
 
 
 class RunStartError(RuntimeError):
@@ -100,8 +106,11 @@ class RunService:
         try:
             agent = await db.get_one(Agent, agent_id)
             selected_adapter = adapter or agent.adapter
+            effective_config = {**agent.config, **(config or {})}
             task = await db.get_one(Task, task_id) if task_id is not None else None
-            stored = await _stored_session(db, agent, task_id, selected_adapter)
+            stored, resumable = await _stored_session(
+                db, agent, task_id, selected_adapter, effective_config
+            )
             if cwd is None and stored is not None and stored.cwd:
                 # Sessions are stored per working directory; resume needs the same one.
                 cwd = Path(stored.cwd)
@@ -115,7 +124,9 @@ class RunService:
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = selected_adapter
             run.status = RunStatus.RUNNING
-            run.session_id_before = resume_session_id or (stored.session_id if stored else None)
+            run.session_id_before = resume_session_id or (
+                stored.session_id if stored is not None and resumable else None
+            )
             run.started_at = run.heartbeat_at = now
             await db.commit()
             tool_context = ToolContext(agent.id, run.id, self._sessions, self._clock)
@@ -123,7 +134,7 @@ class RunService:
                 prompt=prompt,
                 cwd=cwd,
                 resume_session_id=run.session_id_before,
-                config={**agent.config, **(config or {})},
+                config=effective_config,
                 hooks=hooks,
                 tools=tools,
                 tools_server=tools_server,
@@ -187,6 +198,7 @@ class ActiveRun:
         self._seq = 0
         self._project_id: int | None = None
         self._cwd: Path | None = None
+        self._session_adapter = run.adapter
         # The adapter's terminal result once `wait()` has finished it; None on a failure.
         self.result: AdapterResult | None = None
 
@@ -197,6 +209,7 @@ class ActiveRun:
     async def begin(self, request: RunRequest, project_id: int | None) -> None:
         self._project_id = project_id
         self._cwd = request.cwd
+        self._session_adapter = session_adapter(self.run.adapter, dict(request.config))
         try:
             await self._adapter.start(request)
         except Exception as error:
@@ -309,7 +322,7 @@ class ActiveRun:
                 AgentTaskSession(
                     agent_id=self.run.agent_id,
                     task_id=task_id,
-                    adapter=self.run.adapter,
+                    adapter=self._session_adapter,
                     session_id=session_id,
                     cwd=cwd,
                     created_at=now,
@@ -317,7 +330,7 @@ class ActiveRun:
                 )
             )
             return
-        row.adapter = self.run.adapter
+        row.adapter = self._session_adapter
         row.session_id = session_id
         row.cwd = cwd
         row.updated_at = now
@@ -337,15 +350,31 @@ async def _queued_run(
 
 
 async def _stored_session(
-    db: AsyncSession, agent: Agent, task_id: int | None, adapter: str
-) -> AgentTaskSession | None:
+    db: AsyncSession,
+    agent: Agent,
+    task_id: int | None,
+    adapter: str,
+    config: dict[str, Any],
+) -> tuple[AgentTaskSession | None, bool]:
     if task_id is None:
-        return None
-    # A session belongs to the adapter that made it; another adapter starts afresh.
-    return await db.scalar(
+        return None, False
+    row = await db.scalar(
         select(AgentTaskSession).where(
             AgentTaskSession.agent_id == agent.id,
             AgentTaskSession.task_id == task_id,
-            AgentTaskSession.adapter == adapter,
         )
     )
+    if row is None:
+        return None, False
+    key = session_adapter(adapter, config)
+    if row.adapter == key:
+        return row, True
+    # Older tmux rows have no kind tag. Reuse only while the agent's configuration has not
+    # changed since that session was stored; its next run writes a tagged row.
+    if (
+        row.adapter == adapter == "tmux"
+        and key == session_adapter(agent.adapter, agent.config)
+        and row.updated_at >= agent.updated_at
+    ):
+        return row, True
+    return row, False

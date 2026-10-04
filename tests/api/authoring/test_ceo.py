@@ -114,3 +114,14 @@ def test_ceo_assignment_requires_a_session(app_client: TestClient) -> None:
         app_client.put("/api/org/ceo", json={"primary_kind": "claude"}, headers=WRITE).status_code
         == 401
     )
+
+
+def test_an_unavailable_agent_kind_is_refused(
+    signed_in: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("labhq.adapters.kinds.shutil.which", lambda _: None)
+
+    response = signed_in.put("/api/org/ceo", json={"primary_kind": "codex"}, headers=WRITE)
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "ceo_assignment_invalid"

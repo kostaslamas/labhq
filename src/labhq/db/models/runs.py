@@ -98,6 +98,7 @@ class AgentTaskSession(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id", ondelete="CASCADE"))
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"))
+    # tmux sessions include their CLI kind, e.g. tmux:codex, to prevent cross-kind resume.
     adapter: Mapped[str] = mapped_column(String(64))
     session_id: Mapped[str] = mapped_column(String(128))
     # Sessions are stored per working directory, so resume needs the same cwd.

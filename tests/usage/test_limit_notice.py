@@ -197,6 +197,36 @@ async def test_a_backup_on_another_adapter_starts_without_the_primary_session(wo
     assert run.adapter == "backup"
 
 
+async def test_two_tmux_kinds_do_not_share_a_session(world: World) -> None:
+    scheduler = await on_kind(world, {"agent": "fake-a", "fallback_agent": "fake-b"})
+    async with world.sessions() as db:
+        db.add(
+            AgentTaskSession(
+                agent_id=world.agent_id,
+                task_id=world.task_id,
+                adapter="tmux:fake-a",
+                session_id="primary-session",
+                cwd=None,
+                created_at=world.clock.now(),
+                updated_at=world.clock.now(),
+            )
+        )
+        await db.commit()
+    run_id = await finished_run(world, "fake-a", {"screen_final": {"text": screen(NOTICE)}})
+    await collector(world, FakeExtractor(ANSWERS[NOTICE])).collect([run_id])
+
+    await scheduler.enqueue(on_task(world, "after-limit"))
+    report = await scheduler.tick()
+    await scheduler.settle()
+
+    assert len(report.started) == 1
+    assert world.fake.requests[-1].resume_session_id is None
+    async with world.sessions() as db:
+        session = await db.scalar(select(AgentTaskSession))
+    assert session is not None
+    assert session.adapter == "tmux:fake-b"
+
+
 async def test_a_missing_primary_program_uses_the_backup(
     world: World, monkeypatch: pytest.MonkeyPatch
 ) -> None:
