@@ -25,6 +25,7 @@ from labhq.db.models import Run
 from labhq.runs import ActiveRun, RunService, RunStartError
 from labhq.scheduler.checkout import release
 from labhq.scheduler.dispatch import Dispatch, Verdict, dispatch_one, pending_wakeup_ids
+from labhq.scheduler.progress import continue_task
 from labhq.scheduler.reaper import LIVE_STATUSES, reap_stale_runs
 from labhq.scheduler.settings import SchedulerSettings, get_scheduler_settings
 from labhq.scheduler.sources import SourceRegistry, default_sources
@@ -186,6 +187,12 @@ class Scheduler:
             if live.timed_out_at is not None:
                 await self._mark_timed_out(db, live)
             await release(db, live.run_id)
+            await continue_task(
+                db,
+                self._clock,
+                live.run_id,
+                max_unreported_runs=self._settings.max_unreported_runs,
+            )
             await db.commit()
         report.finished.append(live.run_id)
 
@@ -265,6 +272,12 @@ class Scheduler:
                     .execution_options(synchronize_session=False)
                 )
             await release(db, run_id)
+            await continue_task(
+                db,
+                self._clock,
+                run_id,
+                max_unreported_runs=self._settings.max_unreported_runs,
+            )
             await db.commit()
 
 
