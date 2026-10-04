@@ -118,6 +118,7 @@ and CI fails when it does not match them.
 | `tests/onboard/test_first_run.py::test_first_run_reaches_a_verified_system_without_any_account` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_the_model_notice_appears_on_the_first_run_only` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_the_qr_code_encodes_exactly_the_printed_connector_url` | the fake cloudflared is a /bin/sh wrapper |
+| `tests/onboard/test_first_run.py::test_with_web_push_the_notifications_step_asks_for_a_device_instead_of_failing` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_first_run.py::test_without_no_serve_the_program_takes_over_the_port_behind_the_same_tunnel` | the fake cloudflared is a /bin/sh wrapper |
 | `tests/onboard/test_model.py::test_a_logged_in_claude_verifies` | the fake claude is a shebang script |
 | `tests/onboard/test_model.py::test_only_the_logged_in_answer_counts` | the fake claude is a shebang script |
