@@ -1,6 +1,5 @@
 """The fake agent in a real private tmux server: one turn, resume, interrupt."""
 
-import asyncio
 import sys
 from collections.abc import AsyncIterator
 from dataclasses import replace
@@ -251,7 +250,7 @@ async def test_ceo_keeps_one_named_pane_and_conversation_across_direct_turns(
     for _ in range(100):
         if make_adapter.server.pane_state("ceo_fake_persistent").dead:
             break
-        await asyncio.sleep(0.02)
+        await tmux_world.clock.sleep(0.02)
     assert make_adapter.server.pane_state("ceo_fake_persistent").dead
     fifth = await tmux_world.service.execute(
         agent_id=tmux_world.agent_id, task_id=None, prompt="after quit"
