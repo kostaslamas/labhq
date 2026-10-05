@@ -36,7 +36,18 @@ describe('project folder suggestions and existing agent edits', () => {
   })
 
   it('fills the path from an exact project name and offers partial matches', async () => {
-    get.mockResolvedValue({ data: [{ name: 'labhq', path: '/srv/work/labhq' }] })
+    get.mockImplementation((path: string) =>
+      path === '/api/repository-browser'
+        ? {
+            data: {
+              roots: [{ name: 'work', path: '/srv/work' }],
+              path: null,
+              parent: null,
+              folders: [],
+            },
+          }
+        : { data: [{ name: 'labhq', path: '/srv/work/labhq' }] },
+    )
     const wrapper = mount(AddProjectForm, { global: { plugins } })
     await wrapper.get('input[name="name"]').setValue('labhq')
     await new Promise((resolve) => setTimeout(resolve, 300))
@@ -44,7 +55,7 @@ describe('project folder suggestions and existing agent edits', () => {
     expect((wrapper.get('input[name="repo_path"]').element as HTMLInputElement).value).toBe(
       '/srv/work/labhq',
     )
-    expect(wrapper.get('[data-testid="path-suggestions"]').text()).toContain('/srv/work/labhq')
+    expect(wrapper.get('[data-testid="folder-tree"]').text()).toContain('/srv/work')
   })
 
   it('saves changes to the same agent id', async () => {
