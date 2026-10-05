@@ -71,6 +71,10 @@ async def test_project_lists_and_requests_an_exact_saved_session(
         encoding="utf-8",
     )
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex"))
+    monkeypatch.setattr(
+        "labhq.api.authoring.routes.choice_named",
+        lambda kind: SimpleNamespace(found=lambda: "/usr/bin/codex"),
+    )
 
     listed = signed_in.get(f"/api/projects/{project_id}/saved-sessions?kind=codex")
     assert listed.status_code == 200

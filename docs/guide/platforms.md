@@ -80,6 +80,8 @@ and CI fails when it does not match them.
 | `tests/adoption/test_checks.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_move.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_observe.py::test_ending_an_agent_its_parent_never_reaps_returns_once_it_is_a_zombie` | POSIX zombie processes and /bin/sh |
+| `tests/adoption/test_saved.py` | saved CLI sessions run through the tmux adapter |
+| `tests/api/authoring/test_adoption.py::test_project_lists_and_requests_an_exact_saved_session` | saved CLI sessions run through the tmux adapter |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
 | `tests/callcenter/screens/test_call_center_reads.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/callcenter/screens/test_calls_in_tmux.py` | the tmux adapter does not run on native Windows (ADR 0003) |
