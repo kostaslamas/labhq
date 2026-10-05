@@ -65,6 +65,8 @@
     "button": "Use a running tmux agent as manager",
     "title": "Assign a running tmux agent",
     "hint": "Choose an agent already running in your tmux. Your approval moves its conversation into labhq and assigns it as this project's manager.",
+    "fromSaved": "The live conversation in the selected tmux pane will be assigned. A saved session will not be resumed.",
+    "outsideTmux": "No matching agent is running in your tmux now. If it is running elsewhere, stop it or move it into tmux, then try again.",
     "loading": "Looking for running agents…",
     "empty": "No running agents for this project were found in your tmux.",
     "agent": "Running agent",
@@ -87,7 +89,9 @@
     "working": "Requesting…",
     "loadFailed": "The sessions could not be loaded.",
     "assignFailed": "The session could not be assigned. Refresh the list and try again.",
-    "running": "This agent is still running in the project folder. Use the running tmux agent option."
+    "runningAvailable": "An agent of this type is running in this project. Choose its live tmux pane to assign it as manager.",
+    "chooseRunning": "Choose running agent",
+    "runningOutside": "An agent of this type is running, but no matching tmux pane was found. Stop it or move it into tmux, then try again."
   },
   "add": {
     "button": "Add project",

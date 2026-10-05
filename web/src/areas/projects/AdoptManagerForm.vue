@@ -7,7 +7,7 @@ import { Button } from '@/ui'
 
 import { FIELD, LABEL } from './fieldClasses'
 
-const props = defineProps<{ projectId: number }>()
+const props = defineProps<{ projectId: number; kind?: string | null }>()
 const emit = defineEmits<{ requested: [approvalId: number]; cancel: [] }>()
 const { t } = useI18n()
 
@@ -33,8 +33,8 @@ async function load(): Promise<void> {
     })
     if (!data) failure.value = true
     else {
-      candidates.value = data
-      selectedPid.value = data.length === 1 ? String(data[0]!.pid) : ''
+      candidates.value = props.kind ? data.filter((agent) => agent.kind === props.kind) : data
+      selectedPid.value = candidates.value.length === 1 ? String(candidates.value[0]!.pid) : ''
     }
   } catch {
     failure.value = true
@@ -71,9 +71,10 @@ onMounted(load)
   >
     <h3 class="text-base font-semibold">{{ t('projects.adopt.title') }}</h3>
     <p class="text-sm text-muted">{{ t('projects.adopt.hint') }}</p>
+    <p v-if="kind" class="text-sm text-muted" role="status">{{ t('projects.adopt.fromSaved') }}</p>
     <p v-if="loading" class="text-sm text-muted">{{ t('projects.adopt.loading') }}</p>
     <p v-else-if="candidates.length === 0" class="text-sm text-muted">
-      {{ t('projects.adopt.empty') }}
+      {{ t(kind ? 'projects.adopt.outsideTmux' : 'projects.adopt.empty') }}
     </p>
     <label v-else :class="LABEL">
       {{ t('projects.adopt.agent') }}

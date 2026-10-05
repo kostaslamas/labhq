@@ -27,6 +27,7 @@ const adding = ref(false)
 const editing = ref<number | null>(null)
 const awaiting = ref(false)
 const adopting = ref(false)
+const adoptingKind = ref<string | null>(null)
 const assigningSaved = ref(false)
 const adoptionRequested = ref(false)
 const hasManager = computed(
@@ -58,6 +59,17 @@ function managerRequested(): void {
   adoptionRequested.value = true
   adopting.value = false
   assigningSaved.value = false
+}
+
+function useRunningAgent(kind: string): void {
+  assigningSaved.value = false
+  adoptingKind.value = kind
+  adopting.value = true
+}
+
+function chooseRunningAgent(): void {
+  adoptingKind.value = null
+  adopting.value = true
 }
 
 async function agentAdded(): Promise<void> {
@@ -173,6 +185,7 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
         <AdoptManagerForm
           v-if="adopting"
           :project-id="view.id"
+          :kind="adoptingKind"
           @requested="managerRequested"
           @cancel="adopting = false"
         />
@@ -180,6 +193,7 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           v-if="assigningSaved"
           :project-id="view.id"
           @requested="managerRequested"
+          @running="useRunningAgent"
           @cancel="assigningSaved = false"
         />
         <div
@@ -193,7 +207,7 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           >
             {{ t('projects.sessions.button') }}
           </Button>
-          <Button variant="outline" data-testid="adopt-manager" @click="adopting = true">
+          <Button variant="outline" data-testid="adopt-manager" @click="chooseRunningAgent">
             {{ t('projects.adopt.button') }}
           </Button>
         </div>
