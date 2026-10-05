@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labhq.adapters.tmux import AgentKinds, TmuxServer, default_kinds, get_tmux_settings
 from labhq.adapters.tmux.agents import default_python
 from labhq.adapters.tmux.turns import Watch, quiescent
-from labhq.adoption.checkout import changed_paths, fingerprint, toplevel
+from labhq.adoption.checkout import changed_paths, fingerprint, is_git_repository, toplevel
 from labhq.adoption.discovery import is_alive
 from labhq.adoption.observe import AdoptionError, OwnerTmux, observer_for, wait_for_turn_end
 from labhq.adoption.record import Adopted, record_adoption
@@ -127,7 +127,8 @@ class AdoptionEngine:
             end_process, request.pid, request.started_at, settings.end_timeout_seconds
         )
         # Exclude first, so the snapshot of uncommitted work never lists labhq's own files.
-        exclude_state_dir(cwd)
+        if is_git_repository(repo):
+            exclude_state_dir(cwd)
         uncommitted = changed_paths(repo)
         write_rules(cwd)
         server = self.server()

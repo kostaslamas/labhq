@@ -9,7 +9,7 @@ import hashlib
 import os
 from pathlib import Path
 
-from labhq.worktrees.git import run_git
+from labhq.worktrees.git import GitError, run_git
 
 READ_ONLY_GIT = {"GIT_OPTIONAL_LOCKS": "0"}
 
@@ -19,11 +19,28 @@ def _git(*args: str, repo: Path) -> str:
 
 
 def toplevel(path: Path) -> Path:
-    return Path(_git("rev-parse", "--show-toplevel", repo=path).strip())
+    try:
+        return Path(_git("rev-parse", "--show-toplevel", repo=path).strip())
+    except GitError as error:
+        if "not a git repository" not in error.stderr:
+            raise
+        return path.resolve()
+
+
+def is_git_repository(path: Path) -> bool:
+    try:
+        _git("rev-parse", "--show-toplevel", repo=path)
+    except GitError as error:
+        if "not a git repository" not in error.stderr:
+            raise
+        return False
+    return True
 
 
 def changed_paths(repo: Path) -> list[str]:
     """Paths with uncommitted changes, untracked files included, `.labhq/` excluded."""
+    if not is_git_repository(repo):
+        return []
     raw = _git("status", "--porcelain=v1", "-z", "--untracked-files=all", repo=repo)
     fields = raw.split("\0")
     paths: list[str] = []
@@ -41,6 +58,15 @@ def changed_paths(repo: Path) -> list[str]:
 
 
 def fingerprint(repo: Path) -> str:
+    if not is_git_repository(repo):
+        parts: list[str] = []
+        for root, dirs, files in os.walk(repo):
+            dirs[:] = sorted(name for name in dirs if name != ".labhq")
+            for name in sorted(files):
+                target = Path(root) / name
+                stat = target.lstat()
+                parts.append(f"{target.relative_to(repo)} {stat.st_size} {stat.st_mtime_ns}")
+        return hashlib.sha256("\n".join(parts).encode("utf-8")).hexdigest()
     head = _git("rev-parse", "--verify", "--quiet", "HEAD", repo=repo).strip()
     parts = [head]
     for path in changed_paths(repo):

@@ -21,7 +21,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters.tmux import AgentKind, AgentKinds, TmuxServer, TurnEnd, default_kinds
-from labhq.adoption.checkout import changed_paths, fingerprint
+from labhq.adoption.checkout import changed_paths, fingerprint, is_git_repository
 from labhq.adoption.rules import STATUS_REQUEST, rules_message, sends
 from labhq.adoption.session import (
     AdoptedSession,
@@ -203,7 +203,9 @@ class AdoptedChecks:
         if current == state.baseline:
             return False
         paths = await asyncio.to_thread(changed_paths, repo)
-        listed = ", ".join(paths[:MAX_LISTED_PATHS]) or "a new commit"
+        listed = ", ".join(paths[:MAX_LISTED_PATHS]) or (
+            "a new commit" if is_git_repository(repo) else "files in the folder"
+        )
         more = f" and {len(paths) - MAX_LISTED_PATHS} more" if len(paths) > MAX_LISTED_PATHS else ""
         await notify(
             db,
@@ -212,7 +214,7 @@ class AdoptedChecks:
             title=f"The main checkout of agent {agent.id} changed",
             body=(
                 f"{repo} changed after labhq adopted agent {agent.id}: {listed}{more}. "
-                "A manager makes no code edits there; workers work in their own worktrees."
+                "A manager makes no code edits there; workers handle project files."
             ),
             idempotency_key=f"{CHECKOUT_CHANGED}:{agent.id}:{current}",
             now=self._clock.now(),

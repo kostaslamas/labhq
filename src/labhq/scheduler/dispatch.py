@@ -22,7 +22,7 @@ from labhq.adapters.kinds import UnknownAgentChoiceError, choice_named
 from labhq.budgets import BudgetSettings, Decision, check
 from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
-from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupStatus
+from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupSource, WakeupStatus
 from labhq.db.models import Agent, Run, Task, WakeupRequest
 from labhq.scheduler.checkout import checkout
 from labhq.scheduler.reaper import LIVE_STATUSES
@@ -149,7 +149,11 @@ async def dispatch_one(
         run_id=run.id,
         agent_id=agent.id,
         task_id=request.task_id,
-        prompt=f"{prompt}\n{TAKEOVER_NOTE}" if overrides else prompt,
+        prompt=(
+            f"{prompt}\n{TAKEOVER_NOTE}"
+            if overrides and request.source is not WakeupSource.OWNER_MESSAGE
+            else prompt
+        ),
         timeout_seconds=limits.timeout_seconds,
         config=overrides,
         adapter=selected_adapter,

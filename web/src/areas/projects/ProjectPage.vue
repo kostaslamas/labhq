@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft } from 'lucide-vue-next'
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api, uiState, type components } from '@/api'
@@ -9,6 +9,7 @@ import { StatusBadge } from '@/status'
 import { Button, Mono } from '@/ui'
 
 import AddAgentForm from './AddAgentForm.vue'
+import AdoptManagerForm from './AdoptManagerForm.vue'
 import BudgetMeter from './BudgetMeter.vue'
 import DeliverableList from './DeliverableList.vue'
 import TaskCounts from './TaskCounts.vue'
@@ -22,6 +23,16 @@ const view = ref<View | null>(null)
 const state = ref<'loading' | 'ready' | 'missing' | 'failed'>('loading')
 const adding = ref(false)
 const awaiting = ref(false)
+const adopting = ref(false)
+const adoptionRequested = ref(false)
+const hasManager = computed(
+  () => view.value?.team.some((member) => member.role === 'manager') ?? false,
+)
+
+function managerRequested(): void {
+  adoptionRequested.value = true
+  adopting.value = false
+}
 
 async function agentAdded(): Promise<void> {
   adding.value = false
@@ -118,6 +129,27 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           <Mono class="text-sm text-muted">#{{ view.id }}</Mono>
         </h2>
         <TeamTree :team="view.team" />
+        <p v-if="adoptionRequested" role="status" class="text-sm text-muted">
+          {{ t('projects.adopt.waiting') }}
+          <RouterLink :to="{ name: 'approvals' }" class="text-accent underline">
+            {{ t('projects.agent.review') }}
+          </RouterLink>
+        </p>
+        <AdoptManagerForm
+          v-if="adopting"
+          :project-id="view.id"
+          @requested="managerRequested"
+          @cancel="adopting = false"
+        />
+        <Button
+          v-else-if="!hasManager && !adoptionRequested"
+          class="w-fit"
+          variant="outline"
+          data-testid="adopt-manager"
+          @click="adopting = true"
+        >
+          {{ t('projects.adopt.button') }}
+        </Button>
         <p
           v-if="awaiting"
           role="status"

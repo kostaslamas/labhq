@@ -199,7 +199,7 @@ class TmuxAdapter:
                 state = await asyncio.to_thread(self._server.pane_state, name)
                 if not state.dead:
                     self._initial_screen = await asyncio.to_thread(self._server.capture, name)
-                    await self.send(self._prompt(request))
+                    await self.send(request.persistent_turn_prompt or request.prompt)
                     return
                 argv = self._argv(kind, request, run_dir)
                 await asyncio.to_thread(

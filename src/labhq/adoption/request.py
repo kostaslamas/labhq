@@ -7,13 +7,14 @@ conversation is kept (ADR 0005).
 
 import asyncio
 from dataclasses import dataclass
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters.tmux import AgentKinds, default_kinds
-from labhq.adoption.checkout import toplevel
+from labhq.adoption.checkout import is_git_repository, toplevel
 from labhq.adoption.discovery import Processes, RunningAgent, all_processes, discover, find_running
 from labhq.adoption.observe import AdoptionError, OwnerTmux
 from labhq.adoption.settings import AdoptionSettings, get_adoption_settings
@@ -27,7 +28,7 @@ ADOPT_AGENT = "adopt_agent"
 NO_ISOLATION_WARNING = (
     "No sandbox is configured (LABHQ_ADOPT_SANDBOX) and the agent cannot run as a separate OS "
     "user, because its conversation is stored under your home. It will run as you, in your "
-    "main checkout: labhq's environment and hook deter a push but do not prevent one "
+    "project folder: labhq's environment and hook deter a push but do not prevent one "
     "(plan §5, rule 6)."
 )
 
@@ -79,6 +80,14 @@ async def refuse_second_manager(db: AsyncSession, project_name: str) -> None:
         )
 
 
+def works_on_project(cwd: Path, project_path: Path) -> bool:
+    """An adopted manager must continue in the project it is assigned to."""
+    root = project_path.resolve()
+    if is_git_repository(cwd):
+        return toplevel(cwd).resolve() == root
+    return cwd.resolve().is_relative_to(root)
+
+
 class Adoptions:
     def __init__(
         self,
@@ -100,7 +109,12 @@ class Adoptions:
         return await asyncio.to_thread(discover, self._kinds, self._processes)
 
     async def request(
-        self, pid: int, *, project: str | None = None, requested_by: int | None = None
+        self,
+        pid: int,
+        *,
+        project: str | None = None,
+        requested_by: int | None = None,
+        require_tmux: bool = False,
     ) -> AdoptionRequest:
         """Record a pending `adopt_agent` approval for process `pid`."""
         try:
@@ -110,9 +124,17 @@ class Adoptions:
         name = project or toplevel(agent.cwd).name
         async with self._sessions() as db:
             await refuse_second_manager(db, name)
+            existing = await db.scalar(select(Project).where(Project.name == name))
+            if existing is not None and not works_on_project(agent.cwd, Path(existing.repo_path)):
+                raise AdoptionError(
+                    f"process {pid} runs in {agent.cwd}, outside project {name!r} "
+                    f"at {existing.repo_path}"
+                )
         pane = await asyncio.to_thread(
             OwnerTmux(self._settings.owner_tmux_socket).pane_of, agent.pid
         )
+        if require_tmux and pane is None:
+            raise AdoptionError(f"process {pid} is not running in the owner's tmux")
         warnings = isolation_warnings(self._settings)
         payload = AdoptPayload(
             kind=agent.kind,

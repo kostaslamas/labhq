@@ -128,6 +128,7 @@ class RunService:
                 cwd = self._memory.home(agent.id)
                 cwd.mkdir(parents=True, exist_ok=True)
                 install_ceo_skill(cwd, get_tmux_settings().socket)
+            persistent_turn_prompt = prompt if ceo_tmux else None
             memory = self._memory.prepare(agent, cwd)
             if memory is not None:
                 cwd, prompt = memory.cwd, memory.prompt(prompt)
@@ -162,6 +163,7 @@ class RunService:
                     if ceo_tmux
                     else None
                 ),
+                persistent_turn_prompt=persistent_turn_prompt,
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(

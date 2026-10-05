@@ -61,6 +61,19 @@
     "failed": "The CEO assignment could not be saved.",
     "loadFailed": "The CEO assignment could not be loaded."
   },
+  "adopt": {
+    "button": "Use a running tmux agent as manager",
+    "title": "Assign a running tmux agent",
+    "hint": "Choose an agent already running in your tmux. Your approval moves its conversation into labhq and assigns it as this project's manager.",
+    "loading": "Looking for running agents…",
+    "empty": "No running agents for this project were found in your tmux.",
+    "agent": "Running agent",
+    "choose": "Choose an agent",
+    "submit": "Request assignment",
+    "working": "Requesting…",
+    "waiting": "Assignment requested. Review the approval to move this agent.",
+    "failed": "The running agents could not be loaded or the assignment could not be requested. Try again."
+  },
   "add": {
     "button": "Add project",
     "title": "Add a project",
