@@ -16,10 +16,12 @@ from labhq.adoption.move import AdoptionEngine, end_process
 from labhq.adoption.observe import AdoptionError, OwnerTmux
 from labhq.adoption.request import (
     ADOPT_AGENT,
+    ADOPT_SAVED_SESSION,
     NO_ISOLATION_WARNING,
     AdoptionRequest,
     Adoptions,
     AdoptPayload,
+    SavedSessionPayload,
 )
 from labhq.adoption.rules import MANAGER_RULES, RULES_RELATIVE_PATH, STATUS_REQUEST, rules_message
 from labhq.adoption.settings import AdoptionSettings, get_adoption_settings
@@ -36,6 +38,11 @@ def adoption_executor(engine: AdoptionEngine) -> Executor:
 # always waits for the owner.
 default_actions.register(ADOPT_AGENT, ActionType(ADOPT_AGENT, RiskClass.LIGHT))
 default_executors.register(ADOPT_AGENT, adoption_executor(AdoptionEngine()))
+default_actions.register(ADOPT_SAVED_SESSION, ActionType(ADOPT_SAVED_SESSION, RiskClass.LIGHT))
+default_executors.register(
+    ADOPT_SAVED_SESSION,
+    Executor(run=AdoptionEngine().run_saved, validate=SavedSessionPayload.model_validate),
+)
 
 __all__ = [
     "ADOPT_AGENT",

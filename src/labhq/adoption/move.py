@@ -8,6 +8,7 @@ and listed in the status.
 
 import asyncio
 import contextlib
+import hashlib
 import os
 import threading
 import time
@@ -18,17 +19,23 @@ from pathlib import Path
 from typing import Any
 
 import psutil
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters.tmux import AgentKinds, TmuxServer, default_kinds, get_tmux_settings
 from labhq.adapters.tmux.agents import default_python
 from labhq.adapters.tmux.turns import Watch, quiescent
 from labhq.adoption.checkout import changed_paths, fingerprint, is_git_repository, toplevel
-from labhq.adoption.discovery import is_alive
+from labhq.adoption.discovery import discover, is_alive
 from labhq.adoption.observe import AdoptionError, OwnerTmux, observer_for, wait_for_turn_end
 from labhq.adoption.record import Adopted, record_adoption
-from labhq.adoption.request import AdoptPayload, refuse_second_manager
+from labhq.adoption.request import (
+    AdoptPayload,
+    SavedSessionPayload,
+    refuse_second_manager,
+)
 from labhq.adoption.rules import rules_message, sends, write_rules
+from labhq.adoption.saved import find_saved_session
 from labhq.adoption.session import (
     AdoptedSession,
     reported_session,
@@ -39,6 +46,7 @@ from labhq.adoption.session import (
 from labhq.adoption.settings import AdoptionSettings, get_adoption_settings
 from labhq.clock import Clock, SystemClock
 from labhq.db import create_engine, session_factory
+from labhq.db.models import Project
 from labhq.hierarchy import HierarchySettings
 from labhq.settings import Settings, get_settings
 from labhq.worktrees.exclude import exclude_state_dir
@@ -95,6 +103,9 @@ class AdoptionEngine:
         """Called from the approval service's worker thread, with only the payload."""
         return asyncio.run(self.adopt(AdoptPayload.model_validate(payload)))
 
+    def run_saved(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        return asyncio.run(self.adopt_saved(SavedSessionPayload.model_validate(payload)))
+
     async def adopt(self, request: AdoptPayload) -> dict[str, Any]:
         engine = create_engine(self.database_url())
         sessions = session_factory(engine)
@@ -108,6 +119,72 @@ class AdoptionEngine:
         finally:
             await engine.dispose()
         return record
+
+    async def adopt_saved(self, request: SavedSessionPayload) -> dict[str, Any]:
+        """Resume the exact stopped conversation approved by the owner."""
+        engine = create_engine(self.database_url())
+        sessions = session_factory(engine)
+        try:
+            async with sessions() as db:
+                await refuse_second_manager(db, request.project)
+                project = await db.scalar(select(Project).where(Project.name == request.project))
+                if (
+                    project is None
+                    or Path(project.repo_path).resolve() != Path(request.cwd).resolve()
+                ):
+                    raise AdoptionError("the project's directory changed after approval")
+            adopted = await self._resume_saved(request)
+            async with sessions() as db:
+                record = await self._record(db, request, adopted)
+                await db.commit()
+        finally:
+            await engine.dispose()
+        return record
+
+    async def _resume_saved(self, request: SavedSessionPayload) -> Adopted:
+        cwd = Path(request.cwd).resolve()
+        kind = self.kinds.get(request.kind)
+        if kind.continue_selected is None:
+            raise AdoptionError(f"{kind.name} cannot resume a selected session")
+        await asyncio.to_thread(find_saved_session, kind.name, cwd, request.session_id)
+        running = await asyncio.to_thread(discover, self.kinds)
+        if any(
+            agent.kind == kind.name
+            and (agent.cwd.resolve().is_relative_to(cwd) or request.session_id in agent.command)
+            for agent in running
+        ):
+            raise AdoptionError(f"a {kind.name} process is still running in {cwd}")
+        repo = toplevel(cwd)
+        if is_git_repository(repo):
+            exclude_state_dir(cwd)
+        uncommitted = changed_paths(repo)
+        write_rules(cwd)
+        server = self.server()
+        key = hashlib.sha256(f"{kind.name}:{cwd}:{request.session_id}".encode()).hexdigest()[:16]
+        name = f"saved-{kind.name}-{key}"
+        session = AdoptedSession(name, cwd, server.state_dir / "adopted" / name)
+        await asyncio.to_thread(
+            start_session,
+            server,
+            kind,
+            session,
+            environ=self.environ if self.environ is not None else os.environ,
+            python=self.python or default_python(),
+            sandbox=self.settings().sandbox,
+            selected_session_id=request.session_id,
+        )
+        if sends(kind):
+            await self._wait_ready(server, name, self.settings())
+            await asyncio.to_thread(send_message, server, name, rules_message())
+        return Adopted(
+            kind=kind,
+            session=session,
+            repo=repo,
+            session_id=request.session_id,
+            uncommitted=uncommitted,
+            baseline=fingerprint(repo),
+            last_screen=None,
+        )
 
     async def _move(self, request: AdoptPayload) -> Adopted:
         kind = self.kinds.get(request.kind)
@@ -182,7 +259,7 @@ class AdoptionEngine:
             await self.clock.sleep(settings.poll_seconds)
 
     async def _record(
-        self, db: AsyncSession, request: AdoptPayload, adopted: Adopted
+        self, db: AsyncSession, request: AdoptPayload | SavedSessionPayload, adopted: Adopted
     ) -> dict[str, Any]:
         return await record_adoption(
             db,
