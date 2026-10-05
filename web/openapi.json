@@ -140,6 +140,36 @@
         "title": "AddedAgent",
         "type": "object"
       },
+      "AdoptManagerApproval": {
+        "properties": {
+          "approval_id": {
+            "title": "Approval Id",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": ["approval_id", "warnings"],
+        "title": "AdoptManagerApproval",
+        "type": "object"
+      },
+      "AdoptManagerBody": {
+        "properties": {
+          "pid": {
+            "exclusiveMinimum": 0.0,
+            "title": "Pid",
+            "type": "integer"
+          }
+        },
+        "required": ["pid"],
+        "title": "AdoptManagerBody",
+        "type": "object"
+      },
       "AgentKindChoice": {
         "properties": {
           "adapter": {
@@ -1838,6 +1868,29 @@
         "title": "RunStatus",
         "type": "string"
       },
+      "RunningManagerCandidate": {
+        "properties": {
+          "cwd": {
+            "title": "Cwd",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "pane": {
+            "title": "Pane",
+            "type": "string"
+          },
+          "pid": {
+            "title": "Pid",
+            "type": "integer"
+          }
+        },
+        "required": ["pid", "kind", "cwd", "pane"],
+        "title": "RunningManagerCandidate",
+        "type": "object"
+      },
       "SendCeoMessage": {
         "properties": {
           "text": {
@@ -3528,6 +3581,57 @@
         "tags": ["projects"]
       }
     },
+    "/api/projects/{project_id}/adopt-manager": {
+      "post": {
+        "description": "Ask approval before moving an owner's running tmux agent into labhq.",
+        "operationId": "adopt_manager_request",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdoptManagerBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdoptManagerApproval"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Adopt Manager Request",
+        "tags": ["authoring"]
+      }
+    },
     "/api/projects/{project_id}/agents": {
       "post": {
         "description": "Add an agent to a project. It starts pending: nothing runs until its approval.",
@@ -3576,6 +3680,51 @@
           }
         },
         "summary": "Project Agents Create",
+        "tags": ["authoring"]
+      }
+    },
+    "/api/projects/{project_id}/running-managers": {
+      "get": {
+        "description": "Show CLI agents in the owner's tmux that can be adopted for this project.",
+        "operationId": "running_managers_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RunningManagerCandidate"
+                  },
+                  "title": "Response Running Managers List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Running Managers List",
         "tags": ["authoring"]
       }
     },

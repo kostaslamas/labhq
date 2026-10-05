@@ -512,6 +512,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/projects/{project_id}/adopt-manager': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Adopt Manager Request
+     * @description Ask approval before moving an owner's running tmux agent into labhq.
+     */
+    post: operations['adopt_manager_request']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects/{project_id}/agents': {
     parameters: {
       query?: never
@@ -526,6 +546,26 @@ export interface paths {
      * @description Add an agent to a project. It starts pending: nothing runs until its approval.
      */
     post: operations['project_agents_create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/projects/{project_id}/running-managers': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Running Managers List
+     * @description Show CLI agents in the owner's tmux that can be adopted for this project.
+     */
+    get: operations['running_managers_list']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -635,6 +675,18 @@ export interface components {
       status: components['schemas']['AgentStatus']
       /** Title */
       title: string
+    }
+    /** AdoptManagerApproval */
+    AdoptManagerApproval: {
+      /** Approval Id */
+      approval_id: number
+      /** Warnings */
+      warnings: string[]
+    }
+    /** AdoptManagerBody */
+    AdoptManagerBody: {
+      /** Pid */
+      pid: number
     }
     /** AgentKindChoice */
     AgentKindChoice: {
@@ -1302,6 +1354,17 @@ export interface components {
      * @enum {string}
      */
     RunStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'interrupted' | 'timed_out'
+    /** RunningManagerCandidate */
+    RunningManagerCandidate: {
+      /** Cwd */
+      cwd: string
+      /** Kind */
+      kind: string
+      /** Pane */
+      pane: string
+      /** Pid */
+      pid: number
+    }
     /** SendCeoMessage */
     SendCeoMessage: {
       /** Text */
@@ -2454,6 +2517,41 @@ export interface operations {
       }
     }
   }
+  adopt_manager_request: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AdoptManagerBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdoptManagerApproval']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   project_agents_create: {
     parameters: {
       query?: never
@@ -2476,6 +2574,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AddedAgent']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  running_managers_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RunningManagerCandidate'][]
         }
       }
       /** @description Error */

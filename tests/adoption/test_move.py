@@ -87,6 +87,24 @@ async def test_the_adopted_agent_manages_the_project_under_the_ceo(world: World)
     assert manager.config["agent"] == "fake-cli"
 
 
+async def test_an_agent_in_a_plain_folder_can_manage_a_project(
+    world: World, tmp_path: Path
+) -> None:
+    folder = tmp_path / "plain-project"
+    folder.mkdir()
+    (folder / "notes.txt").write_text("existing work", encoding="utf-8")
+    world.repo = folder
+
+    _, agent_id = await adopt(world)
+
+    async with world.sessions() as db:
+        manager = await db.get_one(Agent, agent_id)
+        project = await db.get_one(Project, manager.project_id)
+    assert project.repo_path == str(folder)
+    assert manager.role == MANAGER
+    assert (folder / "notes.txt").read_text(encoding="utf-8") == "existing work"
+
+
 async def test_a_project_with_a_manager_cannot_adopt_another(world: World) -> None:
     await adopt(world)
     await wait_for(lambda: len(world.drivers) >= 3, "the continued agent")

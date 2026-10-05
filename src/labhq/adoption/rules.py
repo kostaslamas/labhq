@@ -1,13 +1,13 @@
 """A labhq manager's rules (ADR 0005) and the routes that deliver them.
 
-The rules always go to `.labhq/rules.md`, under the `.labhq/` entry of the repository's
-`info/exclude`, so `git add -A` never stages them. The owner's tracked files, `CLAUDE.md`
-included, are never changed.
+The rules go to `.labhq/rules.md`. In a Git checkout that directory is excluded, so
+`git add -A` never stages it. The owner's tracked files are never changed.
 """
 
 from pathlib import Path
 
 from labhq.adapters.tmux import AgentKind, RulesInjection
+from labhq.adoption.checkout import is_git_repository
 from labhq.worktrees.exclude import STATE_DIR, exclude_state_dir
 
 RULES_RELATIVE_PATH = Path(STATE_DIR) / "rules.md"
@@ -15,8 +15,7 @@ RULES_RELATIVE_PATH = Path(STATE_DIR) / "rules.md"
 MANAGER_RULES: tuple[str, ...] = (
     "Update .labhq/status.md at the end of every turn: summary, done, next, blockers, refs, "
     "questions.",
-    "Make no more code edits in this checkout: split the work into tasks for workers, who "
-    "work in their own worktrees.",
+    "Make no more code edits in this project folder: split the work into tasks for workers.",
     "Never push or merge: request an approval.",
     "Be terse with agents and natural with the owner.",
     "Ask the owner through the questions field of .labhq/status.md, not by waiting at the "
@@ -60,7 +59,8 @@ def rules_message() -> str:
 
 def write_rules(checkout: Path) -> Path:
     """Exclude `.labhq/` first, then write the rules, so nothing can stage them in between."""
-    exclude_state_dir(checkout)
+    if is_git_repository(checkout):
+        exclude_state_dir(checkout)
     path = checkout / RULES_RELATIVE_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(rules_text(), encoding="utf-8")

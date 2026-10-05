@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters.tmux import AgentKind
+from labhq.adoption.checkout import is_git_repository
 from labhq.adoption.request import AdoptPayload, refuse_second_manager
 from labhq.adoption.session import AdoptedSession, file_digest
 from labhq.adoption.state import AdoptionState, store_state
@@ -41,7 +42,12 @@ class Adopted:
     last_screen: str | None
 
 
-def adoption_status(uncommitted: list[str]) -> StatusFields:
+def adoption_status(uncommitted: list[str], *, git: bool = True) -> StatusFields:
+    if not git:
+        return StatusFields(
+            summary="Adopted by labhq as this project's manager. "
+            "Existing folder files were left in place."
+        )
     left = (
         "Uncommitted changes at the move were left in place: " + ", ".join(uncommitted) + "."
         if uncommitted
@@ -126,7 +132,7 @@ async def record_adoption(
     )
     db.add(manager)
     await db.flush()
-    fields = adoption_status(adopted.uncommitted)
+    fields = adoption_status(adopted.uncommitted, git=is_git_repository(adopted.repo))
     status_file = session.cwd / STATUS_RELATIVE_PATH
     if not status_file.exists():
         status_file.write_text(render_status(fields), encoding="utf-8")

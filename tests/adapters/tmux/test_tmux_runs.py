@@ -229,6 +229,9 @@ async def test_ceo_keeps_one_named_pane_and_conversation_across_direct_turns(
     first_pid = first_answer[0].payload["text"].split()[0]
     assert second_answer[0].payload["text"].split()[0] == first_pid
     assert "CEO test rules" in first_answer[0].payload["text"]
+    assert "prompt=second question" in second_answer[0].payload["text"]
+    assert "CEO test rules" not in second_answer[0].payload["text"]
+    assert "## Your memory" not in second_answer[0].payload["text"]
 
     await use_adapter(tmux_world, "tmux", agent_config("fake-other"))
     third = await tmux_world.service.execute(

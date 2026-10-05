@@ -48,6 +48,8 @@ class RunRequest:
     system_prompt_append: str | None = None
     # The CEO's managed tmux pane persists across runs of the same CLI kind.
     persistent_tmux_session: str | None = None
+    # The unwrapped turn for an already running CEO pane. Fresh panes receive `prompt`.
+    persistent_turn_prompt: str | None = None
 
 
 @dataclass(frozen=True)

@@ -5,13 +5,18 @@ Nothing here owns logic: `labhq.work` checks the directory and creates the rows,
 decided on the approvals page like any other.
 """
 
+import asyncio
 from pathlib import Path
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 
 from labhq import work
 from labhq.adapters import default_registry
 from labhq.adapters.kinds import UnknownAgentChoiceError, agent_choices
+from labhq.adoption.observe import AdoptionError, OwnerTmux
+from labhq.adoption.request import Adoptions, works_on_project
+from labhq.adoption.settings import get_adoption_settings
 from labhq.api.authoring.browser import router as browser_router
 from labhq.api.authoring.schemas import (
     AddedAgent,
@@ -29,6 +34,70 @@ from labhq.hierarchy.roles import role
 
 router = APIRouter(tags=["authoring"])
 router.include_router(browser_router)
+
+
+class RunningManagerCandidate(BaseModel):
+    pid: int
+    kind: str
+    cwd: str
+    pane: str
+
+
+class AdoptManagerBody(BaseModel):
+    pid: int = Field(gt=0)
+
+
+class AdoptManagerApproval(BaseModel):
+    approval_id: int
+    warnings: list[str]
+
+
+@router.get("/projects/{project_id}/running-managers")
+async def running_managers_list(
+    project_id: int, owner: SignedIn, context: ContextDep, db: SessionDep
+) -> list[RunningManagerCandidate]:
+    """Show CLI agents in the owner's tmux that can be adopted for this project."""
+    try:
+        project = await work.find_project(db, str(project_id))
+    except work.WorkError:
+        raise ApiError(404, "project_not_found", f"There is no project {project_id}.") from None
+    tmux = OwnerTmux(get_adoption_settings().owner_tmux_socket)
+    found = await Adoptions(context.sessions, clock=context.clock).discover()
+    candidates = []
+    for agent in found:
+        if not works_on_project(agent.cwd, Path(project.repo_path)):
+            continue
+        pane = await asyncio.to_thread(tmux.pane_of, agent.pid)
+        if pane is not None:
+            candidates.append(
+                RunningManagerCandidate(
+                    pid=agent.pid, kind=agent.kind, cwd=str(agent.cwd), pane=pane
+                )
+            )
+    return candidates
+
+
+@router.post("/projects/{project_id}/adopt-manager", status_code=202)
+async def adopt_manager_request(
+    project_id: int,
+    body: AdoptManagerBody,
+    owner: SignedIn,
+    context: ContextDep,
+    db: SessionDep,
+) -> AdoptManagerApproval:
+    """Ask approval before moving an owner's running tmux agent into labhq."""
+    try:
+        project = await work.find_project(db, str(project_id))
+    except work.WorkError:
+        raise ApiError(404, "project_not_found", f"There is no project {project_id}.") from None
+    adoption = Adoptions(context.sessions, clock=context.clock)
+    try:
+        request = await adoption.request(body.pid, project=project.name, require_tmux=True)
+    except AdoptionError as error:
+        raise ApiError(422, "adoption_not_valid", str(error)) from None
+    except HierarchyError as error:
+        raise ApiError(409, "manager_exists", str(error)) from None
+    return AdoptManagerApproval(approval_id=request.approval.id, warnings=list(request.warnings))
 
 
 @router.get("/agent-kinds")

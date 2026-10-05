@@ -1,10 +1,14 @@
 """The owner's checkout after the move: rules excluded, uncommitted work untouched, push
 deterred by the environment alone."""
 
+from pathlib import Path
+
 import pytest
 from sqlalchemy import select
 
 from labhq.adoption import RULES_RELATIVE_PATH, rules_message
+from labhq.adoption.checkout import changed_paths, fingerprint, toplevel
+from labhq.adoption.request import works_on_project
 from labhq.adoption.session import send_message, session_name
 from labhq.callcenter.status.ingest import STATUS_RELATIVE_PATH
 from labhq.db.models import StatusUpdate
@@ -17,6 +21,32 @@ pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Win
 def refs(world: World) -> str:
     remote = world.repo.parent / "remote.git"
     return run_git("for-each-ref", "--format=%(refname) %(objectname)", cwd=remote)
+
+
+def test_a_plain_project_folder_has_a_stable_fingerprint(tmp_path: Path) -> None:
+    folder = tmp_path / "plain"
+    folder.mkdir()
+    (folder / "file.txt").write_text("first", encoding="utf-8")
+    initial = fingerprint(folder)
+
+    assert toplevel(folder) == folder
+    assert changed_paths(folder) == []
+    (folder / ".labhq").mkdir()
+    (folder / ".labhq" / "status.md").write_text("internal", encoding="utf-8")
+    assert fingerprint(folder) == initial
+    (folder / "file.txt").write_text("second", encoding="utf-8")
+    assert fingerprint(folder) != initial
+
+
+def test_a_plain_project_accepts_an_agent_in_a_subfolder(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    child = project / "src"
+    child.mkdir(parents=True)
+    unrelated = tmp_path / "other"
+    unrelated.mkdir()
+
+    assert works_on_project(child, project)
+    assert not works_on_project(unrelated, project)
 
 
 async def test_the_rules_file_is_excluded_and_git_status_does_not_show_it(world: World) -> None:

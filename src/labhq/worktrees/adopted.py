@@ -15,7 +15,7 @@ from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 from labhq.worktrees.environment import worker_environment
-from labhq.worktrees.git import run_git
+from labhq.worktrees.git import GitError, run_git
 from labhq.worktrees.manager import PUSH_DISABLED_URL
 
 
@@ -28,7 +28,12 @@ def push_deterrent_config(remotes: Iterable[str]) -> list[tuple[str, str]]:
 
 
 def remotes_of(repo: Path) -> list[str]:
-    return run_git("remote", cwd=repo).split()
+    try:
+        return run_git("remote", cwd=repo).split()
+    except GitError as error:
+        if "not a git repository" not in error.stderr:
+            raise
+        return []
 
 
 def adopted_environment(repo: Path, base: Mapping[str, str] | None = None) -> dict[str, str]:

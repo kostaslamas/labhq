@@ -36,6 +36,7 @@ def message_text(reason: str) -> str:
 
 
 def message_reason(text: str, earlier: list[ConversationTurn]) -> str:
+    """Store a bounded history for UI and retries; the agent receives only `text`."""
     history = [
         {"owner": turn.text, "ceo": turn.reply}
         for turn in earlier[-HISTORY_TURNS:]
@@ -47,27 +48,8 @@ def message_reason(text: str, earlier: list[ConversationTurn]) -> str:
 
 
 def message_prompt(reason: str) -> str:
-    try:
-        value = json.loads(reason)
-    except ValueError:
-        value = {"text": reason}
-    if not isinstance(value, dict):
-        value = {"text": reason}
-    lines = [
-        "The owner is speaking to you directly. Answer them in your final response. "
-        "If they give you an objective, delegate it to the right project manager and "
-        "tell the owner what you did."
-    ]
-    history = value.get("history")
-    if isinstance(history, list) and history:
-        lines.append("Previous conversation, oldest first:")
-        for turn in history:
-            if isinstance(turn, dict):
-                owner, ceo = turn.get("owner"), turn.get("ceo")
-                if isinstance(owner, str) and isinstance(ceo, str):
-                    lines.extend((f"Owner: {owner}", f"CEO: {ceo}"))
-    lines.append(f"New owner message: {message_text(reason)}")
-    return "\n".join(lines)
+    """Give the CEO the owner's words; the CLI session already has its rules and history."""
+    return message_text(reason)
 
 
 def _event_text(event: RunEvent) -> str | None:
