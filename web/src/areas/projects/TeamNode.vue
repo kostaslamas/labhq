@@ -5,14 +5,14 @@ import { useI18n } from 'vue-i18n'
 
 import { uiState, type components } from '@/api'
 import { StatusBadge } from '@/status'
-import { cn, Mono } from '@/ui'
+import { Button, cn, Mono } from '@/ui'
 
 import BudgetMeter from './BudgetMeter.vue'
 
 type Member = components['schemas']['TeamMember']
 
 const props = defineProps<{ member: Member; open: ReadonlySet<number> }>()
-const emit = defineEmits<{ toggle: [id: number] }>()
+const emit = defineEmits<{ toggle: [id: number]; edit: [id: number] }>()
 const { t } = useI18n()
 
 const expandable = computed(() => props.member.reports.length > 0)
@@ -51,6 +51,17 @@ const label = computed(() =>
             <span aria-hidden="true">·</span>
             <Mono>{{ member.adapter }}</Mono>
           </p>
+          <Button
+            v-if="member.status !== 'retired'"
+            type="button"
+            variant="ghost"
+            size="sm"
+            class="self-start"
+            data-testid="edit-agent"
+            @click="emit('edit', member.id)"
+          >
+            {{ t('projects.agent.edit') }}
+          </Button>
         </div>
         <BudgetMeter :budget="member.budget" />
       </div>
@@ -63,6 +74,7 @@ const label = computed(() =>
         :member="report"
         :open="open"
         @toggle="emit('toggle', $event)"
+        @edit="emit('edit', $event)"
       />
     </ul>
   </li>

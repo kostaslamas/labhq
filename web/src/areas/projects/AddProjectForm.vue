@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api } from '@/api'
@@ -10,6 +10,8 @@ import { FIELD, LABEL } from './fieldClasses'
 import { usdToMicros } from './usd'
 import RepositoryBrowser from './RepositoryBrowser.vue'
 
+type Folder = { name: string; path: string }
+
 const emit = defineEmits<{ added: [projectId: number]; cancel: [] }>()
 const { t } = useI18n()
 
@@ -19,11 +21,56 @@ const budget = ref('')
 const busy = ref(false)
 const failure = ref<string | null>(null)
 const choosing = ref(false)
+const suggestions = ref<Folder[]>([])
+const pathEdited = ref(false)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+let searchVersion = 0
+
+function search(query: string, fromName: boolean): void {
+  clearTimeout(searchTimer)
+  const version = ++searchVersion
+  suggestions.value = []
+  if (query.trim().length < 2) return
+  searchTimer = setTimeout(async () => {
+    try {
+      const { data } = await api.GET('/api/repository-browser/suggest', {
+        params: { query: { query: query.trim() } },
+      })
+      if (version !== searchVersion || !data) return
+      suggestions.value = data
+      if (fromName && !pathEdited.value) {
+        const exact = data.filter(
+          (folder) => folder.name.toLowerCase() === query.trim().toLowerCase(),
+        )
+        const match = exact.length === 1 ? exact[0] : data.length === 1 ? data[0] : null
+        if (match) repoPath.value = match.path
+      }
+    } catch {
+      if (version === searchVersion) suggestions.value = []
+    }
+  }, 250)
+}
+
+watch(name, (value) => {
+  if (!pathEdited.value) {
+    repoPath.value = ''
+    search(value, true)
+  }
+})
+
+function pathInput(): void {
+  pathEdited.value = true
+  search(repoPath.value, false)
+}
 
 function selectRepository(path: string): void {
   repoPath.value = path
+  pathEdited.value = true
+  suggestions.value = []
   choosing.value = false
 }
+
+onBeforeUnmount(() => clearTimeout(searchTimer))
 
 async function submit(): Promise<void> {
   if (busy.value) return
@@ -69,9 +116,25 @@ async function submit(): Promise<void> {
         placeholder="/home/you/code/site"
         autocomplete="off"
         spellcheck="false"
+        @input="pathInput"
       />
-      <span class="text-xs font-normal text-muted">{{ t('projects.add.repoHint') }}</span>
     </label>
+    <span class="-mt-3 text-xs text-muted">{{ t('projects.add.repoHint') }}</span>
+    <ul
+      v-if="suggestions.length"
+      class="max-h-48 overflow-y-auto rounded border border-line"
+      data-testid="path-suggestions"
+    >
+      <li v-for="folder in suggestions" :key="folder.path">
+        <button
+          type="button"
+          class="w-full break-all px-3 py-2 text-left font-mono text-sm hover:bg-surface-raised"
+          @click="selectRepository(folder.path)"
+        >
+          {{ folder.path }}
+        </button>
+      </li>
+    </ul>
     <Button type="button" variant="outline" class="self-start" @click="choosing = !choosing">
       {{ t('projects.add.browse') }}
     </Button>

@@ -67,3 +67,30 @@ def test_browse_does_not_follow_a_symlink_outside_the_root(
     response = signed_in.get("/api/repository-browser", params={"path": str(root / "shortcut")})
     assert response.status_code == 403
     assert response.json()["error"]["code"] == "browser_path_outside_roots"
+
+
+def test_suggest_finds_name_and_partial_path_without_hidden_or_symlink(
+    signed_in: TestClient, tmp_path: Path
+) -> None:
+    root = tmp_path / "allowed"
+    target = root / "Developer" / "labhq"
+    target.mkdir(parents=True)
+    (root / ".hidden").mkdir()
+    (root / "shortcut").symlink_to(target, target_is_directory=True)
+    signed_in.app.state.settings.repository_browser_roots = [root]
+
+    by_name = signed_in.get("/api/repository-browser/suggest", params={"query": "labhq"})
+    by_path = signed_in.get(
+        "/api/repository-browser/suggest", params={"query": str(root / "Developer" / "lab")}
+    )
+    children = signed_in.get(
+        "/api/repository-browser/suggest", params={"query": str(root / "Developer") + "/"}
+    )
+    hidden = signed_in.get("/api/repository-browser/suggest", params={"query": "hidden"})
+    linked = signed_in.get("/api/repository-browser/suggest", params={"query": "shortcut"})
+
+    assert by_name.json() == [{"name": "labhq", "path": str(target)}]
+    assert by_path.json() == by_name.json()
+    assert children.json() == by_name.json()
+    assert hidden.json() == []
+    assert linked.json() == []

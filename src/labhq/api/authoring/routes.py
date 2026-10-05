@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
+from sqlalchemy import select
 
 from labhq import work
 from labhq.adapters import default_registry
@@ -26,13 +27,18 @@ from labhq.api.authoring.schemas import (
     NewAgentBody,
     NewProjectBody,
     RegisteredProject,
+    UpdateAgentBody,
+    UpdatedAgent,
 )
 from labhq.api.deps import ClockDep, ContextDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.approvals import ApprovalService
 from labhq.auth.routes import SignedIn
+from labhq.db.enums import AgentStatus, RunStatus
+from labhq.db.models import Agent, Run
 from labhq.hierarchy import CEO, CREATE_AGENT, MANAGER, Hierarchy, HierarchyError, check_reports_to
 from labhq.hierarchy.roles import role
+from labhq.usage.plan import agent_kind
 
 router = APIRouter(tags=["authoring"])
 router.include_router(browser_router)
@@ -272,4 +278,75 @@ async def project_agents_create(
         budget_micros=agent.budget_micros,
         status=agent.status,
         approval_id=approval.id,
+    )
+
+
+@router.patch("/projects/{project_id}/agents/{agent_id}")
+async def project_agent_update(
+    project_id: int,
+    agent_id: int,
+    body: UpdateAgentBody,
+    owner: SignedIn,
+    db: SessionDep,
+    clock: ClockDep,
+) -> UpdatedAgent:
+    """Edit an existing assignment without creating another agent or manager."""
+    agent = await db.get(Agent, agent_id)
+    if agent is None or agent.project_id != project_id or agent.status == AgentStatus.RETIRED:
+        raise ApiError(404, "agent_not_found", "This project has no such active agent.")
+    title = body.title.strip()
+    if not title:
+        raise ApiError(422, "agent_not_valid", "Give the agent a title.")
+    try:
+        choice = choice_named(body.kind)
+    except UnknownAgentChoiceError as error:
+        raise ApiError(422, "unknown_kind", str(error)) from None
+    old_kind = agent_kind(agent.adapter, agent.config)
+    if body.kind != old_kind:
+        if isinstance(agent.config.get("adoption"), dict):
+            raise ApiError(
+                409,
+                "adopted_agent",
+                "This agent owns a continued session; change its session first.",
+            )
+        busy = await db.scalar(
+            select(Run.id)
+            .where(Run.agent_id == agent.id, Run.status.in_((RunStatus.QUEUED, RunStatus.RUNNING)))
+            .limit(1)
+        )
+        if busy is not None:
+            raise ApiError(409, "agent_busy", "Wait for the agent's current run to finish.")
+        if choice.found() is None:
+            raise ApiError(422, "kind_unavailable", f"{body.kind} is not installed on this server.")
+    if agent.role == MANAGER:
+        if body.reports_to != agent.reports_to:
+            raise ApiError(422, "reporting_line", "A manager reports to the global CEO.")
+    elif body.reports_to is not None:
+        parent = await db.get(Agent, body.reports_to)
+        if (
+            parent is None
+            or parent.project_id != project_id
+            or parent.status == AgentStatus.RETIRED
+            or parent.id == agent.id
+        ):
+            raise ApiError(422, "reporting_line", "Choose an active agent on this project.")
+        try:
+            check_reports_to(agent.role, parent.role)
+        except HierarchyError as error:
+            raise ApiError(422, "reporting_line", str(error)) from None
+    if body.kind != old_kind:
+        config = {key: value for key, value in agent.config.items() if key != "agent"}
+        agent.config = {**config, **choice.config}
+        agent.adapter = choice.adapter
+    agent.title = title
+    agent.reports_to = body.reports_to
+    agent.budget_micros = body.budget_micros
+    agent.updated_at = clock.now()
+    await db.commit()
+    return UpdatedAgent(
+        id=agent.id,
+        title=agent.title,
+        kind=body.kind,
+        reports_to=agent.reports_to,
+        budget_micros=agent.budget_micros,
     )

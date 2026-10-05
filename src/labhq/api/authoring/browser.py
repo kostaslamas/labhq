@@ -22,6 +22,60 @@ class BrowserListing(BaseModel):
     folders: list[BrowserFolder]
 
 
+@router.get("/repository-browser/suggest")
+def repository_browser_suggest(
+    request: Request, query: str = Query(min_length=2, max_length=4096)
+) -> list[BrowserFolder]:
+    """Find a few visible server folders by name or partial path for project entry."""
+    needle = query.strip().casefold()
+    if len(needle) < 2:
+        return []
+    roots = _roots(request)
+    if query.startswith("/"):
+        typed = Path(query)
+        parent = typed if query.endswith("/") else typed.parent
+        prefix = "" if query.endswith("/") else typed.name.casefold()
+        root = _within_root(parent, roots)
+        if root is None or any(part.startswith(".") for part in parent.relative_to(root).parts):
+            return []
+        try:
+            if parent.is_symlink() or parent.resolve(strict=True) != parent:
+                return []
+            return [
+                BrowserFolder(name=child.name, path=str(child))
+                for child in sorted(parent.iterdir(), key=lambda path: path.name.casefold())
+                if child.name.casefold().startswith(prefix)
+                and not child.name.startswith(".")
+                and not child.is_symlink()
+                and child.is_dir()
+            ][:12]
+        except (OSError, RuntimeError):
+            return []
+    found: list[BrowserFolder] = []
+    visited = 0
+    stack = [(root, 0) for root in reversed(roots)]
+    while stack and visited < 2000 and len(found) < 12:
+        directory, depth = stack.pop()
+        visited += 1
+        if needle in directory.name.casefold() or needle in str(directory).casefold():
+            found.append(BrowserFolder(name=directory.name, path=str(directory)))
+        if depth >= 4:
+            continue
+        try:
+            children = sorted(
+                (
+                    child
+                    for child in directory.iterdir()
+                    if not child.name.startswith(".") and not child.is_symlink() and child.is_dir()
+                ),
+                key=lambda child: child.name.casefold(),
+            )
+        except OSError:
+            continue
+        stack.extend((child, depth + 1) for child in reversed(children))
+    return found
+
+
 def _roots(request: Request) -> list[Path]:
     roots = []
     for configured in request.app.state.settings.repository_browser_roots:

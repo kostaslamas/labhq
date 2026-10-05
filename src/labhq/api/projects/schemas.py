@@ -52,6 +52,9 @@ class TeamMember(BaseModel):
     role: str
     title: str
     adapter: str
+    kind: str
+    reports_to: int | None
+    adopted: bool
     status: AgentStatus
     budget: Budget
     reports: list["TeamMember"]

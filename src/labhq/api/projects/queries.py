@@ -12,6 +12,7 @@ from labhq.approvals.push import PUSH_ACTION
 from labhq.budgets import BudgetSettings, decide, spent_micros
 from labhq.db.enums import ApprovalStatus, TaskStatus
 from labhq.db.models import Agent, Approval, CostEvent, Run, Task
+from labhq.usage.plan import agent_kind
 from labhq.worktrees import branch_name
 
 OPEN_STATUSES = tuple(
@@ -123,6 +124,9 @@ async def team_tree(
             role=agent.role,
             title=agent.title,
             adapter=agent.adapter,
+            kind=agent_kind(agent.adapter, agent.config),
+            reports_to=agent.reports_to,
+            adopted=isinstance(agent.config.get("adoption"), dict),
             status=agent.status,
             budget=budget,
             reports=[],
