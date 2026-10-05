@@ -54,6 +54,7 @@ async def test_project_can_list_and_request_a_running_tmux_manager(
     assert requested == [(1234, "site", True)]
 
 
+@pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 async def test_project_lists_and_requests_an_exact_saved_session(
     signed_in: TestClient, repo: Path, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

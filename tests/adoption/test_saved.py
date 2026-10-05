@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from uuid import uuid4
 
+import pytest
 from sqlalchemy import select
 
 from labhq.adapters.tmux.agents import default_kinds
@@ -16,6 +17,8 @@ from labhq.adoption.state import state_of
 from labhq.clock import SystemClock
 from labhq.db import create_engine, session_factory
 from labhq.db.models import Agent, Project
+
+pytestmark = pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 
 
 def test_discovery_lists_only_sessions_in_the_chosen_directory(tmp_path: Path, monkeypatch) -> None:
