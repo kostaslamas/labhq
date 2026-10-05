@@ -5,16 +5,19 @@ the same tools the SDK adapter serves in process, bound to the agent of the run.
 """
 
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import Any
 
 import mcp_types as types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters import AgentTool
-from labhq.agenttools.registry import AgentToolRegistry, ToolContext, tools_for
+from labhq.agenttools.registry import AgentToolRegistry, ToolContext, bind, tools_for
 from labhq.clock import Clock
+from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, Run
 
 SERVER_NAME = "labhq-agent"
@@ -55,6 +58,8 @@ async def run_tools(
     sessions: async_sessionmaker[AsyncSession],
     clock: Clock,
     run_id: int,
+    *,
+    follow_agent: bool = False,
 ) -> list[AgentTool]:
     """The tools of the run's agent, bound to that agent. The caller never names the agent."""
     async with sessions() as db:
@@ -63,7 +68,28 @@ async def run_tools(
             raise LookupError(f"there is no run {run_id}")
         agent = await db.get_one(Agent, run.agent_id)
     context = ToolContext(agent_id=agent.id, run_id=run.id, sessions=sessions, clock=clock)
-    return tools_for(registry, agent, context)
+    if not follow_agent:
+        return tools_for(registry, agent, context)
+
+    def following_tool(spec: Any) -> AgentTool:
+        original = bind(spec, context)
+
+        async def handler(arguments: dict[str, Any]) -> str:
+            async with sessions() as db:
+                active = await db.scalar(
+                    select(Run.id)
+                    .where(Run.agent_id == agent.id, Run.status == RunStatus.RUNNING)
+                    .order_by(Run.id.desc())
+                    .limit(1)
+                )
+            if active is None:
+                return "This CEO session has no active run. Wait for a new owner message."
+            current = ToolContext(agent_id=agent.id, run_id=active, sessions=sessions, clock=clock)
+            return await bind(spec, current).handler(arguments)
+
+        return replace(original, handler=handler)
+
+    return [following_tool(spec) for spec in registry.for_agent(agent.role, agent.config)]
 
 
 async def serve_stdio(tools: Sequence[AgentTool]) -> None:

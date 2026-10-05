@@ -73,12 +73,17 @@ def serve(
 @mcp_app.command()
 def agent(
     run: Annotated[int, typer.Option("--run", help="The run whose agent the tools serve.")],
+    follow_agent: Annotated[
+        bool, typer.Option("--follow-agent", help="Bind each tool call to this agent's active run.")
+    ] = False,
 ) -> None:
     """Serve a run agent's engine tools over stdio, for its CLI to start as a child."""
 
     async def command(context: Context) -> None:
         try:
-            tools = await run_tools(agent_tools, context.sessions, context.clock, run)
+            tools = await run_tools(
+                agent_tools, context.sessions, context.clock, run, follow_agent=follow_agent
+            )
         except LookupError as error:
             raise CliError(str(error)) from error
         await serve_stdio(tools)

@@ -155,6 +155,8 @@ class TmuxAdapter:
         self._session_id: str | None = None
         self._interrupted = False
         self._result: AdapterResult | None = None
+        self._persistent = False
+        self._initial_screen = ""
 
     @property
     def clock(self) -> Clock:
@@ -167,29 +169,60 @@ class TmuxAdapter:
             raise AdapterError("the tmux adapter needs a working directory")
         config = TmuxAgentConfig.model_validate(dict(request.config))
         kind = self._kinds.get(config.agent)
-        name = (
+        name = request.persistent_tmux_session or (
             session_name(request.run_id)
             if request.run_id is not None
             else f"run-{uuid.uuid4().hex}"
         )
+        self._persistent = request.persistent_tmux_session is not None
         run_dir = self._server.state_dir / "runs" / name
-        shutil.rmtree(run_dir, ignore_errors=True)
-        run_dir.mkdir(parents=True)
+        if not self._persistent:
+            shutil.rmtree(run_dir, ignore_errors=True)
+        run_dir.mkdir(parents=True, exist_ok=self._persistent)
         self._name, self._kind, self._config, self._run_dir = name, kind, config, run_dir
         self._cwd = request.cwd
+        variables = session_environment(self._environ)
+        if self._persistent:
+            variables["LABHQ_CEO_SESSION"] = name
+            signal = self._read(SIGNAL_FILE)
+            prior = _json_object(signal) if signal else None
+            for filename in (SIGNAL_FILE, STATUSLINE_FILE):
+                (run_dir / filename).unlink(missing_ok=True)
+            if await asyncio.to_thread(self._server.has_session, name):
+                existing = await asyncio.to_thread(self._server.show_environment, name)
+                if existing.get("LABHQ_CEO_SESSION") != name:
+                    raise AdapterError(f"tmux session {name!r} is not managed by labhq")
+                _, previous_id = split_session(request.resume_session_id)
+                self._session_id = previous_id or (
+                    str(prior["session_id"]) if prior and prior.get("session_id") else None
+                )
+                state = await asyncio.to_thread(self._server.pane_state, name)
+                if not state.dead:
+                    self._initial_screen = await asyncio.to_thread(self._server.capture, name)
+                    await self.send(self._prompt(request))
+                    return
+                argv = self._argv(kind, request, run_dir)
+                await asyncio.to_thread(
+                    self._server.respawn_session,
+                    name,
+                    cwd=request.cwd,
+                    argv=argv,
+                    variables=variables,
+                )
+                return
         argv = self._argv(kind, request, run_dir)
         await asyncio.to_thread(
             self._server.new_session,
             name,
             cwd=request.cwd,
             argv=argv,
-            variables=session_environment(self._environ),
+            variables=variables,
         )
 
     async def events(self) -> AsyncIterator[AdapterEvent]:
         name, kind, config = self._started()
         yield AdapterEvent("agent", {"kind": kind.name, "session": name})
-        watch = Watch(screen="", last_change_at=self._clock.now())
+        watch = Watch(screen=self._initial_screen, last_change_at=self._clock.now())
         quiet = timedelta(seconds=config.quiescence_seconds)
         settle = timedelta(seconds=config.interrupt_settle_seconds)
         replied: set[str] = set()
@@ -248,9 +281,9 @@ class TmuxAdapter:
 
     async def close(self) -> None:
         name, self._name = self._name, None
-        if name is not None:
+        if name is not None and not self._persistent:
             await asyncio.to_thread(self._server.kill_session, name)
-        if self._run_dir is not None:
+        if self._run_dir is not None and not self._persistent:
             shutil.rmtree(self._run_dir, ignore_errors=True)
 
     def _argv(self, kind: AgentKind, request: RunRequest, run_dir: Path) -> list[str]:
@@ -265,14 +298,21 @@ class TmuxAdapter:
             guard_hook=guard_hook_command(self._python),
         )
         values = {
-            "prompt": request.prompt,
+            "prompt": self._prompt(request),
             "session_id": self._session_id or "",
+            "signal_path": str(run_dir / SIGNAL_FILE),
             "guard_hook": context.guard_hook,
         }
         words = [word.format_map(values) for word in template]
         extra = LAUNCHES[kind.launch](context) if kind.launch is not None else []
         extra += self._tool_words(kind, request, run_dir)
         return [words[0], *extra, *words[1:]]
+
+    @staticmethod
+    def _prompt(request: RunRequest) -> str:
+        if request.system_prompt_append:
+            return f"{request.system_prompt_append}\n\n{request.prompt}"
+        return request.prompt
 
     def _tool_words(self, kind: AgentKind, request: RunRequest, run_dir: Path) -> list[str]:
         own = bool(request.tools)
@@ -300,7 +340,9 @@ class TmuxAdapter:
                 raise AdapterError("the run's own tools name no stdio server to serve them")
             servers.append(ToolServer(OWN_TOOLS_SERVER, (*labhq, *request.tools_server), env))
         if request.agent_tools and request.run_id is not None:
-            argv = (*labhq, "mcp", "agent", "--run", str(request.run_id))
+            argv: tuple[str, ...] = (*labhq, "mcp", "agent", "--run", str(request.run_id))
+            if request.persistent_tmux_session:
+                argv += ("--follow-agent",)
             servers.append(ToolServer(AGENT_TOOLS_SERVER, argv, env))
         return servers
 

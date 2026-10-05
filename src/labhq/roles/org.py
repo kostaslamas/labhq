@@ -9,8 +9,9 @@ from sqlalchemy import select
 
 from labhq.agenttools import AgentToolSpec, ToolContext
 from labhq.agenttools.whoami import NoArguments
-from labhq.db.enums import AgentStatus
-from labhq.db.models import Agent, Project
+from labhq.ceosessions import ceo_session_name
+from labhq.db.enums import AgentStatus, RunStatus
+from labhq.db.models import Agent, Project, Run, RunEvent
 from labhq.hierarchy import CEO, MANAGER, ProposedMember
 from labhq.roles.common import RoleServices, refusing
 from labhq.work import WorkError, add_task, find_project
@@ -56,6 +57,45 @@ async def list_projects(context: ToolContext, arguments: NoArguments) -> str:
             else "no manager"
         )
         lines.append(f"- {project.name} (id {project.id}, {project.status}): {led}")
+    return "\n".join(lines)
+
+
+async def list_agent_sessions(context: ToolContext, arguments: NoArguments) -> str:
+    """Durable run status and attachable tmux names, without exposing CLI session IDs."""
+    async with context.sessions() as db:
+        agents = list(await db.scalars(select(Agent).order_by(Agent.id)))
+        by_id = {agent.id: agent for agent in agents}
+        runs = list(await db.scalars(select(Run).order_by(Run.id.desc())))
+        latest = {run.agent_id: run for run in reversed(runs)}
+        ceo_panes: dict[int, set[str]] = {}
+        for run in runs:
+            if run.adapter != "tmux" or by_id[run.agent_id].role != CEO:
+                continue
+            event = await db.scalar(
+                select(RunEvent).where(RunEvent.run_id == run.id, RunEvent.kind == "agent")
+            )
+            name = event.payload.get("kind") if event is not None else None
+            stored_kind = (run.session_id_after or "").partition(":")[0]
+            kind = name if isinstance(name, str) else stored_kind
+            if kind:
+                ceo_panes.setdefault(run.agent_id, set()).add(ceo_session_name(kind))
+    if not agents:
+        return "There are no agents."
+    lines = []
+    for agent in agents:
+        recent = latest.get(agent.id)
+        if recent is None:
+            lines.append(f"- agent {agent.id} ({agent.role}, {agent.title}): no runs")
+            continue
+        pane = ""
+        if agent.role == CEO and ceo_panes.get(agent.id):
+            pane = f", tmux names {', '.join(sorted(ceo_panes[agent.id]))}"
+        elif recent.adapter == "tmux" and recent.status == RunStatus.RUNNING:
+            pane = f", tmux run-{recent.id}"
+        lines.append(
+            f"- agent {agent.id} ({agent.role}, {agent.title}): "
+            f"run {recent.id} {recent.status}{pane}"
+        )
     return "\n".join(lines)
 
 
@@ -107,6 +147,14 @@ def ceo_tools(services: RoleServices) -> list[AgentToolSpec]:
             roles=frozenset({CEO}),
             read_only=True,
             handler=list_projects,
+        ),
+        AgentToolSpec(
+            name="list_agent_sessions",
+            description="List agents, their latest run status and CEO tmux session names.",
+            input_model=NoArguments,
+            roles=frozenset({CEO}),
+            read_only=True,
+            handler=list_agent_sessions,
         ),
         AgentToolSpec(
             name="assign_manager",

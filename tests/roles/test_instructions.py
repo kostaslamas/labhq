@@ -91,6 +91,7 @@ async def test_each_roles_run_carries_its_instruction(
             {
                 "whoami",
                 "list_projects",
+                "list_agent_sessions",
                 "assign_manager",
                 "delegate_task",
                 "task_overview",

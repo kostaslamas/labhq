@@ -46,6 +46,8 @@ class RunRequest:
     agent_tools: Sequence[AgentTool] = ()
     # The role instruction and output style (labhq.prompts), after the adapter's own prompt.
     system_prompt_append: str | None = None
+    # The CEO's managed tmux pane persists across runs of the same CLI kind.
+    persistent_tmux_session: str | None = None
 
 
 @dataclass(frozen=True)

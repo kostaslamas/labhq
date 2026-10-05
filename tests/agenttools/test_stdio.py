@@ -6,7 +6,11 @@ import sys
 from mcp import Client, StdioServerParameters
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from labhq.agenttools.registry import AgentToolRegistry, AgentToolSpec, ToolContext
+from labhq.agenttools.stdio import run_tools
+from labhq.agenttools.whoami import NoArguments
 from labhq.clock import FakeClock
+from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, Run
 from tests.agenttools.conftest import Team
 
@@ -52,3 +56,39 @@ async def test_an_mcp_client_lists_and_calls_the_run_agents_tools(
     assert text.type == "text"
     assert text.text.startswith(f"You are agent {team.worker_id}, Worker, role worker.")
     assert missing.is_error
+
+
+async def test_persistent_tool_server_uses_the_current_run_on_each_call(
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, team: Team
+) -> None:
+    async def current_run(context: ToolContext, arguments: NoArguments) -> str:
+        return str(context.run_id)
+
+    registry = AgentToolRegistry()
+    registry.register(
+        AgentToolSpec(
+            name="current_run",
+            description="Show the current run",
+            input_model=NoArguments,
+            roles=frozenset({"worker"}),
+            read_only=True,
+            handler=current_run,
+        )
+    )
+    first = await queued_run(sessions, clock, team)
+    async with sessions() as db:
+        (await db.get_one(Run, first)).status = RunStatus.RUNNING
+        await db.commit()
+    [tool] = await run_tools(registry, sessions, clock, first, follow_agent=True)
+    assert await tool.handler({}) == str(first)
+
+    async with sessions() as db:
+        (await db.get_one(Run, first)).status = RunStatus.SUCCEEDED
+        await db.commit()
+    assert "no active run" in await tool.handler({})
+
+    second = await queued_run(sessions, clock, team)
+    async with sessions() as db:
+        (await db.get_one(Run, second)).status = RunStatus.RUNNING
+        await db.commit()
+    assert await tool.handler({}) == str(second)
