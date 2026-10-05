@@ -11,6 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labhq.db.enums import RunStatus, WakeupSource, WakeupStatus
 from labhq.db.models import Run, RunEvent, WakeupRequest
 
+HISTORY_TURNS = 6
+HISTORY_CHARS = 12_000
+
 
 @dataclass(frozen=True)
 class ConversationTurn:
@@ -33,8 +36,15 @@ def message_text(reason: str) -> str:
 
 
 def message_reason(text: str, earlier: list[ConversationTurn]) -> str:
-    """Store the message and retry metadata; history lives in the CEO session."""
-    return json.dumps({"text": text}, ensure_ascii=False)
+    """Store a bounded history for UI and retries; the agent receives only `text`."""
+    history = [
+        {"owner": turn.text, "ceo": turn.reply}
+        for turn in earlier[-HISTORY_TURNS:]
+        if turn.status == "answered" and turn.reply
+    ]
+    while history and len(json.dumps(history, ensure_ascii=False)) > HISTORY_CHARS:
+        history.pop(0)
+    return json.dumps({"text": text, "history": history}, ensure_ascii=False)
 
 
 def message_prompt(reason: str) -> str:
