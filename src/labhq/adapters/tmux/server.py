@@ -132,6 +132,10 @@ class TmuxServer:
         text = self.run("capture-pane", "-p", "-J", "-S", "-", "-t", f"={name}:")
         return "\n".join(line.rstrip() for line in text.rstrip().splitlines())
 
+    def list_sessions(self) -> list[str]:
+        """Names on labhq's private server, including sessions with a dead pane."""
+        return self.run("list-sessions", "-F", "#{session_name}").splitlines()
+
     def respawn_session(
         self, name: str, *, cwd: Path, argv: Sequence[str], variables: Mapping[str, str]
     ) -> None:

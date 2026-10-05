@@ -1,9 +1,8 @@
-"""Reading a working agent's screen, read-only, when its status is stale (ADR 0004).
+"""Read-only tmux screens for working agents and named private-server sessions (ADR 0004).
 
-`ScreenReader` captures the pane of an agent's running tmux run and records when the
-screen last changed, so an agent's last activity is the later of its latest `run_events`
-row and its last screen change. It has no way to send keys: reading never disturbs the
-agent that works.
+`ScreenReader` records when a running agent's screen changes for status freshness. It can
+also list and capture any named session on labhq's private socket, including a dead pane.
+It has no way to send keys: reading never disturbs an agent that works.
 """
 
 from labhq.callcenter.screens.log import ScreenLog

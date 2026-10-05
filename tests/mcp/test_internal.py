@@ -32,7 +32,16 @@ from labhq.mcp.internal import internal_tools
 from tests.adapters.tmux.conftest import require_tmux
 from tests.db.factories import project_agent_task
 
-READS = {"brief", "inbox", "health", "team", "agent_status", "read_screen"}
+READS = {
+    "brief",
+    "inbox",
+    "health",
+    "team",
+    "agent_status",
+    "read_screen",
+    "list_tmux_sessions",
+    "read_tmux_session",
+}
 BOUNDED = {"deliver", "interrupt", "answer"}
 SHIP = "Tell the Manager to ship the login form today."
 STOP = "Interrupt the Manager and tell it to stop the deploy."

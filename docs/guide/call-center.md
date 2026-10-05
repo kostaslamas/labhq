@@ -66,7 +66,9 @@ through `ask_ceo` to a Call Center agent started for the call. Questions a few m
 
 - Tell you what happened, what waits for you and how the machines are.
 - Find out what an agent is doing, from the status the agent keeps or, when that is stale,
-  by reading the agent's screen. It never interrupts an agent to ask.
+  by reading the agent's screen. It can also list and read named sessions on labhq's private
+  tmux server, including `ceo_claude` and `ceo_codex` after the agent has quit. It never
+  sends keys to a pane to ask.
 - Pass your answer to an agent that asked you something, as you said it.
 - Create tasks, and approve or reject light actions after your clear yes.
 - Deliver a message to an agent at the end of its turn, or interrupt it at once when you

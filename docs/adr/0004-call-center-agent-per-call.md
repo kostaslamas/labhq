@@ -71,6 +71,10 @@ row or screen change). The Call Center answers from a fresh status. When the sta
 stale, it captures the agent's tmux pane and reads it. It never sends keys to a working
 agent's pane.
 
+The Call Center can also list and capture a named session on labhq's private tmux server,
+including a CEO pane kept after its CLI exits. These read-only tools use the same bounded
+screen tail and do not access the user's other tmux sockets.
+
 ### The Call Center's tools come over stdio, not the network
 
 The Call Center gets labhq's internal tools from an MCP server that its CLI starts as a
