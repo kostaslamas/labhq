@@ -2054,6 +2054,10 @@
             "title": "Adapter",
             "type": "string"
           },
+          "adopted": {
+            "title": "Adopted",
+            "type": "boolean"
+          },
           "budget": {
             "$ref": "#/components/schemas/Budget"
           },
@@ -2061,12 +2065,27 @@
             "title": "Id",
             "type": "integer"
           },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
           "reports": {
             "items": {
               "$ref": "#/components/schemas/TeamMember"
             },
             "title": "Reports",
             "type": "array"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reports To"
           },
           "role": {
             "title": "Role",
@@ -2080,7 +2099,18 @@
             "type": "string"
           }
         },
-        "required": ["id", "role", "title", "adapter", "status", "budget", "reports"],
+        "required": [
+          "id",
+          "role",
+          "title",
+          "adapter",
+          "kind",
+          "reports_to",
+          "adopted",
+          "status",
+          "budget",
+          "reports"
+        ],
         "title": "TeamMember",
         "type": "object"
       },
@@ -2186,6 +2216,91 @@
         "enum": ["agent", "owner", "system"],
         "title": "TranscriptSource",
         "type": "string"
+      },
+      "UpdateAgentBody": {
+        "additionalProperties": false,
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "maximum": 4.611686018427388e18,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "kind": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Kind",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reports To"
+          },
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["title", "kind"],
+        "title": "UpdateAgentBody",
+        "type": "object"
+      },
+      "UpdatedAgent": {
+        "properties": {
+          "budget_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Micros"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "reports_to": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reports To"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": ["id", "title", "kind", "reports_to", "budget_micros"],
+        "title": "UpdatedAgent",
+        "type": "object"
       },
       "Vocabulary": {
         "description": "The status values the backend may return, by enum.",
@@ -3717,6 +3832,66 @@
         "tags": ["authoring"]
       }
     },
+    "/api/projects/{project_id}/agents/{agent_id}": {
+      "patch": {
+        "description": "Edit an existing assignment without creating another agent or manager.",
+        "operationId": "project_agent_update",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "agent_id",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAgentBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdatedAgent"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Project Agent Update",
+        "tags": ["authoring"]
+      }
+    },
     "/api/projects/{project_id}/assign-saved-session": {
       "post": {
         "operationId": "assign_saved_session",
@@ -3912,6 +4087,53 @@
           }
         },
         "summary": "Repository Browser Get",
+        "tags": ["authoring", "authoring"]
+      }
+    },
+    "/api/repository-browser/suggest": {
+      "get": {
+        "description": "Find a few visible server folders by name or partial path for project entry.",
+        "operationId": "repository_browser_suggest",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 4096,
+              "minLength": 2,
+              "title": "Query",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BrowserFolder"
+                  },
+                  "title": "Response Repository Browser Suggest",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Repository Browser Suggest",
         "tags": ["authoring", "authoring"]
       }
     },

@@ -89,4 +89,14 @@ test('a project and an agent added in the UI appear, and the agent starts only a
   await expect(page.getByTestId('decision')).toBeVisible()
 
   await expect.poll(status).toBe('active')
+
+  await page.goto(`/projects/${projectId}`)
+  await page.getByTestId('edit-agent').click()
+  await page.getByTestId('edit-agent-form').getByLabel('Title').fill('E2E reviewer')
+  await page.getByTestId('edit-agent-form').getByRole('button', { name: 'Save changes' }).click()
+  await expect(page.getByTestId('team-title')).toHaveText(['E2E reviewer'])
+  const updated = await page.request.get(`/api/projects/${projectId}`)
+  const updatedView = (await updated.json()) as ProjectView
+  expect(updatedView.team).toHaveLength(1)
+  expect(updatedView.team[0]?.title).toBe('E2E reviewer')
 })

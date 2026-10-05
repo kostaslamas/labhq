@@ -9,6 +9,10 @@ const KNOWN = new Set([
   'unknown_kind',
   'reporting_line',
   'agent_not_valid',
+  'agent_not_found',
+  'agent_busy',
+  'adopted_agent',
+  'kind_unavailable',
   'project_not_found',
   'validation_error',
 ])

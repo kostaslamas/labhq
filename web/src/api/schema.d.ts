@@ -552,6 +552,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/projects/{project_id}/agents/{agent_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Project Agent Update
+     * @description Edit an existing assignment without creating another agent or manager.
+     */
+    patch: operations['project_agent_update']
+    trace?: never
+  }
   '/api/projects/{project_id}/assign-saved-session': {
     parameters: {
       query?: never
@@ -621,6 +641,26 @@ export interface paths {
      * @description List visible directories only; the create route validates the chosen folder.
      */
     get: operations['repository_browser_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/repository-browser/suggest': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Repository Browser Suggest
+     * @description Find a few visible server folders by name or partial path for project entry.
+     */
+    get: operations['repository_browser_suggest']
     put?: never
     post?: never
     delete?: never
@@ -1470,11 +1510,17 @@ export interface components {
     TeamMember: {
       /** Adapter */
       adapter: string
+      /** Adopted */
+      adopted: boolean
       budget: components['schemas']['Budget']
       /** Id */
       id: number
+      /** Kind */
+      kind: string
       /** Reports */
       reports: components['schemas']['TeamMember'][]
+      /** Reports To */
+      reports_to: number | null
       /** Role */
       role: string
       status: components['schemas']['AgentStatus']
@@ -1528,6 +1574,30 @@ export interface components {
      * @enum {string}
      */
     TranscriptSource: 'agent' | 'owner' | 'system'
+    /** UpdateAgentBody */
+    UpdateAgentBody: {
+      /** Budget Micros */
+      budget_micros?: number | null
+      /** Kind */
+      kind: string
+      /** Reports To */
+      reports_to?: number | null
+      /** Title */
+      title: string
+    }
+    /** UpdatedAgent */
+    UpdatedAgent: {
+      /** Budget Micros */
+      budget_micros: number | null
+      /** Id */
+      id: number
+      /** Kind */
+      kind: string
+      /** Reports To */
+      reports_to: number | null
+      /** Title */
+      title: string
+    }
     /**
      * Vocabulary
      * @description The status values the backend may return, by enum.
@@ -2640,6 +2710,42 @@ export interface operations {
       }
     }
   }
+  project_agent_update: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+        agent_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAgentBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UpdatedAgent']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   assign_saved_session: {
     parameters: {
       query?: never
@@ -2757,6 +2863,37 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BrowserListing']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  repository_browser_suggest: {
+    parameters: {
+      query: {
+        query: string
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['BrowserFolder'][]
         }
       }
       /** @description Error */

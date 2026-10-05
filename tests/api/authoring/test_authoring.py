@@ -197,3 +197,54 @@ def test_reporting_lines_follow_the_role_table(signed_in: TestClient, repo: Path
     assert unknown.status_code == 422
     assert elsewhere.status_code == 422
     assert "no agent 999" in elsewhere.json()["error"]["message"]
+
+
+async def test_existing_agent_can_be_edited_without_creating_another(
+    signed_in: TestClient, repo: Path, context: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda binary: "/bin/true")
+    project_id = add_project(signed_in, repo).json()["id"]
+    created = add_agent(signed_in, project_id).json()
+
+    response = signed_in.patch(
+        f"/api/projects/{project_id}/agents/{created['id']}",
+        json={"title": "Reviewer", "kind": "aider", "reports_to": None, "budget_micros": 3000000},
+        headers=WRITE,
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["kind"] == "aider"
+    async with context.sessions() as db:
+        agents = list(await db.scalars(select(Agent).where(Agent.project_id == project_id)))
+    assert len(agents) == 1
+    assert (agents[0].title, agents[0].adapter, agents[0].config, agents[0].budget_micros) == (
+        "Reviewer",
+        "tmux",
+        {"agent": "aider"},
+        3000000,
+    )
+
+
+async def test_adopted_agent_keeps_its_session_kind(
+    signed_in: TestClient, repo: Path, context: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda binary: "/bin/true")
+    project_id = add_project(signed_in, repo).json()["id"]
+    agent_id = add_agent(signed_in, project_id).json()["id"]
+    async with context.sessions() as db:
+        agent = await db.get(Agent, agent_id)
+        assert agent is not None
+        agent.config = {"agent": "codex", "adoption": {"tmux_session": "owned"}}
+        await db.commit()
+
+    response = signed_in.patch(
+        f"/api/projects/{project_id}/agents/{agent_id}",
+        json={"title": "Manager", "kind": "aider", "reports_to": None},
+        headers=WRITE,
+    )
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "adopted_agent"
+    async with context.sessions() as db:
+        agent = await db.get(Agent, agent_id)
+        assert agent is not None and agent.config["agent"] == "codex"

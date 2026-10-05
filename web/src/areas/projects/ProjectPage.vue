@@ -9,6 +9,7 @@ import { StatusBadge } from '@/status'
 import { Button, Mono } from '@/ui'
 
 import AddAgentForm from './AddAgentForm.vue'
+import EditAgentForm from './EditAgentForm.vue'
 import AdoptManagerForm from './AdoptManagerForm.vue'
 import SavedSessionForm from './SavedSessionForm.vue'
 import BudgetMeter from './BudgetMeter.vue'
@@ -23,13 +24,35 @@ const { t, locale } = useI18n()
 const view = ref<View | null>(null)
 const state = ref<'loading' | 'ready' | 'missing' | 'failed'>('loading')
 const adding = ref(false)
+const editing = ref<number | null>(null)
 const awaiting = ref(false)
 const adopting = ref(false)
 const assigningSaved = ref(false)
 const adoptionRequested = ref(false)
 const hasManager = computed(
-  () => view.value?.team.some((member) => member.role === 'manager') ?? false,
+  () =>
+    view.value?.team.some((member) => member.role === 'manager' && member.status !== 'retired') ??
+    false,
 )
+function findMember(
+  members: components['schemas']['TeamMember'][],
+  id: number,
+): components['schemas']['TeamMember'] | null {
+  for (const member of members) {
+    if (member.id === id) return member
+    const nested = findMember(member.reports, id)
+    if (nested) return nested
+  }
+  return null
+}
+const editedMember = computed(() =>
+  view.value && editing.value !== null ? findMember(view.value.team, editing.value) : null,
+)
+
+async function agentSaved(): Promise<void> {
+  editing.value = null
+  await load()
+}
 
 function managerRequested(): void {
   adoptionRequested.value = true
@@ -131,7 +154,16 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           {{ t('projects.view.team') }}
           <Mono class="text-sm text-muted">#{{ view.id }}</Mono>
         </h2>
-        <TeamTree :team="view.team" />
+        <TeamTree :team="view.team" @edit="editing = $event" />
+        <EditAgentForm
+          v-if="editedMember"
+          :key="editedMember.id"
+          :project-id="view.id"
+          :member="editedMember"
+          :team="view.team"
+          @saved="agentSaved"
+          @cancel="editing = null"
+        />
         <p v-if="adoptionRequested" role="status" class="text-sm text-muted">
           {{ t('projects.adopt.waiting') }}
           <RouterLink :to="{ name: 'approvals' }" class="text-accent underline">

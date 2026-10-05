@@ -10,6 +10,7 @@ import TeamNode from './TeamNode.vue'
 type Member = components['schemas']['TeamMember']
 
 const props = defineProps<{ team: Member[] }>()
+const emit = defineEmits<{ edit: [id: number] }>()
 const { t } = useI18n()
 
 // Ids of the expanded nodes. The roots start open, so the first two levels are visible.
@@ -63,6 +64,7 @@ function collapseAll(): void {
           :member="root"
           :open="open"
           @toggle="toggle"
+          @edit="emit('edit', $event)"
         />
       </ul>
     </template>

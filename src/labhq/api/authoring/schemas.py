@@ -55,3 +55,20 @@ class AddedAgent(BaseModel):
     status: AgentStatus
     # The approval that activates it; decide it from the approvals page.
     approval_id: int
+
+
+class UpdateAgentBody(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=200)
+    kind: str = Field(min_length=1, max_length=64)
+    reports_to: int | None = None
+    budget_micros: int | None = Field(default=None, ge=0, le=2**62)
+
+
+class UpdatedAgent(BaseModel):
+    id: int
+    title: str
+    kind: str
+    reports_to: int | None
+    budget_micros: int | None
