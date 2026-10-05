@@ -18,7 +18,7 @@ class AdoptionState(BaseModel):
     repo: str
     tmux_session: str
     state_dir: str
-    original_pid: int
+    original_pid: int | None = None
     # The conversation the continued agent reported; None until it reports one.
     session_id: str | None = None
     uncommitted: list[str] = []

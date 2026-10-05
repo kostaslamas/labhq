@@ -101,6 +101,8 @@ class AgentKind:
     # Adoption (ADR 0005). `continue_` (a keyword otherwise) continues the most recent
     # conversation in the working directory; None means the agent cannot be adopted.
     continue_: tuple[str, ...] | None = None
+    # Continue a conversation chosen by its exact id, instead of the latest one.
+    continue_selected: tuple[str, ...] | None = None
     rules_injection: RulesInjection = RulesInjection.FIRST_MESSAGE
     # Added after the program name of `continue_` when the rules go in the system prompt;
     # `{rules}` is the rules' text and `{rules_file}` the path of `.labhq/rules.md`.
@@ -274,6 +276,14 @@ CLAUDE_CODE = AgentKind(
         "--system-prompt-snapshot",
         "off",
     ),
+    continue_selected=(
+        "claude",
+        "--dangerously-skip-permissions",
+        "--resume",
+        "{session_id}",
+        "--system-prompt-snapshot",
+        "off",
+    ),
     rules_injection=RulesInjection.SYSTEM_PROMPT,
     rules_words=("--append-system-prompt", "{rules}"),
     continue_source=(
@@ -335,6 +345,7 @@ CODEX = AgentKind(
     ),
     # The same interactive flags as `resume`, so its hooks (turn signal, push guard) run too.
     continue_=("codex", "resume", "--last", *CODEX_FLAGS),
+    continue_selected=("codex", "resume", *CODEX_FLAGS, "--", "{session_id}"),
     # `-c developer_instructions` exists, but whether a resumed thread takes it is unverified.
     rules_injection=RulesInjection.FIRST_MESSAGE,
     compaction_pattern=r"multiple compactions",
@@ -366,6 +377,7 @@ GEMINI = AgentKind(
         "docs/cli/session-management.md; checked 2026-10-03"
     ),
     continue_=("gemini", "--approval-mode", "yolo", "--resume", "latest"),
+    continue_selected=("gemini", "--approval-mode", "yolo", "--resume", "{session_id}"),
     # GEMINI_SYSTEM_MD replaces the whole system prompt; there is no append.
     rules_injection=RulesInjection.FIRST_MESSAGE,
     compaction_pattern=r"Chat history compressed from",
@@ -405,6 +417,13 @@ AIDER = AgentKind(
         "--restore-chat-history, --yes-always, --no-pretty, --no-fancy-input); checked 2026-10-03"
     ),
     continue_=(
+        "aider",
+        "--yes-always",
+        "--no-pretty",
+        "--no-fancy-input",
+        "--restore-chat-history",
+    ),
+    continue_selected=(
         "aider",
         "--yes-always",
         "--no-pretty",

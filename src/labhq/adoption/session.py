@@ -45,9 +45,15 @@ def session_name(pid: int) -> str:
 
 
 def continue_argv(
-    kind: AgentKind, session: AdoptedSession, *, python: str, sandbox: Sequence[str]
+    kind: AgentKind,
+    session: AdoptedSession,
+    *,
+    python: str,
+    sandbox: Sequence[str],
+    selected_session_id: str | None = None,
 ) -> list[str]:
-    if kind.continue_ is None:
+    template = kind.continue_selected if selected_session_id is not None else kind.continue_
+    if template is None:
         raise ValueError(f"agent kind {kind.name!r} cannot continue a conversation")
     context = LaunchContext(
         python=python,
@@ -61,8 +67,9 @@ def continue_argv(
         "signal_path": str(session.signal_path),
         "statusline_path": str(session.statusline_path),
         "guard_hook": context.guard_hook,
+        "session_id": selected_session_id or "",
     }
-    words = [word.format_map(values) for word in kind.continue_]
+    words = [word.format_map(values) for word in template]
     launch = LAUNCHES[kind.launch](context) if kind.launch is not None else []
     rules = [word.format_map(values) for word in kind.rules_words] if appends(kind) else []
     return [*sandbox, words[0], *launch, *rules, *words[1:]]
@@ -76,11 +83,18 @@ def start_session(
     environ: Mapping[str, str],
     python: str,
     sandbox: Sequence[str],
+    selected_session_id: str | None = None,
 ) -> list[str]:
     session.state_dir.mkdir(parents=True, exist_ok=True)
     for stale in (session.signal_path, session.statusline_path):
         stale.unlink(missing_ok=True)
-    argv = continue_argv(kind, session, python=python, sandbox=sandbox)
+    argv = continue_argv(
+        kind,
+        session,
+        python=python,
+        sandbox=sandbox,
+        selected_session_id=selected_session_id,
+    )
     variables = adopted_environment(session.cwd, client_environment(environ))
     server.new_session(session.name, cwd=session.cwd, argv=argv, variables=variables)
     return argv

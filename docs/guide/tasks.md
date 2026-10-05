@@ -7,6 +7,12 @@ assignee. A project needs an active manager for that route.
 
 On the Projects page, choose the CEO's main and backup agent. One CEO serves every project.
 Project managers added from the UI report to that CEO automatically.
+For a project without a manager, **Assign a saved agent session** lists the sessions of the
+chosen Claude Code, Codex, Gemini or Aider CLI in that project's exact folder. The list
+includes sessions whose CLI has quit. Choose the session ID and approve the request; labhq
+resumes that conversation as the project's manager. A running CLI in the folder must first
+use **Use a running tmux agent as manager**, so two processes never drive the same session.
+The session list shows IDs and update times, without conversation text.
 Open CEO in the sidebar to send the CEO a direct message and see its answer. Each message
 uses the scheduler, so it waits while the CEO is busy and follows the configured backup.
 The backup runs when the main agent's program is unavailable or its plan usage is paused;

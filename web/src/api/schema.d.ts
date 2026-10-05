@@ -552,6 +552,23 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/projects/{project_id}/assign-saved-session': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Assign Saved Session */
+    post: operations['assign_saved_session']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects/{project_id}/running-managers': {
     parameters: {
       query?: never
@@ -564,6 +581,26 @@ export interface paths {
      * @description Show CLI agents in the owner's tmux that can be adopted for this project.
      */
     get: operations['running_managers_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/projects/{project_id}/saved-sessions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Saved Sessions List
+     * @description List exact sessions of the selected CLI in this project's directory.
+     */
+    get: operations['saved_sessions_list']
     put?: never
     post?: never
     delete?: never
@@ -766,6 +803,13 @@ export interface components {
       credential: {
         [key: string]: unknown
       }
+    }
+    /** AssignSavedSessionBody */
+    AssignSavedSessionBody: {
+      /** Kind */
+      kind: string
+      /** Session Id */
+      session_id: string
     }
     /** AuthStatus */
     AuthStatus: {
@@ -1364,6 +1408,15 @@ export interface components {
       pane: string
       /** Pid */
       pid: number
+    }
+    /** SavedSessionChoice */
+    SavedSessionChoice: {
+      /** Kind */
+      kind: string
+      /** Session Id */
+      session_id: string
+      /** Updated At */
+      updated_at: string
     }
     /** SendCeoMessage */
     SendCeoMessage: {
@@ -2587,6 +2640,41 @@ export interface operations {
       }
     }
   }
+  assign_saved_session: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AssignSavedSessionBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AdoptManagerApproval']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   running_managers_list: {
     parameters: {
       query?: never
@@ -2605,6 +2693,39 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['RunningManagerCandidate'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  saved_sessions_list: {
+    parameters: {
+      query: {
+        kind: string
+      }
+      header?: never
+      path: {
+        project_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SavedSessionChoice'][]
         }
       }
       /** @description Error */

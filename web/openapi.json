@@ -408,6 +408,21 @@
         "title": "AssertionBody",
         "type": "object"
       },
+      "AssignSavedSessionBody": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          }
+        },
+        "required": ["kind", "session_id"],
+        "title": "AssignSavedSessionBody",
+        "type": "object"
+      },
       "AuthStatus": {
         "properties": {
           "authenticated": {
@@ -1889,6 +1904,25 @@
         },
         "required": ["pid", "kind", "cwd", "pane"],
         "title": "RunningManagerCandidate",
+        "type": "object"
+      },
+      "SavedSessionChoice": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": ["kind", "session_id", "updated_at"],
+        "title": "SavedSessionChoice",
         "type": "object"
       },
       "SendCeoMessage": {
@@ -3683,6 +3717,56 @@
         "tags": ["authoring"]
       }
     },
+    "/api/projects/{project_id}/assign-saved-session": {
+      "post": {
+        "operationId": "assign_saved_session",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignSavedSessionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdoptManagerApproval"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Assign Saved Session",
+        "tags": ["authoring"]
+      }
+    },
     "/api/projects/{project_id}/running-managers": {
       "get": {
         "description": "Show CLI agents in the owner's tmux that can be adopted for this project.",
@@ -3725,6 +3809,60 @@
           }
         },
         "summary": "Running Managers List",
+        "tags": ["authoring"]
+      }
+    },
+    "/api/projects/{project_id}/saved-sessions": {
+      "get": {
+        "description": "List exact sessions of the selected CLI in this project's directory.",
+        "operationId": "saved_sessions_list",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": true,
+            "schema": {
+              "title": "Kind",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SavedSessionChoice"
+                  },
+                  "title": "Response Saved Sessions List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Saved Sessions List",
         "tags": ["authoring"]
       }
     },

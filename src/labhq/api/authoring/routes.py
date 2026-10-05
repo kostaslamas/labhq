@@ -13,9 +13,11 @@ from pydantic import BaseModel, Field
 
 from labhq import work
 from labhq.adapters import default_registry
-from labhq.adapters.kinds import UnknownAgentChoiceError, agent_choices
+from labhq.adapters.kinds import UnknownAgentChoiceError, agent_choices, choice_named
+from labhq.adapters.tmux import UnknownAgentKindError, default_kinds
 from labhq.adoption.observe import AdoptionError, OwnerTmux
 from labhq.adoption.request import Adoptions, works_on_project
+from labhq.adoption.saved import list_saved_sessions
 from labhq.adoption.settings import get_adoption_settings
 from labhq.api.authoring.browser import router as browser_router
 from labhq.api.authoring.schemas import (
@@ -50,6 +52,70 @@ class AdoptManagerBody(BaseModel):
 class AdoptManagerApproval(BaseModel):
     approval_id: int
     warnings: list[str]
+
+
+class SavedSessionChoice(BaseModel):
+    kind: str
+    session_id: str
+    updated_at: str
+
+
+class AssignSavedSessionBody(BaseModel):
+    kind: str
+    session_id: str
+
+
+@router.get("/projects/{project_id}/saved-sessions")
+async def saved_sessions_list(
+    project_id: int, kind: str, owner: SignedIn, db: SessionDep
+) -> list[SavedSessionChoice]:
+    """List exact sessions of the selected CLI in this project's directory."""
+    try:
+        project = await work.find_project(db, str(project_id))
+        default_kinds.get(kind)
+    except work.WorkError:
+        raise ApiError(404, "project_not_found", f"There is no project {project_id}.") from None
+    except UnknownAgentKindError:
+        raise ApiError(422, "unknown_kind", f"There is no CLI agent kind {kind!r}.") from None
+    found = await asyncio.to_thread(list_saved_sessions, kind, Path(project.repo_path))
+    return [
+        SavedSessionChoice(
+            kind=item.kind, session_id=item.session_id, updated_at=item.updated_at.isoformat()
+        )
+        for item in found
+    ]
+
+
+@router.post("/projects/{project_id}/assign-saved-session", status_code=202)
+async def assign_saved_session(
+    project_id: int,
+    body: AssignSavedSessionBody,
+    owner: SignedIn,
+    context: ContextDep,
+    db: SessionDep,
+) -> AdoptManagerApproval:
+    try:
+        project = await work.find_project(db, str(project_id))
+        default_kinds.get(body.kind)
+    except work.WorkError:
+        raise ApiError(404, "project_not_found", f"There is no project {project_id}.") from None
+    except UnknownAgentKindError:
+        raise ApiError(422, "unknown_kind", f"There is no CLI agent kind {body.kind!r}.") from None
+    if choice_named(body.kind).found() is None:
+        raise ApiError(422, "kind_unavailable", f"{body.kind} is not installed on this server.")
+    try:
+        approval = await Adoptions(context.sessions, clock=context.clock).request_saved(
+            kind=body.kind, session_id=body.session_id, project=project
+        )
+    except LookupError as error:
+        raise ApiError(422, "session_not_found", str(error)) from None
+    except AdoptionError as error:
+        raise ApiError(409, "agent_running", str(error)) from None
+    except HierarchyError as error:
+        raise ApiError(409, "manager_exists", str(error)) from None
+    return AdoptManagerApproval(
+        approval_id=approval.id, warnings=list(approval.payload.get("warnings", []))
+    )
 
 
 @router.get("/projects/{project_id}/running-managers")

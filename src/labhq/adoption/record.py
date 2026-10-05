@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters.tmux import AgentKind
 from labhq.adoption.checkout import is_git_repository
-from labhq.adoption.request import AdoptPayload, refuse_second_manager
+from labhq.adoption.request import AdoptPayload, SavedSessionPayload, refuse_second_manager
 from labhq.adoption.session import AdoptedSession, file_digest
 from labhq.adoption.state import AdoptionState, store_state
 from labhq.callcenter.status.format import StatusFields, render_status
@@ -94,7 +94,12 @@ async def ensure_ceo(db: AsyncSession, clock: Clock, adapter: str) -> Agent:
 
 
 async def record_adoption(
-    db: AsyncSession, clock: Clock, *, request: AdoptPayload, adopted: Adopted, ceo_adapter: str
+    db: AsyncSession,
+    clock: Clock,
+    *,
+    request: AdoptPayload | SavedSessionPayload,
+    adopted: Adopted,
+    ceo_adapter: str,
 ) -> dict[str, Any]:
     await refuse_second_manager(db, request.project)
     project = await ensure_project(db, clock, request.project, adopted.repo)
@@ -122,7 +127,7 @@ async def record_adoption(
             repo=str(adopted.repo),
             tmux_session=session.name,
             state_dir=str(session.state_dir),
-            original_pid=request.pid,
+            original_pid=request.pid if isinstance(request, AdoptPayload) else None,
             session_id=adopted.session_id,
             uncommitted=adopted.uncommitted,
             baseline=adopted.baseline,

@@ -17,6 +17,7 @@ from labhq.adapters.tmux import AgentKinds, default_kinds
 from labhq.adoption.checkout import is_git_repository, toplevel
 from labhq.adoption.discovery import Processes, RunningAgent, all_processes, discover, find_running
 from labhq.adoption.observe import AdoptionError, OwnerTmux
+from labhq.adoption.saved import find_saved_session
 from labhq.adoption.settings import AdoptionSettings, get_adoption_settings
 from labhq.approvals import ApprovalService
 from labhq.clock import Clock
@@ -25,6 +26,7 @@ from labhq.db.models import Agent, Approval, Project
 from labhq.hierarchy import MANAGER, HierarchyError
 
 ADOPT_AGENT = "adopt_agent"
+ADOPT_SAVED_SESSION = "adopt_saved_session"
 NO_ISOLATION_WARNING = (
     "No sandbox is configured (LABHQ_ADOPT_SANDBOX) and the agent cannot run as a separate OS "
     "user, because its conversation is stored under your home. It will run as you, in your "
@@ -45,6 +47,18 @@ class AdoptPayload(BaseModel):
     project: str = Field(min_length=1)
     # The owner's tmux pane the agent runs in; None outside tmux.
     pane: str | None = None
+    warnings: tuple[str, ...] = ()
+
+
+class SavedSessionPayload(BaseModel):
+    """A chosen, stopped conversation to continue as the project's manager."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    kind: str
+    session_id: str
+    cwd: str
+    project: str
     warnings: tuple[str, ...] = ()
 
 
@@ -107,6 +121,30 @@ class Adoptions:
 
     async def discover(self) -> list[RunningAgent]:
         return await asyncio.to_thread(discover, self._kinds, self._processes)
+
+    async def request_saved(self, *, kind: str, session_id: str, project: Project) -> Approval:
+        """Request approval to resume an exact session after it has stopped."""
+        cwd = Path(project.repo_path).resolve()
+        await asyncio.to_thread(find_saved_session, kind, cwd, session_id)
+        async with self._sessions() as db:
+            await refuse_second_manager(db, project.name)
+        running = await self.discover()
+        if any(
+            agent.kind == kind
+            and (agent.cwd.resolve().is_relative_to(cwd) or session_id in agent.command)
+            for agent in running
+        ):
+            raise AdoptionError(
+                f"a {kind} process is still running in {cwd}; use the running-agent flow"
+            )
+        payload = SavedSessionPayload(
+            kind=kind,
+            session_id=session_id,
+            cwd=str(cwd),
+            project=project.name,
+            warnings=isolation_warnings(self._settings),
+        )
+        return await self._approvals.request(ADOPT_SAVED_SESSION, payload.model_dump(mode="json"))
 
     async def request(
         self,

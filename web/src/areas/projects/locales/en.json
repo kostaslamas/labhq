@@ -74,6 +74,21 @@
     "waiting": "Assignment requested. Review the approval to move this agent.",
     "failed": "The running agents could not be loaded or the assignment could not be requested. Try again."
   },
+  "sessions": {
+    "button": "Assign a saved agent session",
+    "title": "Choose an existing session",
+    "hint": "Sessions in this project's folder, including agents that have quit. Approval resumes the exact session as manager.",
+    "kind": "Agent",
+    "loading": "Looking for sessions…",
+    "session": "Session",
+    "choose": "Choose a session",
+    "empty": "No saved sessions for this agent in the project folder.",
+    "submit": "Request assignment",
+    "working": "Requesting…",
+    "loadFailed": "The sessions could not be loaded.",
+    "assignFailed": "The session could not be assigned. Refresh the list and try again.",
+    "running": "This agent is still running in the project folder. Use the running tmux agent option."
+  },
   "add": {
     "button": "Add project",
     "title": "Add a project",
