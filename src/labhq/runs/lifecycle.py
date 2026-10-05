@@ -24,8 +24,10 @@ from labhq.adapters import (
     RunRequest,
 )
 from labhq.adapters import default_registry as builtin_adapters
+from labhq.adapters.tmux import get_tmux_settings
 from labhq.agenttools import AgentToolRegistry, ToolContext, bind
 from labhq.agenttools import default_registry as builtin_agent_tools
+from labhq.ceosessions import CEO_ROLE, ceo_session_name, install_ceo_skill
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, AgentTaskSession, CostEvent, Run, RunEvent, Task
@@ -108,12 +110,24 @@ class RunService:
             selected_adapter = adapter or agent.adapter
             effective_config = {**agent.config, **(config or {})}
             task = await db.get_one(Task, task_id) if task_id is not None else None
-            stored, resumable = await _stored_session(
-                db, agent, task_id, selected_adapter, effective_config
-            )
+            ceo_tmux = agent.role == CEO_ROLE and selected_adapter == "tmux"
+            stored, resumable = (None, False)
+            ceo_session_id = None
+            if ceo_tmux:
+                ceo_session_id = await _ceo_session_id(
+                    db, agent.id, agent_kind(selected_adapter, effective_config)
+                )
+            else:
+                stored, resumable = await _stored_session(
+                    db, agent, task_id, selected_adapter, effective_config
+                )
             if cwd is None and stored is not None and stored.cwd:
                 # Sessions are stored per working directory; resume needs the same one.
                 cwd = Path(stored.cwd)
+            if ceo_tmux:
+                cwd = self._memory.home(agent.id)
+                cwd.mkdir(parents=True, exist_ok=True)
+                install_ceo_skill(cwd, get_tmux_settings().socket)
             memory = self._memory.prepare(agent, cwd)
             if memory is not None:
                 cwd, prompt = memory.cwd, memory.prompt(prompt)
@@ -124,8 +138,10 @@ class RunService:
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = selected_adapter
             run.status = RunStatus.RUNNING
-            run.session_id_before = resume_session_id or (
-                stored.session_id if stored is not None and resumable else None
+            run.session_id_before = (
+                resume_session_id
+                or ceo_session_id
+                or (stored.session_id if stored is not None and resumable else None)
             )
             run.started_at = run.heartbeat_at = now
             await db.commit()
@@ -141,6 +157,11 @@ class RunService:
                 run_id=run.id,
                 agent_tools=[bind(spec, tool_context) for spec in agent_tool_specs],
                 system_prompt_append=system_prompt_append,
+                persistent_tmux_session=(
+                    ceo_session_name(agent_kind(selected_adapter, effective_config))
+                    if ceo_tmux
+                    else None
+                ),
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(
@@ -389,3 +410,17 @@ async def _stored_session(
     ):
         return row, True
     return row, False
+
+
+async def _ceo_session_id(db: AsyncSession, agent_id: int, kind: str) -> str | None:
+    """Carry a CEO CLI conversation across direct messages and project wakeups."""
+    return await db.scalar(
+        select(Run.session_id_after)
+        .where(
+            Run.agent_id == agent_id,
+            Run.adapter == "tmux",
+            Run.session_id_after.startswith(f"{kind}:"),
+        )
+        .order_by(Run.id.desc())
+        .limit(1)
+    )

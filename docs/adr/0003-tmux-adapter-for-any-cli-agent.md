@@ -60,8 +60,10 @@ built, with a captured screen per agent as a test fixture. This ADR does not ass
 
 ### Sessions run on a private tmux server
 
-labhq starts its own tmux server on a dedicated socket (`tmux -L labhq`), one session per
-run. A server shared with the user would hand workers the user's `SSH_AUTH_SOCK`, forge
+labhq starts its own tmux server on a dedicated socket (`tmux -L labhq`). Ordinary runs
+use one session per run. The global CEO keeps one named session per CLI kind, such as
+`ceo_claude` or `ceo_codex`, across owner messages and project wakeups. A server shared
+with the user would hand workers the user's `SSH_AUTH_SOCK`, forge
 tokens and credential helpers.
 
 A private server alone does not keep them out. A new session starts from the server's
@@ -81,6 +83,10 @@ and `XAUTHORITY` (checked on tmux 3.4). So:
    on top, passed as `new-session -e NAME=value`.
 
 The user can still watch or take over a run with `tmux -L labhq attach -t <run>`.
+For the CEO, attach to `ceo_claude` or `ceo_codex`. labhq reuses a live managed CEO pane;
+if its CLI exited, labhq respawns it in the same tmux session and resumes its recorded
+conversation when the CLI supports resume. A preexisting pane without labhq's ownership
+marker is left untouched.
 
 ### Resume
 
@@ -88,6 +94,11 @@ A run that ends records its session id in `agent_task_sessions`, as the SDK adap
 The next run of the same agent on the same task starts with the agent's `resume` template
 in the same `cwd`. Where an agent can take an id at start, labhq assigns it and never has to
 discover it.
+
+The global CEO resumes the most recent conversation of each CLI kind from its run records,
+including direct owner messages without a task. Its working directory and operational skill
+live in the CEO agent home. Its MCP tool server binds each call to the CEO's current run,
+so a persistent CLI does not keep a stale run ID.
 
 ### Usage comes from a structured source where the CLI has one
 

@@ -132,6 +132,23 @@ class TmuxServer:
         text = self.run("capture-pane", "-p", "-J", "-S", "-", "-t", f"={name}:")
         return "\n".join(line.rstrip() for line in text.rstrip().splitlines())
 
+    def respawn_session(
+        self, name: str, *, cwd: Path, argv: Sequence[str], variables: Mapping[str, str]
+    ) -> None:
+        """Restart a dead managed pane in its existing named session."""
+        assignments = [word for item in variables.items() for word in ("-e", "=".join(item))]
+        self.run(
+            "respawn-pane",
+            "-k",
+            "-t",
+            f"={name}:",
+            "-c",
+            str(cwd),
+            *assignments,
+            "--",
+            *argv,
+        )
+
     def send_keys(self, name: str, *keys: str, literal: bool = False) -> None:
         flags = ("-l",) if literal else ()
         self.run("send-keys", "-t", f"={name}:", *flags, *keys)

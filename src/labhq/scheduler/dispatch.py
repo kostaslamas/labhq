@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters.kinds import UnknownAgentChoiceError, choice_named
 from labhq.budgets import BudgetSettings, Decision, check
+from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupStatus
 from labhq.db.models import Agent, Run, Task, WakeupRequest
@@ -92,7 +93,8 @@ async def dispatch_one(
     if agent.status is not AgentStatus.ACTIVE:
         return Dispatch(Verdict.AGENT_INACTIVE)
     limits = AgentLimits.from_config(agent.config, settings)
-    if await _live_runs(session, agent.id) >= limits.max_concurrency:
+    concurrency = 1 if agent.role == CEO_ROLE else limits.max_concurrency
+    if await _live_runs(session, agent.id) >= concurrency:
         return Dispatch(Verdict.AT_CONCURRENCY)
 
     # Plan §7 rule 3: checked at enqueue and again here, since spend moves in between.

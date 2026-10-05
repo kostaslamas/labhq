@@ -16,8 +16,9 @@ from claude_agent_sdk import HookMatcher
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters import AdapterRegistry, AgentTool
+from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
-from labhq.db.models import Project, Task
+from labhq.db.models import Agent, Project, Task
 from labhq.economy import RtkHook, rtk_hook
 from labhq.guards import push_guard_matcher
 from labhq.runs import ActiveRun, RunService
@@ -81,14 +82,17 @@ class WorkspaceRunService(RunService):
         tools_server: Sequence[str] = (),
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
-            cwd, plain = await self._task_workspace(task_id)
-            if plain:
-                prompt += (
-                    "\n\nThis project is an ordinary folder, shared by its tasks. "
-                    "Edit files directly and do not initialize Git. "
-                    f"For this task, keep {plain_status_path(task_id)} "
-                    "current instead of the shared .labhq/status.md."
-                )
+            async with self._workspace_sessions() as db:
+                agent = await db.get_one(Agent, agent_id)
+            if agent.role != CEO_ROLE:
+                cwd, plain = await self._task_workspace(task_id)
+                if plain:
+                    prompt += (
+                        "\n\nThis project is an ordinary folder, shared by its tasks. "
+                        "Edit files directly and do not initialize Git. "
+                        f"For this task, keep {plain_status_path(task_id)} "
+                        "current instead of the shared .labhq/status.md."
+                    )
         active = await super().start(
             agent_id=agent_id,
             task_id=task_id,

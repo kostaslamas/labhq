@@ -1,7 +1,7 @@
 """The CEO's tools and the manager's team proposal leave approvals pending (plan §10)."""
 
-from labhq.db.enums import AgentStatus, ApprovalStatus, RiskClass
-from labhq.db.models import Agent, Project
+from labhq.db.enums import AgentStatus, ApprovalStatus, RiskClass, RunStatus
+from labhq.db.models import Agent, Project, Run, RunEvent
 from labhq.hierarchy import CREATE_AGENT, CREATE_TEAM
 from tests.roles.conftest import Org
 
@@ -41,6 +41,54 @@ async def test_list_projects_names_each_projects_manager(org: Org) -> None:
     answer = await org.call("list_projects", org.ceo)
     assert f"site (id {org.site}, active): manager agent {org.manager} (active)" in answer
     assert f"shop (id {org.shop}, active): manager agent {org.shop_manager}" in answer
+
+
+async def test_ceo_can_list_run_status_and_named_tmux_panes(org: Org) -> None:
+    now = org.clock.now()
+    async with org.sessions() as db:
+        run = Run(
+            agent_id=org.ceo,
+            adapter="tmux",
+            status=RunStatus.SUCCEEDED,
+            session_id_after="codex:session-id",
+            created_at=now,
+        )
+        db.add(run)
+        await db.flush()
+        db.add(
+            RunEvent(
+                run_id=run.id,
+                seq=1,
+                kind="agent",
+                payload={"kind": "codex"},
+                created_at=now,
+            )
+        )
+        other = Run(
+            agent_id=org.ceo,
+            adapter="tmux",
+            status=RunStatus.SUCCEEDED,
+            session_id_after="claude-code:other-id",
+            created_at=now,
+        )
+        db.add(other)
+        await db.flush()
+        db.add(
+            RunEvent(
+                run_id=other.id,
+                seq=1,
+                kind="agent",
+                payload={"kind": "claude-code"},
+                created_at=now,
+            )
+        )
+        await db.commit()
+
+    answer = await org.call("list_agent_sessions", org.ceo)
+
+    assert f"agent {org.ceo} (ceo" in answer
+    assert f"run {other.id} succeeded, tmux names ceo_claude, ceo_codex" in answer
+    assert "session-id" not in answer
 
 
 async def test_propose_team_leaves_a_pending_heavy_create_team_approval(org: Org) -> None:
@@ -83,6 +131,7 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
 
     assert names("ceo") == {
         "list_projects",
+        "list_agent_sessions",
         "assign_manager",
         "delegate_task",
         "task_overview",

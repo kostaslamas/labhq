@@ -40,6 +40,17 @@ async def test_agent_config_raises_the_limit(world: World) -> None:
     assert report.waiting == {}
 
 
+async def test_ceo_keeps_one_active_run_even_if_config_allows_two(world: World) -> None:
+    world.fake.wait_for_interrupt = True
+    await set_agent(world, role="ceo", config={"max_concurrency": 2})
+    await _two_tasks_queued(world)
+
+    report = await world.scheduler.tick()
+
+    assert len(report.started) == 1
+    assert list(report.waiting.values()) == [Verdict.AT_CONCURRENCY]
+
+
 async def test_a_task_held_by_another_run_waits_even_below_the_limit(world: World) -> None:
     world.fake.wait_for_interrupt = True
     await set_agent(world, config={"max_concurrency": 2})
