@@ -9,14 +9,16 @@ import { FIELD, LABEL } from './fieldClasses'
 
 type Kind = components['schemas']['AgentKindChoice']
 type Session = components['schemas']['SavedSessionChoice']
+type Candidate = components['schemas']['RunningManagerCandidate']
 
 const props = defineProps<{ projectId: number }>()
-const emit = defineEmits<{ requested: [approvalId: number]; cancel: [] }>()
+const emit = defineEmits<{ requested: [approvalId: number]; running: [kind: string]; cancel: [] }>()
 const { t, locale } = useI18n()
 
 const kinds = ref<Kind[]>([])
 const kind = ref('')
 const sessions = ref<Session[]>([])
+const runningCandidates = ref<Candidate[]>([])
 const sessionId = ref('')
 const loading = ref(false)
 const busy = ref(false)
@@ -35,23 +37,40 @@ async function loadKinds(): Promise<void> {
 
 async function loadSessions(): Promise<void> {
   sessions.value = []
+  runningCandidates.value = []
   sessionId.value = ''
   if (!kind.value) return
   loading.value = true
   failure.value = ''
   const selected = kind.value
   try {
-    const { data } = await api.GET('/api/projects/{project_id}/saved-sessions', {
-      params: { path: { project_id: props.projectId }, query: { kind: selected } },
-    })
+    const [saved, running] = await Promise.allSettled([
+      api.GET('/api/projects/{project_id}/saved-sessions', {
+        params: { path: { project_id: props.projectId }, query: { kind: selected } },
+      }),
+      api.GET('/api/projects/{project_id}/running-managers', {
+        params: { path: { project_id: props.projectId } },
+      }),
+    ])
     if (selected !== kind.value) return
-    if (!data) failure.value = 'projects.sessions.loadFailed'
-    else sessions.value = data
+    if (saved.status === 'fulfilled' && saved.value.data) sessions.value = saved.value.data
+    else failure.value = 'projects.sessions.loadFailed'
+    if (running.status === 'fulfilled' && running.value.data) {
+      runningCandidates.value = running.value.data.filter((agent) => agent.kind === selected)
+    }
   } catch {
     failure.value = 'projects.sessions.loadFailed'
   } finally {
     if (selected === kind.value) loading.value = false
   }
+}
+
+async function handleRunning(): Promise<void> {
+  const { data: active } = await api.GET('/api/projects/{project_id}/running-managers', {
+    params: { path: { project_id: props.projectId } },
+  })
+  if (active?.some((agent) => agent.kind === kind.value)) emit('running', kind.value)
+  else failure.value = 'projects.sessions.runningOutside'
 }
 
 async function submit(): Promise<void> {
@@ -66,8 +85,8 @@ async function submit(): Promise<void> {
     if (data) emit('requested', data.approval_id)
     else {
       const code = (error as { error?: { code?: string } } | undefined)?.error?.code
-      failure.value =
-        code === 'agent_running' ? 'projects.sessions.running' : 'projects.sessions.assignFailed'
+      if (code === 'agent_running') await handleRunning()
+      else failure.value = 'projects.sessions.assignFailed'
     }
   } catch {
     failure.value = 'projects.sessions.assignFailed'
@@ -95,6 +114,22 @@ watch(kind, loadSessions)
   >
     <h3 class="text-base font-semibold">{{ t('projects.sessions.title') }}</h3>
     <p class="text-sm text-muted">{{ t('projects.sessions.hint') }}</p>
+    <div
+      v-if="runningCandidates.length"
+      class="rounded-lg border border-line p-3 text-sm"
+      role="status"
+    >
+      <p>{{ t('projects.sessions.runningAvailable') }}</p>
+      <Button
+        type="button"
+        variant="outline"
+        class="mt-2"
+        data-testid="choose-running-agent"
+        @click="emit('running', kind)"
+      >
+        {{ t('projects.sessions.chooseRunning') }}
+      </Button>
+    </div>
     <label :class="LABEL">
       {{ t('projects.sessions.kind') }}
       <select v-model="kind" :class="FIELD" required data-testid="saved-session-kind">
