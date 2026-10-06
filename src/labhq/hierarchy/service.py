@@ -25,7 +25,9 @@ from labhq.hierarchy.team import (
     TeamProposal,
     check_adapters,
     check_team_size,
+    create_team,
     find_manager,
+    team_of,
 )
 from labhq.usage.plan import FALLBACK_ADAPTER_KEY, FALLBACK_KEY
 from labhq.work import find_project
@@ -194,6 +196,57 @@ class Hierarchy:
         return await self._approvals.request(
             CREATE_TEAM, proposal.model_dump(mode="json"), agent_id=manager_id
         )
+
+    async def staff_team(
+        self, manager_id: int, members: Iterable[ProposedMember | Mapping[str, Any]]
+    ) -> dict[str, int]:
+        """Create a manager's team now, with no approval, if it stays within the size cap.
+
+        For the CEO, which the owner lets staff teams (issue #168). A manager still proposes.
+        """
+        proposal = TeamProposal.model_validate(
+            {"manager_id": manager_id, "members": tuple(members)}
+        )
+        check_adapters(proposal, self._adapters)
+        async with self._sessions() as db:
+            ids = await create_team(db, self._clock, proposal, self._settings)
+            await db.commit()
+        return ids
+
+    async def create_agent(
+        self,
+        manager_id: int,
+        *,
+        role: str,
+        title: str,
+        adapter: str,
+        reports_to: int | None = None,
+    ) -> Agent:
+        """Add one agent to a manager's team, under the manager or one of its members."""
+        async with self._sessions() as db:
+            manager = await find_manager(db, manager_id)
+            team = {member.id: member for member in await team_of(db, manager)}
+            parent = manager if reports_to in (None, manager.id) else team.get(reports_to or 0)
+            if parent is None:
+                raise HierarchyError(f"agent {reports_to} is not in manager {manager_id}'s team")
+            check_reports_to(role, parent.role)
+            if adapter not in self._adapters:
+                raise UnknownAdapterError(f"no adapter registered as {adapter!r}")
+            await check_team_size(db, manager, 1, self._settings)
+            now = self._clock.now()
+            agent = Agent(
+                project_id=manager.project_id,
+                role=role,
+                title=title,
+                reports_to=parent.id,
+                adapter=adapter,
+                status=AgentStatus.ACTIVE,
+                created_at=now,
+                updated_at=now,
+            )
+            db.add(agent)
+            await db.commit()
+        return agent
 
     async def tree(self) -> list[Node]:
         """Every agent that is not retired, under the agent it reports to."""
