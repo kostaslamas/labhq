@@ -23,8 +23,10 @@ from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Run
 from labhq.runs import ActiveRun, RunService, RunStartError
+from labhq.scheduler.admission import Admission, order_by_group
 from labhq.scheduler.checkout import release
 from labhq.scheduler.dispatch import Dispatch, Verdict, dispatch_one, pending_wakeup_ids
+from labhq.scheduler.memory import MemoryMeter, system_memory
 from labhq.scheduler.progress import continue_task
 from labhq.scheduler.reaper import LIVE_STATUSES, reap_stale_runs
 from labhq.scheduler.settings import SchedulerSettings, get_scheduler_settings
@@ -67,6 +69,7 @@ class Scheduler:
         settings: SchedulerSettings | None = None,
         budget_settings: BudgetSettings | None = None,
         usage_settings: UsageSettings | None = None,
+        memory: MemoryMeter | None = None,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
@@ -75,6 +78,7 @@ class Scheduler:
         self._settings = settings or get_scheduler_settings()
         self._budget_settings = budget_settings
         self._usage_settings = usage_settings
+        self._admission = Admission(self._settings, clock, memory or system_memory)
         self._live: dict[int, LiveRun] = {}
         # Abandoned waiters, kept referenced until their cancellation has run.
         self._abandoned: set[asyncio.Task[Run]] = set()
@@ -211,7 +215,7 @@ class Scheduler:
 
     async def _dispatch(self, report: TickReport) -> None:
         async with self._sessions() as db:
-            wakeup_ids = await pending_wakeup_ids(db)
+            wakeup_ids = await order_by_group(db, await pending_wakeup_ids(db))
         for wakeup_id in wakeup_ids:
             async with self._sessions() as db:
                 outcome = await dispatch_one(
@@ -222,6 +226,7 @@ class Scheduler:
                     settings=self._settings,
                     budget_settings=self._budget_settings,
                     usage_settings=self._usage_settings,
+                    admission=self._admission,
                 )
             if outcome.verdict is Verdict.QUEUED:
                 await self._start(outcome, report)

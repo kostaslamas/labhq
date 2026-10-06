@@ -20,6 +20,17 @@ def isolated_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("LABHQ_DATA_DIR", str(tmp_path / "isolated-data"))
 
 
+@pytest.fixture(autouse=True)
+def roomy_machine(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The scheduler's default meter never reads the real machine; a test injects its own."""
+    from labhq.scheduler.memory import MemoryReading
+
+    monkeypatch.setattr(
+        "labhq.scheduler.scheduler.system_memory",
+        lambda: MemoryReading(total_bytes=64 * 1024**3, available_bytes=48 * 1024**3),
+    )
+
+
 @pytest.fixture
 def clock() -> FakeClock:
     return FakeClock(datetime(2026, 10, 2, 9, 0, tzinfo=UTC))
