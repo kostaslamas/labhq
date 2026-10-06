@@ -126,6 +126,7 @@ and CI fails when it does not match them.
 | `tests/onboard/test_model.py::test_a_logged_in_claude_verifies` | the fake claude is a shebang script |
 | `tests/onboard/test_model.py::test_only_the_logged_in_answer_counts` | the fake claude is a shebang script |
 | `tests/program/test_sigterm.py::test_a_stop_signal_ends_labhq_serve_with_exit_code_zero` | POSIX stop signals |
+| `tests/roles/test_ceo_org_projects.py::test_discovery_lists_running_and_saved_sessions` | saved CLI sessions run through the tmux adapter |
 | `tests/scheduler/test_termination.py::test_a_process_that_is_already_gone_reports_false` | POSIX process groups and signals |
 | `tests/scheduler/test_termination.py::test_posix_signals_the_whole_process_group` | POSIX process groups and signals |
 
