@@ -91,6 +91,15 @@ Auth settings, read from `LABHQ_AUTH_*` environment variables and `LABHQ_PUBLIC_
 | `LABHQ_AUTH_SESSION_ABSOLUTE_SECONDS` | `int` | `2592000` | A session ends this long after sign-in, however active it is. |
 | `LABHQ_AUTH_SESSION_COOKIE` | `str` | `labhq_session` | Name of the HttpOnly session cookie. |
 
+## `labhq.autonomy.settings.AutonomySettings`
+
+Autonomy and heartbeat defaults, read from `LABHQ_AUTONOMY` and `LABHQ_CEO_HEARTBEAT_SECONDS`.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_AUTONOMY` | `Autonomy` | `on` | The start-up value of the global switch. The owner can flip it at runtime from the API; that choice is stored in the database and wins over this one. |
+| `LABHQ_CEO_HEARTBEAT_SECONDS` | `int` | `3600` | Seconds between two heartbeat wakeups of the global CEO. 0 turns the heartbeat off. |
+
 ## `labhq.budgets.settings.BudgetSettings`
 
 Budget thresholds and period, read from `LABHQ_BUDGET_*` environment variables.
@@ -307,6 +316,8 @@ How often each background duty of the always-on program runs, from `LABHQ_PROGRA
 | `LABHQ_PROGRAM_GRAPHIFY_INTERVAL_SECONDS` | `float` | `60.0` | How often project graphify indexes are checked; a new project waits at most this long. |
 | `LABHQ_PROGRAM_CHAT_INTERVAL_SECONDS` | `float` | `30.0` | The chat loop runs until its adapter fails; it reconnects after this long. |
 | `LABHQ_PROGRAM_GATE_INTERVAL_SECONDS` | `float` | `5.0` | How often an external approval gate is polled; unused while no gate is configured. |
+| `LABHQ_PROGRAM_HEARTBEAT_INTERVAL_SECONDS` | `float` | `30.0` | How often the CEO heartbeat is considered; the heartbeat's own period is a separate setting, so a shorter interval here never wakes the CEO more often. |
+| `LABHQ_PROGRAM_MEETINGS_INTERVAL_SECONDS` | `float` | `60.0` | How often due meetings are requested and decided ones started. |
 | `LABHQ_PROGRAM_SHUTDOWN_GRACE_SECONDS` | `float` | `10.0` | Time the server gets to stop before it is cancelled on shutdown. |
 
 ## `labhq.scheduler.settings.SchedulerSettings`
@@ -320,7 +331,8 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_HEARTBEAT_LIMIT_SECONDS` | `int` | `300` | A run silent for this long has lost its owner. The scheduler beats live runs on every tick, so the limit only has to outlast a few ticks, not a long tool call. |
 | `LABHQ_SCHEDULER_INTERRUPT_GRACE_SECONDS` | `int` | `30` | Time a timed-out run gets to honour its interrupt before it is abandoned. |
 | `LABHQ_SCHEDULER_TICK_SECONDS` | `float` | `5.0` |  |
-| `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `0` | An agent that ends a turn without a handoff gets another turn. 0 keeps it going until the task is resolved (the owner's choice); its budget and the plan-usage cap still stop it. A positive limit marks the task blocked and sends it to the reviewer instead. |
+| `LABHQ_SCHEDULER_AUTO_NEXT_TURN` | `bool` | `true` | An agent that ends a turn without a handoff gets another turn (the owner's choice, #140). Turning this off leaves the next turn to a wakeup from somewhere else. |
+| `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `5` | After this many turns without a handoff the task is marked blocked and its manager is told, so an agent that never reports stops instead of spending until its budget. 0 means no limit: only its budget and the plan-usage cap stop it. |
 | `LABHQ_SCHEDULER_STALL_ALERT_RUNS` | `int` | `3` | Every this many silent turns the reviewer (the parent task's assignee) is woken to look at the stuck task while it keeps going. 0 never alerts. |
 
 ## `labhq.settings.Settings`

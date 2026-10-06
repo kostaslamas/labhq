@@ -280,6 +280,27 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/autonomy': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Autonomy Get */
+    get: operations['autonomy_get']
+    /**
+     * Autonomy Put
+     * @description `paused` stops timers, heartbeats and automatic next turns; owner messages still run.
+     */
+    put: operations['autonomy_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/health': {
     parameters: {
       query?: never
@@ -857,6 +878,15 @@ export interface components {
       authenticated: boolean
       /** Enrolled */
       enrolled: boolean
+    }
+    /**
+     * Autonomy
+     * @enum {string}
+     */
+    Autonomy: 'on' | 'paused'
+    /** AutonomyState */
+    AutonomyState: {
+      autonomy: components['schemas']['Autonomy']
     }
     /** BrowserFolder */
     BrowserFolder: {
@@ -2181,6 +2211,68 @@ export interface operations {
           'application/json': {
             [key: string]: unknown
           }
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  autonomy_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AutonomyState']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  autonomy_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AutonomyState']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AutonomyState']
         }
       }
       /** @description Error */

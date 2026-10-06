@@ -53,7 +53,11 @@ PHASE_3_TABLES = {
 }
 # Passkeys and web sessions (issue #62).
 PHASE_4_TABLES = {"passkey_credentials", "web_sessions", "webauthn_challenges"}
-ALL_TABLES = PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES | PHASE_4_TABLES
+# Runtime switches such as the global autonomy (issue #169).
+PHASE_5_TABLES = {"program_state"}
+ALL_TABLES = (
+    PHASE_1_TABLES | PHASE_2_TABLES | TMUX_TABLES | PHASE_3_TABLES | PHASE_4_TABLES | PHASE_5_TABLES
+)
 
 
 def _sync_url(async_url: str) -> str:
@@ -66,7 +70,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0012"]
+    assert heads == ["0013"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:

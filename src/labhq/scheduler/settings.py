@@ -22,9 +22,10 @@ class SchedulerSettings(BaseSettings):
     # An agent that ends a turn without a handoff gets another turn (the owner's choice, #140).
     # Turning this off leaves the next turn to a wakeup from somewhere else.
     auto_next_turn: bool = True
-    # 0 keeps an agent going until its task is resolved; its budget and the plan-usage cap still
-    # stop it. A positive limit marks the task blocked and sends it to the reviewer instead.
-    max_unreported_runs: int = Field(default=0, ge=0)
+    # After this many turns without a handoff the task is marked blocked and its manager is
+    # told, so an agent that never reports stops instead of spending until its budget. 0 means
+    # no limit: only its budget and the plan-usage cap stop it.
+    max_unreported_runs: int = Field(default=5, ge=0)
     # Every this many silent turns the reviewer (the parent task's assignee) is woken to look
     # at the stuck task while it keeps going. 0 never alerts.
     stall_alert_runs: int = Field(default=3, ge=0)

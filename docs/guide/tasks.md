@@ -42,12 +42,28 @@ Returning a task wakes its manager with your feedback. Only your `task accept` c
 root task. Merge and push remain separate heavy actions that need their own approval.
 
 If an assigned agent ends a turn without handing off or reporting a blocker, the scheduler
-gives it another turn, and keeps doing so until the task is resolved: the CEO and the
-managers do not stop on their own. Only the agent's budget and the plan-usage cap stop it. So that a stuck task is never
-invisible, every `LABHQ_SCHEDULER_STALL_ALERT_RUNS` silent turns (three by default) wake its
-reviewer, the parent task's assignee, who can look at it with `task_overview` and give
-feedback, split or reassign it, or ask you; the task keeps going meanwhile.
-Set `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` to a positive number to stop after that many
-silent turns instead: the task is then marked blocked and sent to its reviewer, and a
-reviewer that keeps ending turns without deciding triggers an owner notification. Budget and agent approvals can still pause
+gives it another turn (turn this off with `LABHQ_SCHEDULER_AUTO_NEXT_TURN=false`). So that a
+stuck task is never invisible, every `LABHQ_SCHEDULER_STALL_ALERT_RUNS` silent turns (three by
+default) wake its reviewer, the parent task's assignee, who can look at it with
+`task_overview` and give feedback, split or reassign it, or ask you; the task keeps going
+meanwhile.
+
+After `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` silent turns (five by default) the agent stops: the
+task is marked blocked and sent to its reviewer, and a reviewer that keeps ending turns
+without deciding triggers an owner notification. Set it to 0 to let an agent keep going until
+its budget or the plan-usage cap stops it. Budget and agent approvals can still pause
 work; the task stays visible instead of being called done.
+
+## The CEO acts on its own
+
+The global CEO does not wait to be asked. `LABHQ_CEO_HEARTBEAT_SECONDS` (3600; 0 turns it off)
+wakes it once per period with a short brief of only what changed since its last turn: new
+reports, stalled tasks, new approvals and budget warnings. When you approve or reject
+something the CEO or a manager requested, that agent is woken once with the decision. Meetings
+on a cadence (`LABHQ_MEETINGS_CADENCE_SECONDS`) are requested and, once you approve them,
+started by the running program.
+
+`LABHQ_AUTONOMY=paused` (or `PUT /api/autonomy`) stops all of that: no timer, heartbeat or
+automatic next turn starts, and held wakeups wait until you turn autonomy `on` again. Your own
+messages to the CEO still get through. The switch you set at runtime wins over the
+environment variable.

@@ -18,11 +18,13 @@ from datetime import datetime, timedelta
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from labhq.autonomy.settings import AutonomySettings
 from labhq.budgets import BudgetSettings
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Run
 from labhq.runs import ActiveRun, RunService, RunStartError
+from labhq.scheduler.autonomy import held_wakeup_ids
 from labhq.scheduler.checkout import release
 from labhq.scheduler.dispatch import Dispatch, Verdict, dispatch_one, pending_wakeup_ids
 from labhq.scheduler.progress import continue_task
@@ -67,7 +69,9 @@ class Scheduler:
         settings: SchedulerSettings | None = None,
         budget_settings: BudgetSettings | None = None,
         usage_settings: UsageSettings | None = None,
+        autonomy_settings: AutonomySettings | None = None,
     ) -> None:
+        self._autonomy_settings = autonomy_settings
         self._sessions = sessions
         self._clock = clock
         self._runs = runs
@@ -205,7 +209,8 @@ class Scheduler:
 
     async def _dispatch(self, report: TickReport) -> None:
         async with self._sessions() as db:
-            wakeup_ids = await pending_wakeup_ids(db)
+            held = await held_wakeup_ids(db, self._autonomy_settings)
+            wakeup_ids = [i for i in await pending_wakeup_ids(db) if i not in held]
         for wakeup_id in wakeup_ids:
             async with self._sessions() as db:
                 outcome = await dispatch_one(
