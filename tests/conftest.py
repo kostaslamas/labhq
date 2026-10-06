@@ -25,10 +25,9 @@ def roomy_machine(monkeypatch: pytest.MonkeyPatch) -> None:
     """The scheduler's default meter never reads the real machine; a test injects its own."""
     from labhq.scheduler.memory import MemoryReading
 
-    monkeypatch.setattr(
-        "labhq.scheduler.scheduler.system_memory",
-        lambda: MemoryReading(total_bytes=64 * 1024**3, available_bytes=48 * 1024**3),
-    )
+    roomy = lambda: MemoryReading(total_bytes=64 * 1024**3, available_bytes=48 * 1024**3)  # noqa: E731
+    for name in ("scheduler.scheduler", "scheduler.capacity"):
+        monkeypatch.setattr(f"labhq.{name}.system_memory", roomy)
 
 
 @pytest.fixture

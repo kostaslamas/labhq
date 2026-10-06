@@ -2,8 +2,10 @@
 
 from dataclasses import dataclass, field
 
+import pytest
 from sqlalchemy import select
 
+from labhq.callcenter.answers.status import health
 from labhq.db.enums import AgentStatus, WakeupSource, WakeupStatus
 from labhq.db.models import Agent, Notification
 from labhq.runs import RunService
@@ -185,3 +187,50 @@ async def test_an_unset_cap_is_derived_from_the_injected_total(world: World) -> 
     assert len(report.started) == 1
     assert list(report.waiting.values()) == [Verdict.AT_CAPACITY]
     await scheduler.shutdown()
+
+
+async def test_the_status_answer_reports_running_cap_and_free_memory(
+    world: World, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    world.fake.wait_for_interrupt = True
+    meter = Meter(free_percent=62.0)
+    scheduler = scheduler_with(world, meter, max_running=3)
+    monkeypatch.setattr("labhq.scheduler.capacity.system_memory", meter)
+    monkeypatch.setattr(
+        "labhq.scheduler.capacity.get_scheduler_settings",
+        lambda: SchedulerSettings(max_running=3),
+    )
+    await scheduler.enqueue(on_task(world, "first"))
+    await scheduler.tick()
+
+    async with world.sessions() as db:
+        text = await health(db, world.clock)
+
+    assert "One agent run active out of 3 allowed" in text
+    assert "62 percent of memory is free" in text
+    await scheduler.shutdown()
+
+
+class RecordingPanes:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def suspend_idle(self) -> list[str]:
+        self.calls += 1
+        return ["ceo_claude"]
+
+
+async def test_each_tick_asks_the_pane_suspender_and_reports_what_it_stopped(world: World) -> None:
+    panes = RecordingPanes()
+    scheduler = Scheduler(
+        world.sessions,
+        clock=world.clock,
+        runs=RunService(world.sessions, clock=world.clock, registry=world.registry),
+        settings=SETTINGS,
+        panes=panes,
+    )
+
+    report = await scheduler.tick()
+
+    assert panes.calls == 1
+    assert report.suspended == ["ceo_claude"]

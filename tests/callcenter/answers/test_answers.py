@@ -101,4 +101,7 @@ async def test_health_reports_incidents_and_latest_samples(
 
 
 async def test_health_with_no_hosts(session: AsyncSession, clock: FakeClock) -> None:
-    assert await health(session, clock) == "No machines are registered yet."
+    assert await health(session, clock) == (
+        "No machines are registered yet. No agent runs active out of 8 allowed, "
+        "and 75 percent of memory is free."
+    )
