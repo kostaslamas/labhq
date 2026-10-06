@@ -81,7 +81,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0014"]
+    assert heads == ["0015"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:
