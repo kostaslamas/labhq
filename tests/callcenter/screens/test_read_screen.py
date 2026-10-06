@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from labhq.callcenter.calls import CallTools, NoInterrupter
+from labhq.callcenter.calls import CallTools
 from labhq.callcenter.screens import ScreenLog, ScreenReader
 from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, Run, RunEvent
@@ -15,7 +15,7 @@ pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Win
 
 def _tools(office: Office, *, screens: bool = True) -> CallTools:
     reader = office.reader if screens else None
-    return CallTools(office.sessions, office.clock, NoInterrupter(), call_id=1, screens=reader)
+    return CallTools(office.sessions, office.clock, call_id=1, screens=reader)
 
 
 async def test_it_reads_the_screen_by_agent_name_or_by_task(office: Office) -> None:

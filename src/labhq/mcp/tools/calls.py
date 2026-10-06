@@ -8,7 +8,7 @@ from functools import cache
 
 from mcp.types import ToolAnnotations
 
-from labhq.callcenter.calls import CallCenter, Interrupter, NoInterrupter, Reply, TicketState
+from labhq.callcenter.calls import CallCenter, Reply, TicketState
 from labhq.callcenter.calls.settings import CallAgentSettings
 from labhq.db import create_engine, session_factory
 from labhq.mcp.tools.registry import ToolSpec, default_registry
@@ -30,17 +30,6 @@ SPOKEN_WORKING = (
 DEFAULT_WAIT_SECONDS = 25
 
 
-# `labhq serve` holds the scheduler in this process and attaches it, so interrupt reaches
-# live runs; `labhq mcp serve` alone holds none.
-_interrupter: Interrupter = NoInterrupter()
-
-
-def attach_interrupter(interrupter: Interrupter) -> None:
-    """Call before the first tool call: the Call Center is built once per database."""
-    global _interrupter
-    _interrupter = interrupter
-
-
 @cache
 def _call_center(database_url: str) -> CallCenter:
     settings = Settings()
@@ -50,7 +39,6 @@ def _call_center(database_url: str) -> CallCenter:
         CLOCK,
         workdir=settings.data_dir / CALL_CENTER_DIR,
         agent_settings=CallAgentSettings(),
-        interrupter=_interrupter,
     )
 
 
@@ -91,12 +79,13 @@ async def get_reply_tool(ticket: str, wait_seconds: int = DEFAULT_WAIT_SECONDS) 
 default_registry.register(
     ToolSpec(
         "ask_ceo",
-        "Ask the Call Center something that needs reading and judgement: what an agent is "
-        "doing, why something is stuck, or to pass the owner's words to an agent. question "
-        "is what the owner said, as spoken. wait_seconds (0 to 50, default 0) makes the call wait "
-        "for the answer and return it directly; when it returns a ticket or says it is still "
-        "working, call get_reply with that ticket and never ask the question again. "
-        "Questions a few minutes apart share one call and keep its context.",
+        "Talk to the Call Center: what an agent is doing or why something is stuck, "
+        "answered from reports, or an order it sends to the CEO in the owner's words. "
+        "question is what the owner said, as spoken. wait_seconds (0 to 50, default 0) "
+        "makes the call wait for the answer and return it directly; when it returns a "
+        "ticket or says it is still working, call get_reply with that ticket and never "
+        "ask the question again. Questions a few minutes apart share one call and keep "
+        "its context.",
         ToolAnnotations(readOnlyHint=False, destructiveHint=False),
         ask_ceo_tool,
     )

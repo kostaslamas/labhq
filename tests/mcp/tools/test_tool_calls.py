@@ -9,13 +9,15 @@ from starlette.testclient import TestClient
 
 import labhq.mcp.tools  # noqa: F401  (registers every tool)
 from labhq.callcenter.answers.refs import approval_ref, question_ref
+from labhq.ceochat import message_text
 from labhq.clock import FakeClock
-from labhq.db.enums import AgentStatus, ApprovalStatus, QuestionStatus, RiskClass
-from labhq.db.models import Agent, AgentQuestion, Approval, Call, CallRequest, Task
+from labhq.db.enums import ApprovalStatus, QuestionStatus, RiskClass, WakeupSource
+from labhq.db.models import AgentQuestion, Approval, Call, CallRequest, Task, WakeupRequest
 from labhq.mcp.server import build_app
 from labhq.mcp.tools.registry import default_registry
 from labhq.speech import speakable
 from tests.callcenter.answers.seed import seed_busy
+from tests.callcenter.factories import add_ceo
 from tests.db.factories import project_agent_task
 
 TOKEN = "tool-test-token"
@@ -67,7 +69,7 @@ def test_tools_list_reports_every_registered_tool_with_annotations(client: TestC
 
 
 def test_every_read_tool_answers_on_an_empty_database(client: TestClient) -> None:
-    for name in ("brief", "inbox", "health"):
+    for name in ("brief", "inbox", "health", "reports"):
         assert_spoken(call(client, name))
 
 
@@ -75,14 +77,13 @@ async def test_every_tool_answers_in_speakable_text_on_a_seeded_database(
     session: AsyncSession, clock: FakeClock, client: TestClient
 ) -> None:
     ids = await seed_busy(session, clock)
-    agent = (await session.scalars(select(Agent))).one()
-
     answers = [
         call(client, "brief"),
         call(client, "inbox"),
         call(client, "health"),
         call(client, "decide", reference=approval_ref(ids["approval"]), verdict="approve"),
-        call(client, "order", project="demo", text="Fix the login bug", assignee=agent.id),
+        call(client, "order", text="Fix the login bug"),
+        call(client, "reports"),
         call(client, "answer", reference=question_ref(ids["question"]), words="Release from main."),
     ]
 
@@ -109,21 +110,24 @@ async def test_a_heavy_decide_leaves_a_pending_approval_and_executes_nothing(
     assert_spoken(text)
 
 
-async def test_order_creates_a_task_over_http(
+async def test_an_mcp_order_reaches_the_ceo_verbatim_and_creates_no_task(
     session: AsyncSession, clock: FakeClock, client: TestClient
 ) -> None:
-    _, agent, _ = await project_agent_task(session, clock)
-    # An order without an assignee goes to the project's active manager.
-    agent.role = "manager"
-    agent.status = AgentStatus.ACTIVE
+    await project_agent_task(session, clock)
+    ceo_id = (await add_ceo(session, clock)).id
     await session.commit()
+    tasks_before = await count(session, Task)
+    words = "Ask the demo team for the release notes, by Friday please."
 
-    text = call(client, "order", project="demo", text="Write the release notes")
+    first = call(client, "order", text=words, request_id="retry-1")
+    again = call(client, "order", text=words, request_id="retry-1")
 
-    task = await session.scalar(select(Task).where(Task.title == "Write the release notes"))
-    assert task is not None
-    assert task.assignee_id == agent.id
-    assert f"T{task.id}" in text
+    session.expire_all()
+    (message,) = (await session.scalars(select(WakeupRequest))).all()
+    assert (message.agent_id, message.source) == (ceo_id, WakeupSource.OWNER_MESSAGE)
+    assert message_text(message.reason) == words
+    assert await count(session, Task) == tasks_before
+    assert (first, again) == ("Sent to the CEO.", "That was already sent to the CEO.")
 
 
 async def test_answer_stores_the_words_in_a_reused_call_and_delivers_them(

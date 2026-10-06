@@ -1,8 +1,8 @@
-"""Read-only tools: what happened, what waits for the owner, how the machines are."""
+"""Read-only tools: what happened, what agents reported, what waits, how the machines are."""
 
 from mcp.types import ToolAnnotations
 
-from labhq.callcenter.answers import brief, health, inbox
+from labhq.callcenter.answers import brief, health, inbox, reports
 from labhq.mcp.tools.registry import ToolSpec, default_registry
 from labhq.mcp.tools.runtime import CLOCK, tool_session
 
@@ -17,6 +17,11 @@ async def brief_tool() -> str:
 async def inbox_tool() -> str:
     async with tool_session() as db:
         return await inbox(db)
+
+
+async def reports_tool(project: str | None = None) -> str:
+    async with tool_session() as db:
+        return await reports(db, CLOCK, project)
 
 
 async def health_tool() -> str:
@@ -50,5 +55,16 @@ default_registry.register(
         "aloud as it is.",
         READ_ONLY,
         health_tool,
+    )
+)
+default_registry.register(
+    ToolSpec(
+        "reports",
+        "Answer what an agent is doing or how far a project is from what workers and their "
+        "supervisors last reported: who reported, how long ago, what they said, the task "
+        "status and their last run. Read-only; it wakes nobody. project is the project's "
+        "name, or leave it out for every project. Read the answer aloud as it is.",
+        READ_ONLY,
+        reports_tool,
     )
 )

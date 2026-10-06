@@ -1,4 +1,5 @@
-"""Rows the Call Center tests share: an open call, an owner request and a pending question."""
+"""Rows the Call Center tests share: an open call, an owner request, a pending question and
+the global CEO."""
 
 from dataclasses import dataclass
 
@@ -6,7 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.callcenter.questions import raise_question
 from labhq.clock import Clock
-from labhq.db.models import Call, CallRequest
+from labhq.db.enums import AgentStatus
+from labhq.db.models import Agent, Call, CallRequest
 from tests.db.factories import project_agent_task
 
 
@@ -43,3 +45,19 @@ async def scene(session: AsyncSession, clock: Clock, question: str = "Which bran
     scene_ids = Scene(agent.id, task.id, call.id, asked.id)
     await session.commit()
     return scene_ids
+
+
+async def add_ceo(session: AsyncSession, clock: Clock) -> Agent:
+    now = clock.now()
+    ceo = Agent(
+        project_id=None,
+        role="ceo",
+        title="CEO",
+        adapter="fake",
+        status=AgentStatus.ACTIVE,
+        created_at=now,
+        updated_at=now,
+    )
+    session.add(ceo)
+    await session.flush()
+    return ceo

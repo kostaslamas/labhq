@@ -73,7 +73,7 @@ class Hierarchy:
     async def ensure_ceo(self, adapter: str | None = None) -> Agent:
         """The CEO, created on first use. The operator asks for it, so it starts active."""
         async with self._sessions() as db:
-            ceo = await _current_ceo(db)
+            ceo = await find_ceo(db)
             if ceo is not None:
                 return ceo
             now = self._clock.now()
@@ -93,7 +93,7 @@ class Hierarchy:
 
     async def current_ceo(self) -> Agent | None:
         async with self._sessions() as db:
-            return await _current_ceo(db)
+            return await find_ceo(db)
 
     async def configure_ceo(self, primary: str, backup: str | None) -> Agent:
         """Set the agent kinds of the one CEO shared by every project."""
@@ -102,7 +102,7 @@ class Hierarchy:
         first = self._available_choice(primary)
         second = self._available_choice(backup) if backup is not None else None
         async with self._sessions() as db:
-            ceo = await _current_ceo(db)
+            ceo = await find_ceo(db)
             now = self._clock.now()
             if ceo is None:
                 ceo = Agent(
@@ -261,7 +261,7 @@ class Hierarchy:
         return roots
 
 
-async def _current_ceo(db: AsyncSession) -> Agent | None:
+async def find_ceo(db: AsyncSession) -> Agent | None:
     query = (
         select(Agent)
         .where(Agent.role == CEO, Agent.status != AgentStatus.RETIRED)

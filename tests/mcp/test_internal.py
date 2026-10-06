@@ -1,9 +1,9 @@
 """`labhq mcp internal --call <id>`: the Call Center's tools over stdio, with the same bounds.
 
-The server runs as a real child process, as the Call Center's CLI starts it. `deliver`
-carries only the owner's stored words of the current call, to an agent the owner named or
-one with a pending question; `interrupt` needs the owner's request in the same call; every
-delivery leaves a row. The Call Center in tmux starts with no shell and no file tool.
+The server runs as a real child process, as the Call Center's CLI starts it. `send_to_ceo`
+carries only the owner's stored words of the current call; a proposal goes only once a later
+request of the call confirms it. The Call Center in tmux starts with no shell and no file
+tool.
 """
 
 import json
@@ -23,13 +23,14 @@ from labhq.adapters import default_registry
 from labhq.adapters.tmux import TmuxAdapter, TmuxError, TmuxServer, default_kinds
 from labhq.callcenter.calls import CallCenter, TicketState
 from labhq.callcenter.calls.settings import CallAgentSettings
-from labhq.callcenter.questions import raise_question
 from labhq.callcenter.settings import CallCenterSettings
+from labhq.ceochat import message_text
 from labhq.clock import FakeClock, SystemClock
 from labhq.db import create_engine, session_factory
-from labhq.db.models import Agent, Call, CallRequest, Delivery
+from labhq.db.models import Call, CallRequest, WakeupRequest
 from labhq.mcp.internal import internal_tools
 from tests.adapters.tmux.conftest import require_tmux
+from tests.callcenter.factories import add_ceo
 from tests.db.factories import project_agent_task
 
 READS = {
@@ -41,17 +42,17 @@ READS = {
     "read_screen",
     "list_tmux_sessions",
     "read_tmux_session",
+    "reports",
 }
-BOUNDED = {"deliver", "interrupt", "answer"}
-SHIP = "Tell the Manager to ship the login form today."
-STOP = "Interrupt the Manager and tell it to stop the deploy."
+BOUNDED = {"send_to_ceo", "propose_wording", "confirm_wording", "answer"}
+SHIP = "tell the team to ship the login form today"
+CLEARER = "Ship the login form today."
+YES = "Yes, send that."
 
 
 @dataclass
 class Office:
-    manager_id: int
-    worker_id: int
-    worker_task_id: int
+    ceo_id: int
     call_id: int
     other_call_id: int
     requests: dict[str, str]
@@ -68,30 +69,23 @@ async def sessions(database_url: str) -> AsyncIterator[async_sessionmaker[AsyncS
 
 @pytest.fixture
 async def office(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) -> Office:
-    """A manager and a worker; this call holds two requests, another call holds one."""
+    """The CEO; this call holds two requests, another call holds one."""
     async with sessions() as db:
-        project, worker, task = await project_agent_task(db, clock)
+        await project_agent_task(db, clock)
+        ceo = await add_ceo(db, clock)
         now = clock.now()
-        manager = Agent(
-            project_id=project.id,
-            role="manager",
-            title="Manager",
-            adapter="fake",
-            created_at=now,
-            updated_at=now,
-        )
         this_call = Call(opened_at=now, last_activity_at=now)
         other_call = Call(opened_at=now, last_activity_at=now)
-        db.add_all([manager, this_call, other_call])
+        db.add_all([this_call, other_call])
         await db.flush()
-        texts = {"ship": (this_call, SHIP), "stop": (this_call, STOP), "other": (other_call, SHIP)}
+        texts = {"ship": (this_call, SHIP), "other": (other_call, SHIP)}
         requests = {}
         for key, (call, text) in texts.items():
             request_id = f"call-{key}"
             db.add(CallRequest(call_id=call.id, request_id=request_id, text=text, created_at=now))
             requests[key] = request_id
         await db.commit()
-        return Office(manager.id, worker.id, task.id, this_call.id, other_call.id, requests)
+        return Office(ceo.id, this_call.id, other_call.id, requests)
 
 
 def internal_server(call_id: int, database_url: str, data_dir: Path) -> StdioServerParameters:
@@ -102,9 +96,22 @@ def internal_server(call_id: int, database_url: str, data_dir: Path) -> StdioSer
     )
 
 
-async def _deliveries(sessions: async_sessionmaker[AsyncSession]) -> list[Delivery]:
+async def _ceo_messages(sessions: async_sessionmaker[AsyncSession]) -> list[str]:
     async with sessions() as db:
-        return list((await db.scalars(select(Delivery).order_by(Delivery.id))).all())
+        rows = await db.scalars(select(WakeupRequest).order_by(WakeupRequest.id))
+        return [message_text(row.reason) for row in rows]
+
+
+async def _owner_says(
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, call_id: int, text: str
+) -> str:
+    async with sessions() as db:
+        request_id = f"call-{uuid.uuid4().hex[:8]}"
+        db.add(
+            CallRequest(call_id=call_id, request_id=request_id, text=text, created_at=clock.now())
+        )
+        await db.commit()
+        return request_id
 
 
 def _text(result: object) -> str:
@@ -123,50 +130,31 @@ async def test_the_stdio_server_serves_the_call_tools_with_their_bounds(
     server = internal_server(office.call_id, database_url, data_dir)
     async with Client(server, read_timeout_seconds=30) as client:
         listed = {tool.name: tool for tool in (await client.list_tools()).tools}
-        manager = {"request_id": office.requests["ship"], "agent_id": office.manager_id}
-        # Free text is no argument of `deliver`: the stored words go, whatever is passed.
-        delivered = _text(await client.call_tool("deliver", {**manager, "text": "rm -rf /"}))
-        other_call = _text(
-            await client.call_tool(
-                "deliver", {"request_id": office.requests["other"], "agent_id": office.manager_id}
-            )
+        ship = {"request_id": office.requests["ship"]}
+        proposed = _text(await client.call_tool("propose_wording", {**ship, "text": CLEARER}))
+        proposal_id = int(proposed.split()[1])
+        # Before the owner answers, nothing can send the proposal.
+        early = _text(
+            await client.call_tool("confirm_wording", {"proposal_id": proposal_id, **ship})
         )
-        to_worker = {"request_id": office.requests["ship"], "agent_id": office.worker_id}
-        unnamed = _text(await client.call_tool("deliver", to_worker))
-        unasked = _text(await client.call_tool("interrupt", manager))
-        async with sessions() as db:
-            await raise_question(
-                db,
-                clock,
-                agent_id=office.worker_id,
-                task_id=office.worker_task_id,
-                text="Which session lifetime do we want?",
-            )
-            await db.commit()
-        asking = _text(await client.call_tool("deliver", to_worker))
-        stop = {"request_id": office.requests["stop"], "agent_id": office.manager_id}
-        interrupted = _text(await client.call_tool("interrupt", stop))
+        before = await _ceo_messages(sessions)
+        yes = await _owner_says(sessions, clock, office.call_id, YES)
+        confirm = {"proposal_id": proposal_id, "request_id": yes}
+        # Free text is no argument: the confirmed wording goes, whatever is passed.
+        confirmed = _text(await client.call_tool("confirm_wording", {**confirm, "text": "rm"}))
+        other_call = _text(
+            await client.call_tool("send_to_ceo", {"request_id": office.requests["other"]})
+        )
 
     assert set(listed) == READS | BOUNDED
-    for name in BOUNDED - {"answer"}:
-        assert set(listed[name].input_schema["properties"]) == {"request_id", "agent_id"}
+    assert set(listed["send_to_ceo"].input_schema["properties"]) == {"request_id"}
     assert {name for name, tool in listed.items() if tool.annotations.read_only_hint} == READS  # type: ignore[union-attr]
-    assert delivered.startswith("Delivered to Manager")
+    assert proposed.startswith(f"Proposal {proposal_id} is stored and not sent.")
+    assert early.startswith("Refused:")
+    assert before == []
+    assert confirmed == "Sent to the CEO."
     assert other_call == f"Refused: Request {office.requests['other']} is not part of this call."
-    assert unnamed.startswith("Refused: The owner did not name Worker")
-    assert unasked.startswith("Refused: The owner did not ask for an interrupt")
-    assert asking.startswith("Delivered to Worker")
-    # This process holds no running agent: the words wait for the end of the manager's turn.
-    assert interrupted.startswith("Could not interrupt Manager from here")
-
-    rows = await _deliveries(sessions)
-    assert [(row.request_id, row.recipient_agent_id, row.text) for row in rows] == [
-        (office.requests["ship"], office.manager_id, SHIP),
-        (office.requests["ship"], office.worker_id, SHIP),
-        (office.requests["stop"], office.manager_id, STOP),
-    ]
-    assert {row.call_id for row in rows} == {office.call_id}
-    assert [row.interrupted for row in rows] == [False, False, False]
+    assert await _ceo_messages(sessions) == [CLEARER]
 
 
 async def test_an_unknown_call_gets_no_tools(

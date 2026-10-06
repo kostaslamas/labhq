@@ -24,7 +24,6 @@ from labhq.adapters import AdapterRegistry
 from labhq.adapters import default_registry as builtin_adapters
 from labhq.budgets import BudgetSettings, Decision, check
 from labhq.callcenter.calls.agent import call_center_agent, prompt_for
-from labhq.callcenter.calls.bounds import Interrupter, NoInterrupter
 from labhq.callcenter.calls.settings import CallAgentSettings, get_call_agent_settings
 from labhq.callcenter.calls.spoken import to_speech
 from labhq.callcenter.calls.tickets import expire_if_old, next_pending, record_request
@@ -78,7 +77,6 @@ class CallCenter:
     sessions: async_sessionmaker[AsyncSession]
     clock: Clock
     adapters: AdapterRegistry = builtin_adapters
-    interrupter: Interrupter = field(default_factory=NoInterrupter)
     # Agent sessions are stored per working directory; every turn of a call uses this one.
     workdir: Path | None = None
     settings: CallCenterSettings = field(default_factory=get_callcenter_settings)
@@ -189,9 +187,7 @@ class CallCenter:
 
         if self.workdir is not None:
             self.workdir.mkdir(parents=True, exist_ok=True)
-        tools = CallTools(
-            self.sessions, self.clock, self.interrupter, call_id, self.screens
-        ).specs()
+        tools = CallTools(self.sessions, self.clock, call_id, self.screens).specs()
         runs = RunService(self.sessions, clock=self.clock, registry=self.adapters)
         try:
             active = await runs.start(

@@ -24,7 +24,7 @@ from labhq.hierarchy.roles import (
     Role,
     check_reports_to,
 )
-from labhq.hierarchy.service import Hierarchy, ManagerAssignment, Node
+from labhq.hierarchy.service import Hierarchy, ManagerAssignment, Node, find_ceo
 from labhq.hierarchy.settings import HierarchySettings
 from labhq.hierarchy.team import (
     TEAM_SIZE_KEY,
@@ -59,6 +59,7 @@ __all__ = [
     "TeamSizeError",
     "agent_executor",
     "check_reports_to",
+    "find_ceo",
     "team_executor",
     "team_of",
     "team_size_cap",

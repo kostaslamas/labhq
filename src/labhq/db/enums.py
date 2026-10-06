@@ -101,6 +101,12 @@ class CallRequestStatus(StrEnum):
     EXPIRED = "expired"
 
 
+class ProposalStatus(StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    REJECTED = "rejected"
+
+
 class QuestionStatus(StrEnum):
     PENDING = "pending"
     ANSWERED = "answered"

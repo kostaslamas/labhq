@@ -8,6 +8,7 @@ EXPECTED: dict[str, tuple[bool, bool | None]] = {
     "brief": (True, None),
     "inbox": (True, None),
     "health": (True, None),
+    "reports": (True, None),
     "decide": (False, True),
     "order": (False, False),
     "answer": (False, False),
@@ -40,7 +41,10 @@ def test_descriptions_state_the_rules() -> None:
     assert "short" in specs["answer"].description
     assert "A12" in specs["decide"].description
     assert "Q7" in specs["answer"].description
-    assert "T3" in specs["order"].description
+    assert "CEO" in specs["order"].description
+    assert "never reworded" in specs["order"].description
+    assert "passkey" in specs["order"].description
+    assert "wakes nobody" in specs["reports"].description
     assert "get_reply" in specs["ask_ceo"].description
     assert "same ticket" in specs["get_reply"].description
     assert "never ask again" in specs["get_reply"].description

@@ -28,8 +28,8 @@ async def test_a_second_ask_inside_the_window_resumes_the_same_session(line: Lin
     assert opening.resume_session_id is None
     assert follow_up.resume_session_id == line.fake.session_id
     # The rules are given once per call; a resumed session already has them.
-    assert "You are the Call Center" in opening.prompt
-    assert "You are the Call Center" not in follow_up.prompt
+    assert "You are labhq's Call Center" in opening.prompt
+    assert "You are labhq's Call Center" not in follow_up.prompt
     [call] = await _calls(line)
     assert call.session_id == line.fake.session_id
     assert (await line.center.reply(second.ticket)).state is TicketState.READY

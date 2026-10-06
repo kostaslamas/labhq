@@ -12,12 +12,12 @@ from labhq.adapters.kinds import UnknownAgentChoiceError
 from labhq.api.deps import ContextDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.auth.routes import SignedIn
-from labhq.ceochat import conversation, message_reason
+from labhq.ceochat import conversation
+from labhq.ceochat_send import CeoMessageError, send_owner_message
 from labhq.ceoreports import recent_reports
-from labhq.db.enums import AgentStatus, TaskStatus, WakeupSource
+from labhq.db.enums import TaskStatus
 from labhq.db.models import Task
 from labhq.hierarchy import Hierarchy, HierarchyError
-from labhq.scheduler import Outcome, Wakeup, enqueue
 from labhq.usage.plan import agent_kind, fallback_kind
 from labhq.work import WorkError
 from labhq.work.progress import owner_decide
@@ -122,34 +122,18 @@ async def ceo_messages_post(
     body: SendCeoMessage, owner: SignedIn, context: ContextDep, db: SessionDep
 ) -> CeoChatTurn:
     """Queue one owner turn through the CEO's normal scheduler, budget and backup path."""
-    ceo = await hierarchy(context).current_ceo()
-    if ceo is None:
-        raise ApiError(409, "ceo_unconfigured", "Assign the CEO on the Projects page first.")
-    if ceo.status is not AgentStatus.ACTIVE:
-        raise ApiError(409, "ceo_inactive", "The CEO is not active.")
-    earlier = await conversation(db, ceo.id)
-    if earlier and earlier[-1].status in {"queued", "running"}:
-        raise ApiError(409, "ceo_busy", "Wait for the CEO's current answer before sending again.")
-    result = await enqueue(
-        db,
-        Wakeup(
-            agent_id=ceo.id,
-            source=WakeupSource.OWNER_MESSAGE,
-            idempotency_key=f"owner-message:{uuid4().hex}",
-            reason=message_reason(body.text, earlier),
-        ),
-        context.clock,
-    )
-    if result.outcome is Outcome.REFUSED:
-        await db.rollback()
-        raise ApiError(409, "ceo_budget_stop", "The CEO's budget is exhausted.")
-    await db.commit()
+    try:
+        sent = await send_owner_message(
+            db, context.clock, body.text, key=uuid4().hex, refuse_busy=True
+        )
+    except CeoMessageError as error:
+        raise ApiError(409, error.refusal.value, str(error)) from None
     return CeoChatTurn(
-        id=result.request.id,
+        id=sent.request.id,
         text=body.text,
         reply=None,
         status="queued",
-        created_at=result.request.created_at,
+        created_at=sent.request.created_at,
     )
 
 

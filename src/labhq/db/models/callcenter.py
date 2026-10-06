@@ -1,4 +1,5 @@
-"""Call Center: calls, owner requests, deliveries, agent questions and the notification outbox."""
+"""Call Center: calls, owner requests, wording proposals, deliveries, agent questions and the
+notification outbox."""
 
 from datetime import datetime
 from typing import Any
@@ -7,7 +8,13 @@ from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from labhq.db.base import Base, enum_column
-from labhq.db.enums import CallRequestStatus, CallStatus, NotificationStatus, QuestionStatus
+from labhq.db.enums import (
+    CallRequestStatus,
+    CallStatus,
+    NotificationStatus,
+    ProposalStatus,
+    QuestionStatus,
+)
 
 
 class Call(Base):
@@ -41,6 +48,27 @@ class CallRequest(Base):
     reply: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime]
     answered_at: Mapped[datetime | None]
+
+
+class WordingProposal(Base):
+    """A clearer wording of one owner request, sent to the CEO only once the owner confirms."""
+
+    __tablename__ = "wording_proposals"
+    __table_args__ = (Index("ix_wording_proposals_request_id", "request_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    call_id: Mapped[int] = mapped_column(ForeignKey("calls.id", ondelete="CASCADE"))
+    # The owner's original words stay on this request; the proposal never replaces them.
+    request_id: Mapped[str] = mapped_column(ForeignKey("call_requests.request_id"))
+    text: Mapped[str] = mapped_column(Text)
+    status: Mapped[ProposalStatus] = mapped_column(
+        enum_column(ProposalStatus, "proposal_status"), default=ProposalStatus.PENDING
+    )
+    # Only requests stored after this one can answer the proposal: the owner heard it first.
+    after_request_pk: Mapped[int]
+    decided_by_request_id: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime]
+    decided_at: Mapped[datetime | None]
 
 
 class Delivery(Base):

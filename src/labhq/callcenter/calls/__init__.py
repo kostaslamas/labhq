@@ -2,14 +2,8 @@
 call answers them, and `get_reply` redeems the ticket (ADR 0004)."""
 
 from labhq.callcenter.calls.agent import ROLE, call_center_agent
-from labhq.callcenter.calls.bounds import (
-    BoundError,
-    Interrupter,
-    NoInterrupter,
-    SchedulerInterrupter,
-    deliver_request,
-    interrupt_request,
-)
+from labhq.callcenter.calls.bounds import BoundError, stored_request
+from labhq.callcenter.calls.ceo import confirm_wording, propose_wording, send_request
 from labhq.callcenter.calls.service import CallCenter, Reply, Ticket, TicketState
 from labhq.callcenter.calls.spoken import to_speech
 from labhq.callcenter.calls.tickets import current_call, record_request
@@ -20,16 +14,15 @@ __all__ = [
     "BoundError",
     "CallCenter",
     "CallTools",
-    "Interrupter",
-    "NoInterrupter",
     "Reply",
-    "SchedulerInterrupter",
     "Ticket",
     "TicketState",
     "call_center_agent",
+    "confirm_wording",
     "current_call",
-    "deliver_request",
-    "interrupt_request",
+    "propose_wording",
     "record_request",
+    "send_request",
+    "stored_request",
     "to_speech",
 ]
