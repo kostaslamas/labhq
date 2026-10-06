@@ -118,6 +118,8 @@ async def test_below_the_free_memory_floor_nothing_starts_and_one_warning_is_rec
     report = await scheduler.tick()
     assert len(report.started) == 1
 
+    # The first run must be over, or the agent's own limit answers before memory is asked.
+    await scheduler.settle()
     # A second episode is announced again.
     meter.free_percent = 5.0
     await scheduler.enqueue(on_task(world, "later"))
