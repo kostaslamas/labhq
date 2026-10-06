@@ -13,6 +13,7 @@ from labhq.roles.common import RoleServices, agent_reference
 from labhq.roles.instructions import INSTRUCTIONS, register_instructions
 from labhq.roles.it import it_tools
 from labhq.roles.org import ceo_tools, manager_tools
+from labhq.roles.reports import report_tools
 from labhq.roles.tasks import task_tools
 
 
@@ -20,6 +21,7 @@ def role_tools(services: RoleServices) -> list[AgentToolSpec]:
     return [
         *ceo_tools(services),
         *ceo_org_tools(services),
+        *report_tools(),
         *manager_tools(services),
         *task_tools(),
         *it_tools(services),

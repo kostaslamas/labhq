@@ -165,6 +165,11 @@ class TmuxServer:
         status = int(out[1]) if dead and len(out) > 1 and out[1].lstrip("-").isdigit() else None
         return PaneState(dead=dead, exit_status=status)
 
+    def pane_pid(self, name: str) -> int | None:
+        """The process the pane runs: the agent CLI itself, as it is started without a shell."""
+        out = self.run("list-panes", "-t", f"={name}:", "-F", "#{pane_pid}").split()
+        return int(out[0]) if out and out[0].isdigit() else None
+
     def has_session(self, name: str) -> bool:
         try:
             self.run("has-session", "-t", f"={name}")

@@ -109,6 +109,8 @@ async def test_each_roles_run_carries_its_instruction(
                 "task_overview",
                 "review_task",
                 *CEO_ORG_TOOLS,
+                "report_to_owner",
+                "owner_decision",
             },
         ),
         (

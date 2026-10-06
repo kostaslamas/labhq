@@ -117,6 +117,8 @@ class RunService:
                 ceo_session_id = await _ceo_session_id(
                     db, agent.id, agent_kind(selected_adapter, effective_config)
                 )
+            elif agent.role == CEO_ROLE and task_id is None:
+                ceo_session_id = await _ceo_sdk_session_id(db, agent.id, selected_adapter)
             else:
                 stored, resumable = await _stored_session(
                     db, agent, task_id, selected_adapter, effective_config
@@ -131,7 +133,10 @@ class RunService:
             persistent_turn_prompt = prompt if ceo_tmux else None
             memory = self._memory.prepare(agent, cwd)
             if memory is not None:
-                cwd, prompt = memory.cwd, memory.prompt(prompt)
+                cwd = memory.cwd
+                # A resumed CEO conversation already holds its memory: send the turn alone.
+                if ceo_session_id is None or ceo_tmux:
+                    prompt = memory.prompt(prompt)
             # Before the run turns running: a bad recipient or tool name fails the start.
             system_prompt_append = self._prompts.assemble(agent, task)
             agent_tool_specs = self._agent_tools.for_agent(agent.role, agent.config)
@@ -422,6 +427,21 @@ async def _ceo_session_id(db: AsyncSession, agent_id: int, kind: str) -> str | N
             Run.agent_id == agent_id,
             Run.adapter == "tmux",
             Run.session_id_after.startswith(f"{kind}:"),
+        )
+        .order_by(Run.id.desc())
+        .limit(1)
+    )
+
+
+async def _ceo_sdk_session_id(db: AsyncSession, agent_id: int, adapter: str) -> str | None:
+    """Carry an SDK CEO's conversation across owner messages and other runs without a task."""
+    return await db.scalar(
+        select(Run.session_id_after)
+        .where(
+            Run.agent_id == agent_id,
+            Run.task_id.is_(None),
+            Run.adapter == adapter,
+            Run.session_id_after.is_not(None),
         )
         .order_by(Run.id.desc())
         .limit(1)

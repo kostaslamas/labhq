@@ -14,6 +14,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import Protocol
 
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -23,8 +24,10 @@ from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Run
 from labhq.runs import ActiveRun, RunService, RunStartError
+from labhq.scheduler.admission import Admission, order_by_group
 from labhq.scheduler.checkout import release
 from labhq.scheduler.dispatch import Dispatch, Verdict, dispatch_one, pending_wakeup_ids
+from labhq.scheduler.memory import MemoryMeter, system_memory
 from labhq.scheduler.progress import continue_task
 from labhq.scheduler.reaper import LIVE_STATUSES, reap_stale_runs
 from labhq.scheduler.settings import SchedulerSettings, get_scheduler_settings
@@ -33,6 +36,13 @@ from labhq.scheduler.wakeups import EnqueueResult, Wakeup, enqueue
 from labhq.usage import UsageSettings
 
 log = logging.getLogger(__name__)
+
+
+class PaneSuspender(Protocol):
+    """Stops the CLI processes of persistent panes that sat idle too long."""
+
+    async def suspend_idle(self) -> list[str]: ...
+
 
 TIMEOUT_REASON = "timeout"
 
@@ -54,6 +64,7 @@ class TickReport:
     timed_out: list[int] = field(default_factory=list)
     reaped: list[int] = field(default_factory=list)
     waiting: dict[int, Verdict] = field(default_factory=dict)
+    suspended: list[str] = field(default_factory=list)
 
 
 class Scheduler:
@@ -67,6 +78,8 @@ class Scheduler:
         settings: SchedulerSettings | None = None,
         budget_settings: BudgetSettings | None = None,
         usage_settings: UsageSettings | None = None,
+        memory: MemoryMeter | None = None,
+        panes: PaneSuspender | None = None,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
@@ -75,6 +88,8 @@ class Scheduler:
         self._settings = settings or get_scheduler_settings()
         self._budget_settings = budget_settings
         self._usage_settings = usage_settings
+        self._panes = panes
+        self._admission = Admission(self._settings, clock, memory or system_memory)
         self._live: dict[int, LiveRun] = {}
         # Abandoned waiters, kept referenced until their cancellation has run.
         self._abandoned: set[asyncio.Task[Run]] = set()
@@ -120,6 +135,8 @@ class Scheduler:
             report.reaped = await reap_stale_runs(db, self._clock, limit)
             await db.commit()
         await self._dispatch(report)
+        if self._panes is not None:
+            report.suspended = await self._panes.suspend_idle()
         return report
 
     async def run_forever(self) -> None:
@@ -211,7 +228,7 @@ class Scheduler:
 
     async def _dispatch(self, report: TickReport) -> None:
         async with self._sessions() as db:
-            wakeup_ids = await pending_wakeup_ids(db)
+            wakeup_ids = await order_by_group(db, await pending_wakeup_ids(db))
         for wakeup_id in wakeup_ids:
             async with self._sessions() as db:
                 outcome = await dispatch_one(
@@ -222,6 +239,7 @@ class Scheduler:
                     settings=self._settings,
                     budget_settings=self._budget_settings,
                     usage_settings=self._usage_settings,
+                    admission=self._admission,
                 )
             if outcome.verdict is Verdict.QUEUED:
                 await self._start(outcome, report)

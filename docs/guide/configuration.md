@@ -33,6 +33,7 @@ The `tmux` adapter: Claude Code, Codex CLI, Gemini CLI, Aider or any CLI agent (
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `LABHQ_TMUX_SOCKET` | `str` | `labhq` | The private server's socket: `tmux -L labhq attach -t run-<id>` watches a run. |
+| `LABHQ_TMUX_IDLE_SUSPEND_SECONDS` | `int` | `1800` | A persistent pane (the CEO's) idle this long has its CLI process stopped to give the RAM back; its session id is kept and the next turn resumes it. 0 never stops one. |
 
 ## `labhq.adoption.settings.AdoptionSettings`
 
@@ -131,6 +132,14 @@ What the owner alone decides about the CEO, read from `LABHQ_CEO_*` variables.
 | `LABHQ_CEO_BUDGET_CEILING_MICROS` | `int \| None` | unset | The most the CEO may set as any one agent's or project's budget, in micro-USD. Unset means the owner has not delegated budgets yet, so `set_budget` refuses everything. |
 | `LABHQ_CEO_DISCOVERY_DEPTH` | `int` | `3` | How many directory levels `discover_projects` looks below the folder it is given. |
 | `LABHQ_CEO_DISCOVERY_LIMIT` | `int` | `100` | The most folders and sessions one `discover_projects` answer lists. |
+
+## `labhq.ceoreports.CeoReportSettings`
+
+How the CEO's reports reach the owner.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_CEO_REPORTS_DIGEST_SECONDS` | `int` | `900` | At most one report notification per window; later reports wait and go out as one digest. |
 
 ## `labhq.chat.discord.settings.DiscordSettings`
 
@@ -332,6 +341,8 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_TICK_SECONDS` | `float` | `5.0` |  |
 | `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `0` | An agent that ends a turn without a handoff gets another turn. 0 keeps it going until the task is resolved (the owner's choice); its budget and the plan-usage cap still stop it. A positive limit marks the task blocked and sends it to the reviewer instead. |
 | `LABHQ_SCHEDULER_STALL_ALERT_RUNS` | `int` | `3` | Every this many silent turns the reviewer (the parent task's assignee) is woken to look at the stuck task while it keeps going. 0 never alerts. |
+| `LABHQ_SCHEDULER_MAX_RUNNING` | `int \| None` | unset | Runs active at once across all agents. Unset, it follows the machine: about one per 1.5 GB of RAM, between 1 and 8 (`labhq.scheduler.memory`). |
+| `LABHQ_SCHEDULER_MIN_FREE_MEMORY_PERCENT` | `float` | `15.0` | Below this share of free RAM no run starts; wakeups wait. 0 turns the check off. |
 
 ## `labhq.settings.Settings`
 

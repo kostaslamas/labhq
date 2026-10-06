@@ -3,11 +3,11 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labhq.ceoreports import record_report
 from labhq.clock import Clock
 from labhq.db.enums import TaskStatus, WakeupSource
 from labhq.db.models import Agent, Comment, Task
 from labhq.hierarchy.roles import CEO
-from labhq.notify.outbox import enqueue as notify_owner
 from labhq.scheduler import Wakeup, enqueue
 from labhq.work.service import WorkError
 
@@ -106,18 +106,14 @@ async def review_task(
         parent.updated_at = clock.now()
     comment = await _record(db, clock, task, agent_id, feedback)
     if accept and owner_decides:
-        await notify_owner(
+        # The owner accepts or returns it from the report in the CEO chat.
+        await record_report(
             db,
-            kind="task_ready_for_owner",
-            subject=f"task:{task.id}",
-            title=f"Task T{task.id} is ready for your decision",
-            body=(
-                f"{task.title}\nCEO review: {feedback}\n"
-                f"Decide with labhq task accept {task.id} --feedback '...' "
-                f"or labhq task return {task.id} --feedback '...'."
-            ),
-            idempotency_key=f"task-review:comment:{comment.id}",
-            now=clock.now(),
+            clock,
+            agent_id=agent_id,
+            text=f"T{task.id} {task.title} is done and waits for your decision.\n{feedback}",
+            refs=[f"T{task.id}"],
+            task_id=task.id,
         )
     if not accept:
         assert task.assignee_id is not None

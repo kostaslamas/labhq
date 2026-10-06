@@ -6,10 +6,17 @@ import { api, isErrorEnvelope, type components } from '@/api'
 import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
+import ReportCard from './ReportCard.vue'
+
 type Turn = components['schemas']['CeoChatTurn']
+type Report = components['schemas']['CeoReportOut']
+type Entry =
+  | { key: string; at: number; turn: Turn; report?: never }
+  | { key: string; at: number; report: Report; turn?: never }
 
 const { t, locale } = useI18n()
 const turns = ref<Turn[]>([])
+const reports = ref<Report[]>([])
 const configured = ref<boolean | null>(null)
 const loading = ref(true)
 const loadFailed = ref(false)
@@ -18,6 +25,21 @@ const sending = ref(false)
 const sendFailure = ref('')
 const waiting = computed(() =>
   turns.value.some((turn) => ['queued', 'running'].includes(turn.status)),
+)
+// Reports sit between the turns by time, so the conversation reads in order.
+const timeline = computed<Entry[]>(() =>
+  [
+    ...turns.value.map((turn) => ({
+      key: `turn-${turn.id}`,
+      at: Date.parse(turn.created_at),
+      turn,
+    })),
+    ...reports.value.map((report) => ({
+      key: `report-${report.id}`,
+      at: Date.parse(report.created_at),
+      report,
+    })),
+  ].sort((a, b) => a.at - b.at),
 )
 let refreshTimer: ReturnType<typeof setInterval> | undefined
 
@@ -28,15 +50,17 @@ function time(instant: string): string {
 }
 
 async function load(): Promise<void> {
-  const [assignment, messages] = await Promise.all([
+  const [assignment, messages, reported] = await Promise.all([
     api.GET('/api/org/ceo'),
     api.GET('/api/org/ceo/messages'),
+    api.GET('/api/org/ceo/reports'),
   ])
-  if (!assignment.data || !messages.data) {
+  if (!assignment.data || !messages.data || !reported.data) {
     loadFailed.value = true
   } else {
     configured.value = assignment.data.id !== null
     turns.value = messages.data
+    reports.value = reported.data
     loadFailed.value = false
   }
   loading.value = false
@@ -77,6 +101,7 @@ onMounted(() => {
 })
 onUnmounted(() => clearInterval(refreshTimer))
 useLiveTopic('runs', load)
+useLiveTopic('tasks', load)
 </script>
 
 <template>
@@ -98,34 +123,39 @@ useLiveTopic('runs', load)
     </div>
 
     <template v-else>
-      <p v-if="turns.length === 0" class="glass rounded-xl border border-line p-5 text-muted">
+      <p v-if="timeline.length === 0" class="glass rounded-xl border border-line p-5 text-muted">
         {{ t('ceo.empty') }}
       </p>
       <ol v-else class="flex flex-col gap-5" data-testid="ceo-transcript">
-        <li v-for="turn in turns" :key="turn.id" class="flex flex-col gap-3">
-          <div
-            class="glass ml-6 rounded-xl border border-line p-4 sm:ml-16"
-            data-testid="ceo-owner-message"
-          >
-            <p class="mb-2 text-xs text-muted">{{ t('ceo.you') }} · {{ time(turn.created_at) }}</p>
-            <p class="whitespace-pre-wrap [overflow-wrap:anywhere]">{{ turn.text }}</p>
-          </div>
-          <div
-            class="glass mr-6 rounded-xl border border-line p-4 sm:mr-16"
-            data-testid="ceo-reply"
-          >
-            <p class="mb-2 text-xs text-muted">{{ t('ceo.ceo') }}</p>
-            <p v-if="turn.reply" class="whitespace-pre-wrap [overflow-wrap:anywhere]">
-              {{ turn.reply }}
-            </p>
-            <p
-              v-else
-              class="text-sm text-muted"
-              :class="turn.status === 'failed' ? 'text-status-failed' : ''"
+        <li v-for="entry in timeline" :key="entry.key" class="flex flex-col gap-3">
+          <ReportCard v-if="entry.report" :report="entry.report" @decided="load" />
+          <template v-else-if="entry.turn">
+            <div
+              class="glass ml-6 rounded-xl border border-line p-4 sm:ml-16"
+              data-testid="ceo-owner-message"
             >
-              {{ t(`ceo.${turn.status}`) }}
-            </p>
-          </div>
+              <p class="mb-2 text-xs text-muted">
+                {{ t('ceo.you') }} · {{ time(entry.turn.created_at) }}
+              </p>
+              <p class="whitespace-pre-wrap [overflow-wrap:anywhere]">{{ entry.turn.text }}</p>
+            </div>
+            <div
+              class="glass mr-6 rounded-xl border border-line p-4 sm:mr-16"
+              data-testid="ceo-reply"
+            >
+              <p class="mb-2 text-xs text-muted">{{ t('ceo.ceo') }}</p>
+              <p v-if="entry.turn.reply" class="whitespace-pre-wrap [overflow-wrap:anywhere]">
+                {{ entry.turn.reply }}
+              </p>
+              <p
+                v-else
+                class="text-sm text-muted"
+                :class="entry.turn.status === 'failed' ? 'text-status-failed' : ''"
+              >
+                {{ t(`ceo.${entry.turn.status}`) }}
+              </p>
+            </div>
+          </template>
         </li>
       </ol>
 
