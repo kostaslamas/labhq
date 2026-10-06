@@ -57,6 +57,9 @@ PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
     ConfirmationKind("voice", LIGHT),
     ConfirmationKind("tap", LIGHT),
     ConfirmationKind("passkey", ANY_RISK),
+    # The CEO decides light actions itself (owner decision, issue #168). Light only, so the
+    # CEO can request a merge or a push but never approve one.
+    ConfirmationKind("ceo", LIGHT),
     # An external approval gate proved a passkey; the gate adapter refuses weaker proofs
     # before it ever asks for this kind (approvals.gates).
     ConfirmationKind("external_gate", ANY_RISK),

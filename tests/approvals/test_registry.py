@@ -11,15 +11,24 @@ from labhq.approvals import (
     Registry,
     UnknownEntryError,
     default_actions,
+    default_confirmations,
     default_executors,
 )
 from labhq.db.enums import ApprovalStatus, RiskClass
 from tests.approvals.conftest import World
 
 
-@pytest.mark.parametrize("key", ["push", "merge", "delete_branch", "create_team"])
+@pytest.mark.parametrize("key", ["push", "merge", "delete_branch", "delete_project", "create_team"])
 def test_phase_1_registers_the_heavy_actions(key: str) -> None:
     assert default_actions.get(key).risk_class == RiskClass.HEAVY
+
+
+@pytest.mark.parametrize("risk_class", list(RiskClass))
+def test_the_ceo_confirmation_approves_light_actions_only(risk_class: RiskClass) -> None:
+    # The owner lets the CEO decide light actions; a merge or a push stays the owner's.
+    assert default_confirmations.get("ceo").can_approve(risk_class) == (
+        risk_class is RiskClass.LIGHT
+    )
 
 
 def test_phase_1_executes_push() -> None:
