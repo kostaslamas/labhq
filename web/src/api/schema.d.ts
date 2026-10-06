@@ -24,6 +24,44 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/agents/{agent_id}/keys': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Agent Keys Get */
+    get: operations['agent_keys_get']
+    put?: never
+    /**
+     * Agent Keys Post
+     * @description Send one named key to the agent's live pane; the owner may send any key it lists.
+     */
+    post: operations['agent_keys_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/agents/{agent_id}/screen': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Agent Screen Get */
+    get: operations['agent_screen_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/approvals': {
     parameters: {
       query?: never
@@ -866,6 +904,13 @@ export interface components {
       /** Pid */
       pid: number
     }
+    /** AgentKeys */
+    AgentKeys: {
+      /** Keys */
+      keys: string[]
+      /** Live */
+      live: boolean
+    }
     /** AgentKindChoice */
     AgentKindChoice: {
       /** Adapter */
@@ -887,6 +932,11 @@ export interface components {
       role: string
       /** Title */
       title: string
+    }
+    /** AgentScreen */
+    AgentScreen: {
+      /** Screen */
+      screen: string | null
     }
     /**
      * AgentStatus
@@ -1652,6 +1702,18 @@ export interface components {
       /** Text */
       text: string
     }
+    /** SendKey */
+    SendKey: {
+      /** Key */
+      key: string
+    }
+    /** SentKey */
+    SentKey: {
+      /** Key */
+      key: string
+      /** Screen */
+      screen: string
+    }
     /** SetCeoAssignment */
     SetCeoAssignment: {
       /** Backup Kind */
@@ -1925,6 +1987,103 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AgentKindChoice'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  agent_keys_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        agent_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentKeys']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  agent_keys_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        agent_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SendKey']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SentKey']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  agent_screen_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        agent_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AgentScreen']
         }
       }
       /** @description Error */
