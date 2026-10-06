@@ -25,6 +25,11 @@ class ProgramSettings(BaseSettings):
     chat_interval_seconds: float = Field(default=30.0, gt=0)
     # How often an external approval gate is polled; unused while no gate is configured.
     gate_interval_seconds: float = Field(default=5.0, gt=0)
+    # How often the CEO heartbeat is considered; the heartbeat's own period is a separate
+    # setting, so a shorter interval here never wakes the CEO more often.
+    heartbeat_interval_seconds: float = Field(default=30.0, gt=0)
+    # How often due meetings are requested and decided ones started.
+    meetings_interval_seconds: float = Field(default=60.0, gt=0)
     # Time the server gets to stop before it is cancelled on shutdown.
     shutdown_grace_seconds: float = Field(default=10.0, gt=0)
 

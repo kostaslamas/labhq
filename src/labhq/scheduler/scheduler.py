@@ -19,12 +19,14 @@ from typing import Protocol
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from labhq.autonomy.settings import AutonomySettings
 from labhq.budgets import BudgetSettings
 from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Run
 from labhq.runs import ActiveRun, RunService, RunStartError
 from labhq.scheduler.admission import Admission, order_by_group
+from labhq.scheduler.autonomy import held_wakeup_ids
 from labhq.scheduler.checkout import release
 from labhq.scheduler.dispatch import Dispatch, Verdict, dispatch_one, pending_wakeup_ids
 from labhq.scheduler.memory import MemoryMeter, system_memory
@@ -78,9 +80,11 @@ class Scheduler:
         settings: SchedulerSettings | None = None,
         budget_settings: BudgetSettings | None = None,
         usage_settings: UsageSettings | None = None,
+        autonomy_settings: AutonomySettings | None = None,
         memory: MemoryMeter | None = None,
         panes: PaneSuspender | None = None,
     ) -> None:
+        self._autonomy_settings = autonomy_settings
         self._sessions = sessions
         self._clock = clock
         self._runs = runs
@@ -204,13 +208,7 @@ class Scheduler:
             if live.timed_out_at is not None:
                 await self._mark_timed_out(db, live)
             await release(db, live.run_id)
-            await continue_task(
-                db,
-                self._clock,
-                live.run_id,
-                max_unreported_runs=self._settings.max_unreported_runs,
-                stall_alert_runs=self._settings.stall_alert_runs,
-            )
+            await self._continue(db, live.run_id)
             await db.commit()
         report.finished.append(live.run_id)
 
@@ -228,7 +226,9 @@ class Scheduler:
 
     async def _dispatch(self, report: TickReport) -> None:
         async with self._sessions() as db:
-            wakeup_ids = await order_by_group(db, await pending_wakeup_ids(db))
+            held = await held_wakeup_ids(db, self._autonomy_settings)
+            pending = [i for i in await pending_wakeup_ids(db) if i not in held]
+            wakeup_ids = await order_by_group(db, pending)
         for wakeup_id in wakeup_ids:
             async with self._sessions() as db:
                 outcome = await dispatch_one(
@@ -278,6 +278,17 @@ class Scheduler:
         )
         report.started.append(run_id)
 
+    async def _continue(self, db: AsyncSession, run_id: int) -> None:
+        if not self._settings.auto_next_turn:
+            return
+        await continue_task(
+            db,
+            self._clock,
+            run_id,
+            max_unreported_runs=self._settings.max_unreported_runs,
+            stall_alert_runs=self._settings.stall_alert_runs,
+        )
+
     async def _release_failed(self, run_id: int, error: Exception | None) -> None:
         async with self._sessions() as db:
             if error is not None:
@@ -292,13 +303,7 @@ class Scheduler:
                     .execution_options(synchronize_session=False)
                 )
             await release(db, run_id)
-            await continue_task(
-                db,
-                self._clock,
-                run_id,
-                max_unreported_runs=self._settings.max_unreported_runs,
-                stall_alert_runs=self._settings.stall_alert_runs,
-            )
+            await self._continue(db, run_id)
             await db.commit()
 
 

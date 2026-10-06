@@ -1,5 +1,6 @@
 """A run ending silently cannot strand an assigned task forever."""
 
+import pytest
 from sqlalchemy import select
 
 from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupStatus
@@ -7,6 +8,11 @@ from labhq.db.models import Agent, Notification, Run, Task, WakeupRequest
 from labhq.scheduler.progress import continue_task
 from tests.scheduler.conftest import World
 from tests.scheduler.helpers import get_task, on_task
+
+
+@pytest.fixture
+def auto_next_turn() -> bool:
+    return True
 
 
 async def test_unreported_task_retries_then_escalates_to_its_reviewer(world: World) -> None:
