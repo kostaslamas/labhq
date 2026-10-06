@@ -7,6 +7,7 @@ registries, which is how tests bind the tools to their own services.
 
 from labhq.agenttools import AgentToolRegistry, AgentToolSpec
 from labhq.agenttools import default_registry as default_tools
+from labhq.controlkeys import control_key_tools
 from labhq.prompts import RoleRegistry, default_roles
 from labhq.roles.ceo_org import ceo_org_tools
 from labhq.roles.common import RoleServices, agent_reference
@@ -27,6 +28,7 @@ def role_tools(services: RoleServices) -> list[AgentToolSpec]:
         *manager_tools(services),
         *task_tools(),
         *it_tools(services),
+        *control_key_tools(services.control_keys),
     ]
 
 

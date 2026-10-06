@@ -4,6 +4,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { uiState, type components } from '@/api'
+import ControlKeys from '@/areas/agentkeys/ControlKeys.vue'
 import { StatusBadge } from '@/status'
 import { Button, cn, Mono } from '@/ui'
 
@@ -62,6 +63,11 @@ const label = computed(() =>
           >
             {{ t('projects.agent.edit') }}
           </Button>
+          <!-- Only a tmux agent has a pane to send a key to; the SDK ones are never asked. -->
+          <ControlKeys
+            v-if="member.adapter === 'tmux' && member.status !== 'retired'"
+            :agent-id="member.id"
+          />
         </div>
         <BudgetMeter :budget="member.budget" />
       </div>

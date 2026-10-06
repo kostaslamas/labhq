@@ -170,6 +170,24 @@
         "title": "AdoptManagerBody",
         "type": "object"
       },
+      "AgentKeys": {
+        "properties": {
+          "keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Keys",
+            "type": "array"
+          },
+          "live": {
+            "title": "Live",
+            "type": "boolean"
+          }
+        },
+        "required": ["keys", "live"],
+        "title": "AgentKeys",
+        "type": "object"
+      },
       "AgentKindChoice": {
         "properties": {
           "adapter": {
@@ -214,6 +232,24 @@
         },
         "required": ["id", "title", "role"],
         "title": "AgentRef",
+        "type": "object"
+      },
+      "AgentScreen": {
+        "properties": {
+          "screen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Screen"
+          }
+        },
+        "required": ["screen"],
+        "title": "AgentScreen",
         "type": "object"
       },
       "AgentStatus": {
@@ -2149,6 +2185,32 @@
         "title": "SendCeoMessage",
         "type": "object"
       },
+      "SendKey": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": ["key"],
+        "title": "SendKey",
+        "type": "object"
+      },
+      "SentKey": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "screen": {
+            "title": "Screen",
+            "type": "string"
+          }
+        },
+        "required": ["key", "screen"],
+        "title": "SentKey",
+        "type": "object"
+      },
       "SetCeoAssignment": {
         "properties": {
           "backup_kind": {
@@ -2769,6 +2831,135 @@
         },
         "summary": "Agent Kinds List",
         "tags": ["authoring"]
+      }
+    },
+    "/api/agents/{agent_id}/keys": {
+      "get": {
+        "operationId": "agent_keys_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentKeys"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Agent Keys Get",
+        "tags": ["control-keys"]
+      },
+      "post": {
+        "description": "Send one named key to the agent's live pane; the owner may send any key it lists.",
+        "operationId": "agent_keys_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendKey"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SentKey"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Agent Keys Post",
+        "tags": ["control-keys"]
+      }
+    },
+    "/api/agents/{agent_id}/screen": {
+      "get": {
+        "operationId": "agent_screen_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "agent_id",
+            "required": true,
+            "schema": {
+              "title": "Agent Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentScreen"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Agent Screen Get",
+        "tags": ["control-keys"]
       }
     },
     "/api/approvals": {

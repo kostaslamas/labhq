@@ -100,8 +100,6 @@ class ScreenReader:
         if run is None:
             return None
         name = await _session_for_run(db, run)
-        if name is None:
-            return None
         try:
             text = await asyncio.to_thread(self._panes.capture, name)
         except TmuxError:
@@ -113,19 +111,23 @@ class ScreenReader:
         return Screen(run_id=run.id, agent_id=run.agent_id, text=text, changed_at=changed_at)
 
 
-async def _session_for_run(db: AsyncSession, run: Run) -> str | None:
+async def pane_of_run(db: AsyncSession, run: Run) -> tuple[str, str]:
+    """The tmux session and the agent kind of a run's pane."""
     agent = await db.get_one(Agent, run.agent_id)
+    kind = agent_kind(agent.adapter, agent.config)
     if agent.role != CEO_ROLE:
-        return session_name(run.id)
+        return session_name(run.id), kind
     event = await db.scalar(
         select(RunEvent).where(RunEvent.run_id == run.id, RunEvent.kind == "agent")
     )
     reported = event.payload.get("kind") if event is not None else None
     stored, _ = split_session(run.session_id_before)
-    kind = reported if isinstance(reported, str) else stored
-    if kind is None:
-        kind = agent_kind(agent.adapter, agent.config)
-    return ceo_session_name(kind)
+    kind = reported if isinstance(reported, str) else stored or kind
+    return ceo_session_name(kind), kind
+
+
+async def _session_for_run(db: AsyncSession, run: Run) -> str:
+    return (await pane_of_run(db, run))[0]
 
 
 def default_screen_reader() -> ScreenReader | None:

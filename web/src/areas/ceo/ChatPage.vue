@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { api, isErrorEnvelope, type components } from '@/api'
 import { useLiveTopic } from '@/live'
+import ControlKeys from '@/areas/agentkeys/ControlKeys.vue'
 import { Button } from '@/ui'
 
 import ReportCard from './ReportCard.vue'
@@ -18,6 +19,7 @@ const { t, locale } = useI18n()
 const turns = ref<Turn[]>([])
 const reports = ref<Report[]>([])
 const configured = ref<boolean | null>(null)
+const ceoId = ref<number | null>(null)
 const loading = ref(true)
 const loadFailed = ref(false)
 const draft = ref('')
@@ -59,6 +61,7 @@ async function load(): Promise<void> {
     loadFailed.value = true
   } else {
     configured.value = assignment.data.id !== null
+    ceoId.value = assignment.data.id
     turns.value = messages.data
     reports.value = reported.data
     loadFailed.value = false
@@ -123,6 +126,7 @@ useLiveTopic('tasks', load)
     </div>
 
     <template v-else>
+      <ControlKeys v-if="ceoId !== null" :agent-id="ceoId" />
       <p v-if="timeline.length === 0" class="glass rounded-xl border border-line p-5 text-muted">
         {{ t('ceo.empty') }}
       </p>

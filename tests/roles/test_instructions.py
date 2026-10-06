@@ -114,6 +114,7 @@ async def test_each_roles_run_carries_its_instruction(
                 "delegate_department_task",
                 "report_to_owner",
                 "owner_decision",
+                "send_control_key",
             },
         ),
         (
@@ -121,6 +122,7 @@ async def test_each_roles_run_carries_its_instruction(
             {
                 "whoami",
                 "propose_team",
+                "send_control_key",
                 "create_task",
                 "assign_task",
                 "task_overview",
@@ -130,7 +132,15 @@ async def test_each_roles_run_carries_its_instruction(
         ),
         (
             "lead",
-            {"whoami", "create_task", "assign_task", "task_overview", "report_task", "review_task"},
+            {
+                "whoami",
+                "create_task",
+                "assign_task",
+                "task_overview",
+                "report_task",
+                "review_task",
+                "send_control_key",
+            },
         ),
         ("worker", {"whoami", "task_overview", "report_task"}),
         (
@@ -138,6 +148,7 @@ async def test_each_roles_run_carries_its_instruction(
             {
                 "whoami",
                 "staff_department",
+                "send_control_key",
                 "create_task",
                 "assign_task",
                 "task_overview",

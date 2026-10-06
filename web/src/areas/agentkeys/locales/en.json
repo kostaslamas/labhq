@@ -1,0 +1,10 @@
+{
+  "group": "Control keys",
+  "screen": "The agent's screen",
+  "failed": "The key could not be sent. Try again.",
+  "key": {
+    "escape": "Esc (stop)",
+    "shift_tab": "Shift+Tab (mode)",
+    "ctrl_c": "Ctrl+C (cancel)"
+  }
+}
