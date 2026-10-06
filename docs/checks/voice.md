@@ -4,7 +4,7 @@ CI proves the parts with the fake agent (`tests/callcenter/calls/`, `tests/mcp/t
 `ask_ceo` returns a ticket in under 2 s while the agent takes 30 s, `get_reply` and
 `ask_ceo` with `wait_seconds` long-poll (below), `get_reply` redeems it
 with a speakable answer, a follow-up inside the call window resumes the same session, and
-`deliver` and `interrupt` refuse anything the owner did not ask for. Only a real voice
+the CEO gets only the owner's words or a wording the owner confirmed. Only a real voice
 client and a real model prove the scenario end to end, so this is a manual check, recorded
 on video by the owner. Tests never do it (CONTRIBUTING.md section 7).
 
@@ -37,7 +37,7 @@ brief, then ask_ceo, then get_reply, by voice, through the labhq connector.
 
    Wait for `Connector URL: https://<words>.trycloudflare.com/mcp/<token>` and add it as a
    custom connector in Claude (or as a connector in ChatGPT developer mode). `labhq serve`
-   runs the whole program, so `interrupt` reaches running agents; `labhq mcp serve
+   runs the whole program, so the CEO answers the orders it gets; `labhq mcp serve
    --expose` serves the connector alone, without the scheduler.
 2. Open a voice conversation with the connector enabled. Start recording.
 3. Say: "Give me my brief." Passing: the app calls `brief` and reads a short, plain answer:
@@ -69,8 +69,9 @@ brief, then ask_ceo, then get_reply, by voice, through the labhq connector.
 - Every answer was readable aloud as heard: no table, no JSON, no markdown read out.
 - `select count(*) from cost_events where agent_id = (select id from agents where role =
   'call_center')` grew by one per `ask_ceo`: every call's cost is recorded.
-- Nothing was delivered to a working agent unless you asked for it
-  (`select * from deliveries` is empty, or holds only your own words).
+- Nothing reached the CEO that you did not say or confirm (`select reason from
+  wakeup_requests where source = 'owner_message'` holds only your words or a wording you
+  said yes to), and status questions woke nobody.
 
 ## Record the run
 

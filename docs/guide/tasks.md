@@ -2,8 +2,8 @@
 
 Tell the CEO which project owns an objective. The Call Center delivers your words to the
 CEO; the CEO uses `delegate_task` to give the objective to that project's active manager.
-The voice `order` tool also sends a task to the active manager when you do not name an
-assignee. A project needs an active manager for that route.
+The voice `order` tool sends your words to the CEO the same way. A project needs an active
+manager for the CEO to delegate to.
 
 On the Projects page, choose the CEO's main and backup agent. One CEO serves every project.
 Project managers added from the UI report to that CEO automatically.
