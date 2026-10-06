@@ -33,6 +33,7 @@ The `tmux` adapter: Claude Code, Codex CLI, Gemini CLI, Aider or any CLI agent (
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `LABHQ_TMUX_SOCKET` | `str` | `labhq` | The private server's socket: `tmux -L labhq attach -t run-<id>` watches a run. |
+| `LABHQ_TMUX_IDLE_SUSPEND_SECONDS` | `int` | `1800` | A persistent pane (the CEO's) idle this long has its CLI process stopped to give the RAM back; its session id is kept and the next turn resumes it. 0 never stops one. |
 
 ## `labhq.adoption.settings.AdoptionSettings`
 
@@ -330,6 +331,8 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_TICK_SECONDS` | `float` | `5.0` |  |
 | `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `0` | An agent that ends a turn without a handoff gets another turn. 0 keeps it going until the task is resolved (the owner's choice); its budget and the plan-usage cap still stop it. A positive limit marks the task blocked and sends it to the reviewer instead. |
 | `LABHQ_SCHEDULER_STALL_ALERT_RUNS` | `int` | `3` | Every this many silent turns the reviewer (the parent task's assignee) is woken to look at the stuck task while it keeps going. 0 never alerts. |
+| `LABHQ_SCHEDULER_MAX_RUNNING` | `int \| None` | unset | Runs active at once across all agents. Unset, it follows the machine: about one per 1.5 GB of RAM, between 1 and 8 (`labhq.scheduler.memory`). |
+| `LABHQ_SCHEDULER_MIN_FREE_MEMORY_PERCENT` | `float` | `15.0` | Below this share of free RAM no run starts; wakeups wait. 0 turns the check off. |
 
 ## `labhq.settings.Settings`
 

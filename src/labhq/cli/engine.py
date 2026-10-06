@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from sqlalchemy import select
 
 from labhq.adapters import AdapterRegistry, default_registry
+from labhq.adapters.tmux import default_idle_suspender
 from labhq.approvals import ApprovalService
 from labhq.ceochat_retry import retry_limited_messages
 from labhq.cli.context import Context
@@ -90,6 +91,7 @@ class Engine:
             runs=self.runs,
             settings=scheduler_settings,
             usage_settings=usage_settings,
+            panes=default_idle_suspender(),
         )
         self.usage = UsageCollector(
             context.sessions,

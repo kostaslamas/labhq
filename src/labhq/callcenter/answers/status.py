@@ -10,6 +10,7 @@ from labhq.callcenter.answers.phrasing import clean
 from labhq.clock import Clock
 from labhq.db.enums import HostStatus, IncidentStatus
 from labhq.db.models import HealthRule, HealthSample, Host, Incident
+from labhq.scheduler.capacity import capacity
 from labhq.speech import join_sentences, say_ago, say_count, speakable
 
 LISTED = 5
@@ -110,12 +111,21 @@ async def _open_incidents(db: AsyncSession) -> list[tuple[Incident, str, str]]:
     return [(incident, rule, host) for incident, rule, host in rows.all()]
 
 
+async def _capacity_sentence(db: AsyncSession) -> str:
+    now = await capacity(db)
+    running = say_count(now.running, "agent run").capitalize()
+    return (
+        f"{running} active out of {now.max_running} allowed, "
+        f"and {now.free_percent:.0f} percent of memory is free"
+    )
+
+
 async def health(db: AsyncSession, clock: Clock) -> str:
     hosts = await _hosts(db)
     if not hosts:
-        return speakable("No machines are registered yet.")
+        return speakable(f"No machines are registered yet. {await _capacity_sentence(db)}.")
 
-    parts: list[str] = []
+    parts: list[str] = [await _capacity_sentence(db)]
     problems = [host for host in hosts if host.status is not HostStatus.UP]
     if not problems:
         parts.append("All machines are up")
