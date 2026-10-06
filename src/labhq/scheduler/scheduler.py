@@ -99,8 +99,7 @@ class Scheduler:
     async def interrupt_agent(self, agent_id: int) -> bool:
         """Interrupt the live runs of `agent_id` that this process holds; return whether any.
 
-        The Call Center calls this only when the owner asked for it (ADR 0004). The run ends
-        as `interrupted` and the agent's next run starts from its queued wakeups.
+        The run ends as `interrupted` and the agent's next run starts from its queued wakeups.
         """
         live = [
             run

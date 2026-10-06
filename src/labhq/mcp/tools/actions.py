@@ -1,4 +1,4 @@
-"""Write tools that change state: decide an approval, order a task or a merge."""
+"""Write tools that change state: decide an approval, send an order to the CEO, ask to merge."""
 
 import uuid
 
@@ -15,18 +15,15 @@ async def decide_tool(reference: str, verdict: str) -> str:
 
 
 async def order_tool(
-    project: str,
     text: str = "",
-    assignee: int | None = None,
     request_id: str | None = None,
+    project: str | None = None,
     merge: int | None = None,
 ) -> str:
-    # A retry that repeats the request id creates nothing; without one, every call is new.
-    key = request_id or f"mcp-{uuid.uuid4().hex}"
+    # A retry that repeats the request id sends nothing twice; without one, every call is new.
+    key = request_id or f"mcp-{uuid.uuid4().hex[:24]}"
     async with tool_session() as db:
-        return await order(
-            db, CLOCK, project=project, text=text, request_id=key, assignee=assignee, merge=merge
-        )
+        return await order(db, CLOCK, text=text, request_id=key, project=project, merge=merge)
 
 
 default_registry.register(
@@ -44,13 +41,12 @@ default_registry.register(
 default_registry.register(
     ToolSpec(
         "order",
-        "Create a task in a project and wake its assignee. project is the project name, "
-        "text is the owner's instruction in a sentence or two. Without assignee it goes "
-        "to the project's active manager; assignee can name another agent id. request_id "
-        "is an optional key that makes a retry create nothing twice. "
-        "The answer names the task with a reference like T3. To merge a finished task into "
-        "main instead, set merge to its task id and leave text empty: that only requests the "
-        "merge, which the owner approves with the passkey.",
+        "Send the owner's order or request to the CEO, who passes it down to managers and "
+        "workers. text is exactly what the owner said, never reworded, shortened or "
+        "extended; nothing else is sent with it. request_id is an optional key that makes a "
+        "retry send nothing twice. To merge a finished task into main instead, set project "
+        "and merge to its task id and leave text empty: that only requests the merge, which "
+        "the owner approves with the passkey.",
         ToolAnnotations(readOnlyHint=False, destructiveHint=False),
         order_tool,
     )
