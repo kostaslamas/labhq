@@ -22,5 +22,13 @@
     "title": "Spend without a deliverable",
     "line": "{agent} ({project}) spent money and delivered nothing.",
     "no_project": "no project"
+  },
+  "capacity": {
+    "title": "Run capacity",
+    "running": "Runs active",
+    "memory": "Free memory",
+    "floor": "Pause below",
+    "waiting": "Waiting for room",
+    "paused": "New runs are paused: free memory {free}% is below {floor}%. Nothing is dropped; work resumes when memory recovers."
   }
 }

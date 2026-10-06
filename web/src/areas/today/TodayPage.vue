@@ -3,19 +3,23 @@ import { useI18n } from 'vue-i18n'
 
 import ReportCard from '@/areas/ceo/ReportCard.vue'
 
+import CapacityCard from './CapacityCard.vue'
 import DeliveredList from './DeliveredList.vue'
 import NeedsYou from './NeedsYou.vue'
 import SpendWarnings from './SpendWarnings.vue'
+import { useCapacity } from './useCapacity'
 import { useToday } from './useToday'
 
 const { t } = useI18n()
 const { today, failed, reload } = useToday()
+const { capacity } = useCapacity()
 </script>
 
 <template>
   <section class="mx-auto flex max-w-5xl flex-col gap-8 p-4 sm:p-8">
     <h1 class="text-2xl font-semibold tracking-wide">{{ t('today.nav') }}</h1>
     <p v-if="failed" role="alert" class="text-status-failed">{{ t('today.failed') }}</p>
+    <CapacityCard v-if="capacity" :capacity="capacity" />
     <template v-if="today">
       <section v-if="today.ceo_report" class="flex flex-col gap-3" data-testid="today-ceo-report">
         <header class="flex flex-wrap items-baseline justify-between gap-2">

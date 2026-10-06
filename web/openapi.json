@@ -2026,6 +2026,44 @@
         "title": "RiskClass",
         "type": "string"
       },
+      "RunCapacity": {
+        "properties": {
+          "free_memory_percent": {
+            "title": "Free Memory Percent",
+            "type": "number"
+          },
+          "max_running": {
+            "title": "Max Running",
+            "type": "integer"
+          },
+          "min_free_memory_percent": {
+            "title": "Min Free Memory Percent",
+            "type": "number"
+          },
+          "paused_for_memory": {
+            "title": "Paused For Memory",
+            "type": "boolean"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "running",
+          "max_running",
+          "free_memory_percent",
+          "min_free_memory_percent",
+          "paused_for_memory",
+          "waiting"
+        ],
+        "title": "RunCapacity",
+        "type": "object"
+      },
       "RunStatus": {
         "enum": ["queued", "running", "succeeded", "failed", "interrupted", "timed_out"],
         "title": "RunStatus",
@@ -3286,6 +3324,36 @@
         },
         "summary": "Auth Step Up Options",
         "tags": ["auth"]
+      }
+    },
+    "/api/capacity": {
+      "get": {
+        "description": "Runs against the global cap, free memory against its floor, and what waits for them.",
+        "operationId": "capacity_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCapacity"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Capacity Get",
+        "tags": ["capacity"]
       }
     },
     "/api/health": {
