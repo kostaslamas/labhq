@@ -13,8 +13,8 @@ from pydantic import BaseModel
 import labhq
 from labhq.api.approvals import router as approvals_router
 from labhq.api.authoring import router as authoring_router
-from labhq.api.capacity.router import router as capacity_router
 from labhq.api.autonomy import router as autonomy_router
+from labhq.api.capacity.router import router as capacity_router
 from labhq.api.meetings import router as meetings_router
 from labhq.api.org import router as org_router
 from labhq.api.projects import router as projects_router
