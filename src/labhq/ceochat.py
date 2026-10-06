@@ -52,6 +52,22 @@ def message_prompt(reason: str) -> str:
     return message_text(reason)
 
 
+async def owner_message_of_run(db: AsyncSession, run_id: int) -> str | None:
+    """The owner's own words that started this run, or None if no owner message did.
+
+    This is the one place the CEO's tools learn what the owner said. Every channel that
+    delivers the owner's words verbatim (web chat, the Call Center) queues an
+    `OWNER_MESSAGE` wakeup, so the words are read from that wakeup and never from the model.
+    """
+    request = await db.scalar(
+        select(WakeupRequest).where(
+            WakeupRequest.run_id == run_id,
+            WakeupRequest.source == WakeupSource.OWNER_MESSAGE,
+        )
+    )
+    return message_text(request.reason) if request is not None else None
+
+
 def _event_text(event: RunEvent) -> str | None:
     payload: dict[str, Any] = event.payload
     if event.kind == "final_answer":

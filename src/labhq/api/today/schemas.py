@@ -89,9 +89,21 @@ class SpendWithoutOutput(BaseModel):
     cost_micros: int
 
 
+class CeoReport(BaseModel):
+    id: int
+    text: str
+    refs: list[str]
+    task_id: int | None
+    task_title: str | None
+    awaiting_decision: bool
+    created_at: datetime
+
+
 class Today(BaseModel):
     since: datetime
     until: datetime
+    # The CEO's latest report, whatever its age: the page opens with it.
+    ceo_report: CeoReport | None
     deliverables: list[TodayDeliverable]
     needs_you: NeedsYou
     spend_without_output: list[SpendWithoutOutput]

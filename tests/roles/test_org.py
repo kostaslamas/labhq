@@ -136,6 +136,8 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         "delegate_task",
         "task_overview",
         "review_task",
+        "report_to_owner",
+        "owner_decision",
     }
     assert names("manager") == {
         "propose_team",

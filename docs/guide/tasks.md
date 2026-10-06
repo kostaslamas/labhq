@@ -29,8 +29,11 @@ result or blocker with `report_task`. The parent task's assignee wakes to inspec
 or sends it back with feedback. The same review applies at every level.
 
 A manager reports the root objective to the CEO only after its children are resolved. The
-CEO reviews and can return it to the manager. A favorable CEO review sends you a
-notification and leaves the root task open for your final decision:
+CEO reviews and can return it to the manager. A favorable CEO review becomes a CEO report:
+it appears in the CEO chat and on Today, notifies you, and leaves the root task open for
+your final decision. Accept or return it with the buttons on the report, or tell the CEO in
+the chat; the CEO can record your decision only by quoting your own words. The CLI does the
+same:
 
 ```sh
 labhq task pending
@@ -38,7 +41,7 @@ labhq task accept 12 --feedback "The result meets the objective"
 labhq task return 12 --feedback "The mobile flow still fails"
 ```
 
-Returning a task wakes its manager with your feedback. Only your `task accept` closes the
+Returning a task wakes its manager with your feedback. Only your decision closes the
 root task. Merge and push remain separate heavy actions that need their own approval.
 
 If an assigned agent ends a turn without handing off or reporting a blocker, the scheduler
