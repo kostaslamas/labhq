@@ -386,3 +386,11 @@ Plan usage thresholds and extraction settings, read from `LABHQ_*` (ADR 0003).
 | `LABHQ_USAGE_EXTRACTOR` | `str` | `model` | The extractor registry key, and the agent whose one-shot runs do the model extraction. |
 | `LABHQ_USAGE_EXTRACTOR_AGENT_ID` | `int \| None` | unset |  |
 | `LABHQ_USAGE_MAX_RESET_DAYS` | `int` | `8` | A reset time further away than this is not a plan window; the reading is rejected. |
+
+## `labhq.work.settings.WorkSettings`
+
+What task tools show an agent, read from `LABHQ_WORK_*`.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_WORK_OVERVIEW_REPORTS` | `int` | `5` | How many of a task's own latest reports `task_overview` lists. Children always show their latest one, so a parent reads every result in a single call. |

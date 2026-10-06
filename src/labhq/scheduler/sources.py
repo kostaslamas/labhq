@@ -55,6 +55,21 @@ class OwnerMessageHandler:
         return message_prompt(request.reason)
 
 
+@dataclass(frozen=True)
+class PointerHandler:
+    """The reason is the whole prompt: short pointer lines, never report or task text.
+
+    The agent reads the result itself with `task_overview`; prompts stay minimal.
+    """
+
+    def validate(self, task_id: int | None) -> None:
+        if task_id is None:
+            raise InvalidWakeupError("pointer wakeups need a task")
+
+    def prompt(self, request: WakeupRequest, task: Task | None) -> str:
+        return request.reason
+
+
 class UnknownSourceError(LookupError):
     pass
 
@@ -93,3 +108,5 @@ default_sources.register(
 )
 default_sources.register(WakeupSource.MEETING, TemplateHandler(False, "A meeting needs you."))
 default_sources.register(WakeupSource.OWNER_MESSAGE, OwnerMessageHandler())
+default_sources.register(WakeupSource.CHILD_REPORT, PointerHandler())
+default_sources.register(WakeupSource.TASK_RETURNED, PointerHandler())
