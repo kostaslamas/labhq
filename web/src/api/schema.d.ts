@@ -448,6 +448,66 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/org/ceo/reports': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Ceo Reports Get
+     * @description The CEO's recent reports to the owner, oldest first.
+     */
+    get: operations['ceo_reports_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/org/tasks/{task_id}/accept': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Task Accept
+     * @description The owner closes a root objective the CEO reported as done.
+     */
+    post: operations['task_accept']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/org/tasks/{task_id}/return': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Task Return
+     * @description The owner sends a root objective back to its manager with what still needs work.
+     */
+    post: operations['task_return']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/projects': {
     parameters: {
       query?: never
@@ -969,6 +1029,46 @@ export interface components {
       /** Text */
       text: string
     }
+    /** CeoReport */
+    CeoReport: {
+      /** Awaiting Decision */
+      awaiting_decision: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Refs */
+      refs: string[]
+      /** Task Id */
+      task_id: number | null
+      /** Task Title */
+      task_title: string | null
+      /** Text */
+      text: string
+    }
+    /** CeoReportOut */
+    CeoReportOut: {
+      /** Awaiting Decision */
+      awaiting_decision: boolean
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** Id */
+      id: number
+      /** Refs */
+      refs: string[]
+      /** Task Id */
+      task_id: number | null
+      /** Task Title */
+      task_title: string | null
+      /** Text */
+      text: string
+    }
     /**
      * Credential
      * @description What the UI may know about a passkey. The public key stays on the server.
@@ -1306,6 +1406,20 @@ export interface components {
       rule_name: string
       status: components['schemas']['IncidentStatus']
     }
+    /** OwnerDecisionBody */
+    OwnerDecisionBody: {
+      /**
+       * Feedback
+       * @default
+       */
+      feedback: string
+    }
+    /** OwnerDecisionOut */
+    OwnerDecisionOut: {
+      status: components['schemas']['TaskStatus']
+      /** Task Id */
+      task_id: number
+    }
     /** Page[ApprovalOut] */
     Page_ApprovalOut_: {
       /** Items */
@@ -1529,6 +1643,7 @@ export interface components {
     }
     /** Today */
     Today: {
+      ceo_report: components['schemas']['CeoReport'] | null
       /** Deliverables */
       deliverables: components['schemas']['TodayDeliverable'][]
       needs_you: components['schemas']['NeedsYou']
@@ -2498,6 +2613,105 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CeoChatTurn']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  ceo_reports_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CeoReportOut'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  task_accept: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OwnerDecisionBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OwnerDecisionOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  task_return: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        task_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['OwnerDecisionBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OwnerDecisionOut']
         }
       }
       /** @description Error */
