@@ -10,7 +10,7 @@ from labhq.clock import Clock
 from labhq.db.enums import TaskStatus, WakeupSource
 from labhq.db.models import Agent, Comment, Department, Task
 from labhq.hierarchy.roles import CEO
-from labhq.scheduler import Wakeup, enqueue
+from labhq.scheduler import Outcome, Wakeup, enqueue
 from labhq.work.deliverables import default_deliverables, has_document
 from labhq.work.service import WorkError
 
@@ -46,23 +46,87 @@ async def _record(
     return comment
 
 
+def _merge_line(reason: str, prefix: str, line: str) -> str:
+    """Add a pointer line to a pending wakeup's reason: once per subject, in arrival order."""
+    lines = reason.splitlines()
+    for index, existing in enumerate(lines):
+        if existing.startswith(prefix):
+            lines[index] = line
+            return "\n".join(lines)
+    return "\n".join([*lines, line])
+
+
 async def _wake(
-    db: AsyncSession, clock: Clock, *, agent_id: int, task_id: int, comment: Comment
+    db: AsyncSession,
+    clock: Clock,
+    *,
+    agent_id: int,
+    task_id: int,
+    comment: Comment,
+    source: WakeupSource,
+    prefix: str,
+    line: str,
 ) -> None:
+    """Point the agent at a result. The line is the whole prompt; the report text never travels."""
     result = await enqueue(
         db,
         Wakeup(
             agent_id=agent_id,
-            source=WakeupSource.COMMENT,
-            idempotency_key=f"task-progress:comment:{comment.id}:agent:{agent_id}",
+            source=source,
+            idempotency_key=f"task-progress:{source}:{comment.id}:agent:{agent_id}",
             task_id=task_id,
-            reason=f"Task #{comment.task_id} changed. Read it and continue the objective.",
+            reason=line,
         ),
         clock,
     )
-    # Coalescing keeps the earlier wakeup but drops this reason unless we append it.
-    if result.outcome.value == "coalesced":
-        result.request.reason += f"\nTask #{comment.task_id} changed."
+    # Coalescing keeps the earlier wakeup but drops this reason unless we merge it in.
+    if result.outcome is Outcome.COALESCED:
+        result.request.reason = _merge_line(result.request.reason, prefix, line)
+
+
+def _title(task: Task) -> str:
+    return " ".join(task.title.split())
+
+
+async def _wake_reviewer(
+    db: AsyncSession,
+    clock: Clock,
+    task: Task,
+    *,
+    reviewer_id: int,
+    wake_task_id: int,
+    comment: Comment,
+    blocked: bool,
+) -> None:
+    subject = "Subtask" if wake_task_id != task.id else "Task"
+    state = "blocked" if blocked else "ready for review"
+    await _wake(
+        db,
+        clock,
+        agent_id=reviewer_id,
+        task_id=wake_task_id,
+        comment=comment,
+        source=WakeupSource.CHILD_REPORT,
+        prefix=f"{subject} #{task.id} ",
+        line=(
+            f'{subject} #{task.id} "{_title(task)}" reported: {state}. Read it with task_overview.'
+        ),
+    )
+
+
+async def _wake_returned(db: AsyncSession, clock: Clock, task: Task, comment: Comment) -> None:
+    assert task.assignee_id is not None
+    line = f"Task #{task.id} was returned. Read the feedback with task_overview."
+    await _wake(
+        db,
+        clock,
+        agent_id=task.assignee_id,
+        task_id=task.id,
+        comment=comment,
+        source=WakeupSource.TASK_RETURNED,
+        prefix=f"Task #{task.id} was returned",
+        line=line,
+    )
 
 
 async def _check_deliverable(db: AsyncSession, task: Task) -> None:
@@ -96,7 +160,15 @@ async def report_task(
         parent = await db.get_one(Task, task.parent_id)
         parent.updated_at = clock.now()
     comment = await _record(db, clock, task, agent_id, summary)
-    await _wake(db, clock, agent_id=reviewer_id, task_id=wake_task_id, comment=comment)
+    await _wake_reviewer(
+        db,
+        clock,
+        task,
+        reviewer_id=reviewer_id,
+        wake_task_id=wake_task_id,
+        comment=comment,
+        blocked=blocked,
+    )
 
 
 async def review_task(
@@ -135,8 +207,7 @@ async def review_task(
     if accept and reviewer_agent.role == CEO and task.department_id is not None:
         await _report_department_result(db, clock, task, agent_id, feedback)
     if not accept:
-        assert task.assignee_id is not None
-        await _wake(db, clock, agent_id=task.assignee_id, task_id=task.id, comment=comment)
+        await _wake_returned(db, clock, task, comment)
 
 
 async def _report_department_result(
@@ -180,4 +251,4 @@ async def owner_decide(
     if not accept:
         if task.assignee_id is None:
             raise WorkError(f"task {task.id} has no assignee to revise it")
-        await _wake(db, clock, agent_id=task.assignee_id, task_id=task.id, comment=comment)
+        await _wake_returned(db, clock, task, comment)

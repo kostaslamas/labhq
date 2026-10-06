@@ -20,6 +20,7 @@ from labhq.work import WorkError, add_task, assignment, find_agent
 from labhq.work.deliverables import REPORT
 from labhq.work.progress import report_task as report_progress
 from labhq.work.progress import review_task as review_progress
+from labhq.work.settings import get_work_settings
 
 SCOPED_ROLES = frozenset({MANAGER, LEAD, HEAD})
 CLOSED = frozenset({TaskStatus.DONE, TaskStatus.CANCELLED})
@@ -159,18 +160,35 @@ async def task_overview(context: ToolContext, arguments: TaskReference) -> str:
                 select(Comment)
                 .where(Comment.task_id == task.id)
                 .order_by(Comment.id.desc())
-                .limit(5)
+                .limit(get_work_settings().overview_reports)
             )
         )
+        latest = {child.id: await _latest_report(db, child.id) for child in children}
     lines = [
         f"Task #{task.id}: {task.title} [{task.status}], assignee {task.assignee_id}, "
         f"parent {task.parent_id}.",
         task.description,
-        "Children: " + (", ".join(f"#{c.id} {c.title} [{c.status}]" for c in children) or "none"),
-        "Recent reports: "
-        + ("; ".join(f"agent {c.author_agent_id}: {c.body}" for c in comments) or "none"),
+        "Children:" + ("" if children else " none"),
+        *(_child_line(child, latest[child.id]) for child in children),
+        "Reports: " + ("; ".join(_report(c) for c in comments) or "none"),
     ]
     return "\n".join(line for line in lines if line)
+
+
+def _report(comment: Comment) -> str:
+    when = f"{comment.created_at:%Y-%m-%d %H:%M} UTC"
+    return f"agent {comment.author_agent_id} at {when}: {comment.body}"
+
+
+async def _latest_report(db: AsyncSession, task_id: int) -> Comment | None:
+    return await db.scalar(
+        select(Comment).where(Comment.task_id == task_id).order_by(Comment.id.desc()).limit(1)
+    )
+
+
+def _child_line(child: Task, report: Comment | None) -> str:
+    head = f"- #{child.id} {child.title} [{child.status}]"
+    return f"{head}: {_report(report)}" if report is not None else f"{head}: no report yet"
 
 
 async def report_task(context: ToolContext, arguments: ReportTask) -> str:
@@ -237,7 +255,7 @@ def task_tools() -> list[AgentToolSpec]:
     return [
         AgentToolSpec(
             name="task_overview",
-            description="Read a task, its children and recent reports.",
+            description="Read a task, each child's latest report and its own recent reports.",
             input_model=TaskReference,
             roles=frozenset({CEO, MANAGER, LEAD, WORKER, HEAD}),
             read_only=True,

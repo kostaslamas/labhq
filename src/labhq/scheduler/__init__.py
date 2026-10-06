@@ -7,6 +7,7 @@ from labhq.scheduler.scheduler import Scheduler, TickReport
 from labhq.scheduler.settings import AgentLimits, SchedulerSettings, get_scheduler_settings
 from labhq.scheduler.sources import (
     InvalidWakeupError,
+    PointerHandler,
     SourceHandler,
     SourceRegistry,
     TemplateHandler,
@@ -29,6 +30,7 @@ __all__ = [
     "EnqueueResult",
     "InvalidWakeupError",
     "Outcome",
+    "PointerHandler",
     "PosixProcessGroupTerminator",
     "ProcessTerminator",
     "Scheduler",

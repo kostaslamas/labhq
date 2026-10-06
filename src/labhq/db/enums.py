@@ -40,6 +40,8 @@ class WakeupSource(StrEnum):
     APPROVAL_RESOLVED = "approval_resolved"
     MEETING = "meeting"
     OWNER_MESSAGE = "owner_message"
+    CHILD_REPORT = "child_report"
+    TASK_RETURNED = "task_returned"
 
 
 class WakeupStatus(StrEnum):
