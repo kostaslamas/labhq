@@ -129,6 +129,7 @@ async def test_discovery_refuses_a_root_it_may_not_look_in(org: Org, root: str) 
     assert answer.startswith("Refused:")
 
 
+@pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 async def test_discovery_lists_running_and_saved_sessions(org: Org, home: Path) -> None:
     project = org.root / "app"
     project.mkdir()
