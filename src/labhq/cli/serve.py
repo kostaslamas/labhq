@@ -12,13 +12,11 @@ from pydantic import ValidationError
 
 from labhq.auth.public_url import load_public_url, store_public_url
 from labhq.auth.settings import AuthSettings
-from labhq.callcenter.calls import SchedulerInterrupter
 from labhq.cli.context import Context, execute, fail
 from labhq.cli.engine import Engine
 from labhq.expose import ExposureError, expose_running, exposures, verify_connector
 from labhq.mcp.auth import ensure_token
 from labhq.mcp.server import build_app
-from labhq.mcp.tools.calls import attach_interrupter
 from labhq.mcp.tools.registry import default_registry
 from labhq.notify import Dispatcher, NotifyError, NotifySettings, build_notifier
 
@@ -106,7 +104,6 @@ def serve(
                 Engine(context),
                 Dispatcher(context.sessions, notifier, clock=context.clock, settings=settings),
             )
-            attach_interrupter(SchedulerInterrupter(services.engine.scheduler))
             # No access log: the secret path would land in it.
             mcp_app = build_app(default_registry, secret)
             api_settings = get_api_settings()

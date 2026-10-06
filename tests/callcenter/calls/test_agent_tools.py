@@ -5,8 +5,9 @@ from sqlalchemy import select, update
 from labhq.adapters import AgentTool, RunRequest
 from labhq.adapters.claude import ClaudeAdapter
 from labhq.callcenter.calls import ROLE, call_center_agent
+from labhq.callcenter.calls.agent import INSTRUCTIONS
 from labhq.callcenter.calls.settings import CallAgentSettings
-from labhq.db.models import Agent, Delivery
+from labhq.db.models import Agent, WakeupRequest, WordingProposal
 from tests.adapters.stub_sdk import CLI_PATH
 from tests.callcenter.calls.conftest import Line
 from tests.db.factories import project_agent_task
@@ -20,8 +21,11 @@ READS = {
     "read_screen",
     "list_tmux_sessions",
     "read_tmux_session",
+    "reports",
 }
-BOUNDED = {"deliver", "interrupt", "answer"}
+BOUNDED = {"send_to_ceo", "propose_wording", "confirm_wording", "answer"}
+# The instructions before issue #167, in characters: they must only get shorter.
+EARLIER_INSTRUCTIONS = 1030
 
 
 async def _tools(line: Line, question: str) -> dict[str, AgentTool]:
@@ -81,31 +85,34 @@ async def test_a_tool_reads_the_team_and_an_agents_status(line: Line) -> None:
     assert "has not written a status yet" in worker_status
 
 
-async def test_a_refused_delivery_is_an_answer_the_agent_reads(line: Line) -> None:
-    async with line.sessions() as db:
-        _, worker, _ = await project_agent_task(db, line.clock)
-        worker_id = worker.id
-        await db.commit()
-    tools = await _tools(line, "How is the build?")
+async def test_a_refusal_is_an_answer_the_agent_reads(line: Line) -> None:
+    tools = await _tools(line, "Tell the CEO to ship it.")
     ticket = line.fake.requests[-1].prompt.split("Request ")[1].split(" ")[0]
 
-    said = await tools["deliver"].handler({"request_id": ticket, "agent_id": worker_id})
+    said = await tools["propose_wording"].handler({"request_id": ticket, "text": "  "})
 
     assert said.startswith("Refused:")
     async with line.sessions() as db:
-        assert (await db.scalars(select(Delivery))).all() == []
+        assert (await db.scalars(select(WordingProposal))).all() == []
 
 
 async def test_the_tools_are_bound_to_their_own_call(line: Line) -> None:
-    async with line.sessions() as db:
-        _, worker, _ = await project_agent_task(db, line.clock)
-        worker_id = worker.id
-        await db.commit()
-    other = await line.center.ask("Tell the worker to use main.")
+    other = await line.center.ask("Tell the CEO to use main.")
     await line.center.settle()
     line.after_window()
     tools = await _tools(line, "Anything new?")
 
-    said = await tools["deliver"].handler({"request_id": other.ticket, "agent_id": worker_id})
+    said = await tools["send_to_ceo"].handler({"request_id": other.ticket})
 
     assert said == f"Refused: Request {other.ticket} is not part of this call."
+    async with line.sessions() as db:
+        assert (await db.scalars(select(WakeupRequest))).all() == []
+
+
+def test_the_instructions_are_shorter_and_never_route_to_managers() -> None:
+    assert len(INSTRUCTIONS) < EARLIER_INSTRUCTIONS
+    words = INSTRUCTIONS.casefold()
+    for routing in ("manager", "deliver", "interrupt", "assign", "worker"):
+        assert routing not in words
+    assert "send_to_ceo" in INSTRUCTIONS
+    assert "confirm_wording" in INSTRUCTIONS

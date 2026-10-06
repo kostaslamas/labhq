@@ -1,6 +1,5 @@
-"""The Call Center reaches a live run through the scheduler that holds it."""
+"""The scheduler interrupts the live runs it holds for an agent."""
 
-from labhq.callcenter.calls import SchedulerInterrupter
 from labhq.db.enums import RunStatus
 from tests.scheduler.conftest import World
 from tests.scheduler.helpers import get_run, on_task
@@ -11,7 +10,7 @@ async def test_interrupt_agent_stops_its_live_run_as_interrupted(world: World) -
     await world.scheduler.enqueue(on_task(world, "assign"))
     (run_id,) = (await world.scheduler.tick()).started
 
-    stopped = await SchedulerInterrupter(world.scheduler).interrupt(world.agent_id)
+    stopped = await world.scheduler.interrupt_agent(world.agent_id)
     await world.scheduler.settle()
 
     assert stopped is True

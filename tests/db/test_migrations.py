@@ -53,6 +53,8 @@ PHASE_3_TABLES = {
 }
 # Passkeys and web sessions (issue #62).
 PHASE_4_TABLES = {"passkey_credentials", "web_sessions", "webauthn_challenges"}
+# Wordings the owner confirms before the CEO gets them (issue #167).
+CEO_LINE_TABLES = {"wording_proposals"}
 # The CEO's reports to the owner (issue #170).
 CEO_REPORT_TABLES = {"ceo_reports"}
 # Runtime switches such as the global autonomy (issue #169).
@@ -63,6 +65,7 @@ ALL_TABLES = (
     | TMUX_TABLES
     | PHASE_3_TABLES
     | PHASE_4_TABLES
+    | CEO_LINE_TABLES
     | CEO_REPORT_TABLES
     | PROGRAM_STATE_TABLES
 )
@@ -78,7 +81,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0014"]
+    assert heads == ["0015"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:

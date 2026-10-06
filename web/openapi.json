@@ -2001,6 +2001,11 @@
         "title": "ProjectView",
         "type": "object"
       },
+      "ProposalStatus": {
+        "enum": ["pending", "sent", "rejected"],
+        "title": "ProposalStatus",
+        "type": "string"
+      },
       "QuestionStatus": {
         "enum": ["pending", "answered"],
         "title": "QuestionStatus",
@@ -2557,6 +2562,14 @@
             "title": "Project Status",
             "type": "array"
           },
+          "proposal_status": {
+            "description": "Every value of `ProposalStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/ProposalStatus"
+            },
+            "title": "Proposal Status",
+            "type": "array"
+          },
           "question_status": {
             "description": "Every value of `QuestionStatus`.",
             "items": {
@@ -2600,6 +2613,7 @@
           "meeting_status",
           "notification_status",
           "project_status",
+          "proposal_status",
           "question_status",
           "run_status",
           "task_status",

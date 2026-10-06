@@ -10,6 +10,7 @@ from labhq.db.models.callcenter import (
     Delivery,
     Notification,
     StatusUpdate,
+    WordingProposal,
 )
 from labhq.db.models.chat import ChatBinding
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
@@ -60,4 +61,5 @@ __all__ = [
     "WakeupRequest",
     "WebSession",
     "WebauthnChallenge",
+    "WordingProposal",
 ]

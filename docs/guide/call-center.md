@@ -46,11 +46,12 @@ can add one is up to each vendor. Consumer Gemini does not accept custom MCP con
 | `brief` | read | Today in a few spoken sentences: finished work, decisions waiting, today's spend |
 | `inbox` | read | What waits for you: approvals (`A12`) and agent questions (`Q7`) |
 | `health` | read | Whether the machines that run the agents are up, and open incidents |
+| `reports` | read | What workers and managers last reported, per project: who, how long ago, what |
 | `meeting_minutes` | read | A meeting's participants, decisions, action items and cost; the latest one unless you name it |
-| `ask_ceo` | write | A question that needs reading and judgement; returns a ticket at once |
+| `ask_ceo` | write | Talk to the Call Center: a status question, or an order for the CEO; returns a ticket at once |
 | `get_reply` | read | The answer for an `ask_ceo` ticket, or "still working" |
 | `answer` | write | Your own words as the answer to an agent's question |
-| `order` | write | A new task in a project; without an assignee, it wakes the active manager |
+| `order` | write | Your order, in your exact words, to the CEO; or a merge request for the passkey |
 | `decide` | write, destructive | Approve or reject a pending approval |
 
 Read tools carry `readOnlyHint`, so apps run them without asking. `decide` carries
@@ -65,26 +66,30 @@ through `ask_ceo` to a Call Center agent started for the call. Questions a few m
 ## What it will do
 
 - Tell you what happened, what waits for you and how the machines are.
-- Find out what an agent is doing, from the status the agent keeps or, when that is stale,
-  by reading the agent's screen. It can also list and read named sessions on labhq's private
+- Find out what an agent is doing or how far a project is, from the reports of workers and
+  their managers, naming who reported and how long ago; when those are stale, by reading
+  the agent's screen. Status questions never wake the CEO. It can also list and read named sessions on labhq's private
   tmux server, including `ceo_claude` and `ceo_codex` after the agent has quit. It never
   sends keys to a pane to ask.
 - Pass your answer to an agent that asked you something, as you said it.
-- Create tasks, and approve or reject light actions after your clear yes.
-- Deliver a message to an agent at the end of its turn, or interrupt it at once when you
-  explicitly ask for that in the same call.
+- Send your orders to the CEO, who passes them down to managers and workers. The CEO gets
+  your words exactly as you said them. The Call Center may offer a clearer wording (a fixed
+  transcription, say); it reads it back and sends it only after you say yes in the same
+  call. A no, or no answer, sends nothing.
+- Approve or reject light actions after your clear yes.
 
 ## What it will not do
 
 - **Approve a heavy action.** Push, merge, deleting, team creation, budget overruns and
   changes to a machine stay pending; the Call Center tells you to confirm them with your
   passkey (or, until passkeys land in the web UI, with `labhq approvals approve <id>`).
-- **Put words in your mouth.** A message to an agent is your own words from the current call,
-  stored with the call, never text a model composed. Screens and logs can carry instructions,
+- **Put words in your mouth.** What the CEO gets is your own words from the current call, or
+  a wording you confirmed, with nothing added; never text a model composed on its own. Screens and logs can carry instructions,
   and the agents run with broad permissions, so this rule has no exceptions.
-- **Type into a working agent.** It reads screens; it never sends keys to an agent mid-turn.
+- **Go around the CEO.** It creates no tasks and assigns no work, and it does not message
+  managers or workers. It reads screens; it never sends keys to an agent mid-turn.
 - **Run commands or edit files.** The Call Center agent's own tools read the database, the
-  status, events and screens and deliver messages. It has no shell and writes no files.
+  status, events and screens and send your messages to the CEO. It has no shell and writes no files.
 - **Call you.** It cannot start a conversation; anything urgent reaches you as a
   [notification](notifications.md).
 
