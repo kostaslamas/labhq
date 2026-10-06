@@ -1,5 +1,6 @@
+import asyncio
 from collections.abc import AsyncIterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -19,8 +20,11 @@ SETTINGS = SchedulerSettings(
     heartbeat_limit_seconds=120,
     interrupt_grace_seconds=30,
     tick_seconds=5,
-    # The escalation tests need a limit; production's default is none.
+    # The escalation tests need a small limit; production's default is higher.
     max_unreported_runs=3,
+    # Fake agents never report, so the automatic next turn would start runs behind the tests'
+    # backs (#150). Only the progress tests turn it on.
+    auto_next_turn=False,
 )
 BUDGETS = BudgetSettings()
 
@@ -32,23 +36,30 @@ class World:
     clock: FakeClock
     registry: AdapterRegistry
     fake: FakeScript
+    settings: SchedulerSettings
     project_id: int
     agent_id: int
     task_id: int
+    schedulers: list[Scheduler] = field(default_factory=list)
 
     def fresh_scheduler(self) -> Scheduler:
         """A second scheduler on the same database, as after a restart."""
-        return build_scheduler(self.sessions, self.clock, self.registry)
+        scheduler = build_scheduler(self.sessions, self.clock, self.registry, self.settings)
+        self.schedulers.append(scheduler)
+        return scheduler
 
 
 def build_scheduler(
-    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, registry: AdapterRegistry
+    sessions: async_sessionmaker[AsyncSession],
+    clock: FakeClock,
+    registry: AdapterRegistry,
+    settings: SchedulerSettings = SETTINGS,
 ) -> Scheduler:
     return Scheduler(
         sessions,
         clock=clock,
         runs=RunService(sessions, clock=clock, registry=registry),
-        settings=SETTINGS,
+        settings=settings,
         budget_settings=BUDGETS,
     )
 
@@ -64,7 +75,7 @@ async def sessions(database_url: str) -> AsyncIterator[async_sessionmaker[AsyncS
 
 @pytest.fixture
 async def world(
-    sessions: async_sessionmaker[AsyncSession], clock: FakeClock
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, auto_next_turn: bool
 ) -> AsyncIterator[World]:
     fake = FakeScript()
     registry = default_registry.copy()
@@ -73,9 +84,11 @@ async def world(
         project, agent, task = await project_agent_task(db, clock)
         agent.status = AgentStatus.ACTIVE
         await db.commit()
-    scheduler = build_scheduler(sessions, clock, registry)
-    yield World(
+    settings = SETTINGS.model_copy(update={"auto_next_turn": auto_next_turn})
+    scheduler = build_scheduler(sessions, clock, registry, settings)
+    world = World(
         scheduler=scheduler,
+        settings=settings,
         sessions=sessions,
         clock=clock,
         registry=registry,
@@ -83,6 +96,14 @@ async def world(
         project_id=project.id,
         agent_id=agent.id,
         task_id=task.id,
+        schedulers=[scheduler],
     )
-    # A test that leaves a run live must not leak its task into the next test.
-    await scheduler.shutdown()
+    yield world
+    # A test that leaves a run live must not leak it into the next test, or hang the loop's
+    # teardown on a waiter nobody collects (#150).
+    for owner in world.schedulers:
+        await owner.shutdown()
+    assert [owner.live_run_ids for owner in world.schedulers] == [[]] * len(world.schedulers)
+    current = asyncio.current_task()
+    pending = [task for task in asyncio.all_tasks() if task is not current and not task.done()]
+    assert not pending, f"a scheduler test left tasks running: {pending}"

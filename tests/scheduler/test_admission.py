@@ -32,7 +32,7 @@ class Meter:
 
 def scheduler_with(world: World, meter: Meter, **limits: float) -> Scheduler:
     settings = SchedulerSettings(**{**SETTINGS.model_dump(), **limits})
-    return Scheduler(
+    scheduler = Scheduler(
         world.sessions,
         clock=world.clock,
         runs=RunService(world.sessions, clock=world.clock, registry=world.registry),
@@ -40,6 +40,9 @@ def scheduler_with(world: World, meter: Meter, **limits: float) -> Scheduler:
         budget_settings=BUDGETS,
         memory=meter,
     )
+    # The world's teardown stops every scheduler it knows, so no run outlives its test (#150).
+    world.schedulers.append(scheduler)
+    return scheduler
 
 
 async def add_agent(world: World, role: str) -> tuple[int, int]:

@@ -30,7 +30,7 @@ meetings_app = typer.Typer(help="Meetings: request, list, show.", no_args_is_hel
 LIST_LIMIT = 20
 
 
-def _service(context: Context) -> MeetingService:
+def meeting_service(context: Context) -> MeetingService:
     approvals = ApprovalService(context.sessions, clock=context.clock)
     # The meeting is mirrored to chat through the outbox, which `labhq serve` sends.
     listeners = MeetingListeners()
@@ -57,7 +57,7 @@ def _request(project: str, kind: str, agenda: str | None, participants: list[int
         async with context.sessions() as db:
             project_id = (await find_project(db, project)).id
         return await _guarded(
-            _service(context).request(
+            meeting_service(context).request(
                 project_id=project_id, kind=kind, agenda=agenda, participants=participants
             )
         )
@@ -72,7 +72,7 @@ def _request(project: str, kind: str, agenda: str | None, participants: list[int
 
 def _run(meeting_id: int) -> None:
     async def body(context: Context) -> Meeting:
-        return await _guarded(_service(context).start(meeting_id))
+        return await _guarded(meeting_service(context).start(meeting_id))
 
     meeting = execute(body)
     reason = f" ({meeting.end_reason})" if meeting.end_reason else ""

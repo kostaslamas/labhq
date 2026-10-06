@@ -22,6 +22,7 @@ from labhq.db.models.meetings import (
 )
 from labhq.db.models.reports import CeoReport
 from labhq.db.models.runs import AgentTaskSession, CostEvent, Run, RunEvent, WakeupRequest
+from labhq.db.models.state import ProgramState
 from labhq.db.models.usage import UsageReading
 from labhq.db.models.work import Agent, Comment, Project, Task
 
@@ -49,6 +50,7 @@ __all__ = [
     "MeetingTranscriptEntry",
     "Notification",
     "PasskeyCredential",
+    "ProgramState",
     "Project",
     "Run",
     "RunEvent",
