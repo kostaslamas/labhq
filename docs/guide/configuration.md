@@ -122,6 +122,14 @@ Call timing, read from `LABHQ_CALLCENTER_*` environment variables.
 | `LABHQ_CALLCENTER_CALL_WINDOW_SECONDS` | `int` | `300` | A call with no activity for this long is treated as hung up. |
 | `LABHQ_CALLCENTER_TICKET_EXPIRY_SECONDS` | `int` | `3600` | A request nobody answered within this time becomes `expired` instead of waiting forever. |
 
+## `labhq.ceoreports.CeoReportSettings`
+
+How the CEO's reports reach the owner.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_CEO_REPORTS_DIGEST_SECONDS` | `int` | `900` | At most one report notification per window; later reports wait and go out as one digest. |
+
 ## `labhq.chat.discord.settings.DiscordSettings`
 
 Discord bot credentials and placement, from `LABHQ_DISCORD_*` variables or the data directory.
