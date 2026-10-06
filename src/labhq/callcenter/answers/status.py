@@ -113,8 +113,9 @@ async def _open_incidents(db: AsyncSession) -> list[tuple[Incident, str, str]]:
 
 async def _capacity_sentence(db: AsyncSession) -> str:
     now = await capacity(db)
+    running = say_count(now.running, "agent run").capitalize()
     return (
-        f"{say_count(now.running, 'agent run').capitalize()} active out of {now.max_running} allowed, "
+        f"{running} active out of {now.max_running} allowed, "
         f"and {now.free_percent:.0f} percent of memory is free"
     )
 
