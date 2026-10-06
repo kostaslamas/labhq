@@ -159,3 +159,38 @@ test('the page does not scroll sideways at 1280 by 800', async ({ signedInPage: 
   )
   expect(overflow).toBeLessThanOrEqual(0)
 })
+
+const READING = {
+  running: 2,
+  max_running: 3,
+  free_memory_percent: 8.5,
+  min_free_memory_percent: 15,
+  paused_for_memory: true,
+  waiting: 3,
+}
+
+test('Today warns while admission is paused for memory', async ({ signedInPage: page }) => {
+  // A seeded reading: the server's own memory is whatever the CI machine has.
+  await page.route('**/api/capacity', (route) => route.fulfill({ json: READING }))
+  await page.goto('/today')
+
+  const card = page.getByTestId('capacity')
+  await expect(card).toHaveAttribute('data-paused', 'true')
+  await expect(page.getByTestId('capacity-paused')).toContainText('8.5%')
+  await expect(page.getByTestId('capacity-running')).toContainText('2 / 3')
+  await expect(page.getByTestId('capacity-waiting')).toContainText('3')
+})
+
+test('Today shows the live capacity card without a warning when memory is fine', async ({
+  signedInPage: page,
+}) => {
+  await page.route('**/api/capacity', (route) =>
+    route.fulfill({
+      json: { ...READING, free_memory_percent: 70, paused_for_memory: false, waiting: 0 },
+    }),
+  )
+  await page.goto('/today')
+
+  await expect(page.getByTestId('capacity')).toHaveAttribute('data-paused', 'false')
+  await expect(page.getByTestId('capacity-paused')).toHaveCount(0)
+})

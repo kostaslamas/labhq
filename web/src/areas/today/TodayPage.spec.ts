@@ -4,6 +4,7 @@ import { api } from '@/api'
 import { useLiveTopic } from '@/live'
 import { renderApp, settle } from '@/shell/__fixtures__/render'
 
+import type { RunCapacity } from './useCapacity'
 import type { Today } from './useToday'
 
 vi.mock('@/live', () => ({ useLiveTopic: vi.fn(), liveState: { value: 'idle' } }))
@@ -65,8 +66,20 @@ const answer: Today = {
   ],
 }
 
-function respondWith(data: Today): void {
-  vi.spyOn(api, 'GET').mockResolvedValue({ data, response: new Response() })
+const capacity: RunCapacity = {
+  running: 1,
+  max_running: 3,
+  free_memory_percent: 62.5,
+  min_free_memory_percent: 15,
+  paused_for_memory: false,
+  waiting: 0,
+}
+
+function respondWith(data: Today, reading: RunCapacity = capacity): void {
+  // The page reads two endpoints; each gets its own answer.
+  const answer = (path: string) =>
+    Promise.resolve({ data: path === '/api/capacity' ? reading : data, response: new Response() })
+  vi.spyOn(api, 'GET').mockImplementation(answer)
 }
 
 afterEach(() => {
@@ -87,6 +100,40 @@ describe('TodayPage', () => {
     expect(delivered).toContain('labhq/task-7-add-a-hello-file')
     expect(delivered).toContain('2 commits')
     expect(delivered).toContain('$1.25')
+  })
+
+  it('shows run capacity and free memory at the top, calm while admission runs', async () => {
+    respondWith(answer)
+    const { root } = await renderApp('/today')
+    await settle()
+
+    const card = root.querySelector('[data-testid="capacity"]')
+    expect(card?.getAttribute('data-paused')).toBe('false')
+    expect(root.querySelector('[data-testid="capacity-running"]')?.textContent).toContain('1 / 3')
+    expect(root.querySelector('[data-testid="capacity-memory"]')?.textContent).toContain('62.5%')
+    expect(root.querySelector('[data-testid="capacity-paused"]')).toBeNull()
+    const needs = root.querySelector('[data-testid="needs-you"]')
+    expect(card && needs && card.compareDocumentPosition(needs)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
+  })
+
+  it('warns while admission is paused for memory', async () => {
+    respondWith(answer, {
+      ...capacity,
+      free_memory_percent: 9.5,
+      paused_for_memory: true,
+      waiting: 4,
+    })
+    const { root } = await renderApp('/today')
+    await settle()
+
+    expect(root.querySelector('[data-testid="capacity"]')?.getAttribute('data-paused')).toBe('true')
+    const warning = root.querySelector('[data-testid="capacity-paused"]')
+    expect(warning?.getAttribute('role')).toBe('alert')
+    expect(warning?.textContent).toContain('9.5%')
+    expect(warning?.textContent).toContain('15%')
+    expect(root.querySelector('[data-testid="capacity-waiting"]')?.textContent).toContain('4')
   })
 
   it("opens with the CEO's latest report", async () => {
