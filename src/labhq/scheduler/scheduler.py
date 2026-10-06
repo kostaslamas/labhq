@@ -187,13 +187,7 @@ class Scheduler:
             if live.timed_out_at is not None:
                 await self._mark_timed_out(db, live)
             await release(db, live.run_id)
-            await continue_task(
-                db,
-                self._clock,
-                live.run_id,
-                max_unreported_runs=self._settings.max_unreported_runs,
-                stall_alert_runs=self._settings.stall_alert_runs,
-            )
+            await self._continue(db, live.run_id)
             await db.commit()
         report.finished.append(live.run_id)
 
@@ -260,6 +254,17 @@ class Scheduler:
         )
         report.started.append(run_id)
 
+    async def _continue(self, db: AsyncSession, run_id: int) -> None:
+        if not self._settings.auto_next_turn:
+            return
+        await continue_task(
+            db,
+            self._clock,
+            run_id,
+            max_unreported_runs=self._settings.max_unreported_runs,
+            stall_alert_runs=self._settings.stall_alert_runs,
+        )
+
     async def _release_failed(self, run_id: int, error: Exception | None) -> None:
         async with self._sessions() as db:
             if error is not None:
@@ -274,13 +279,7 @@ class Scheduler:
                     .execution_options(synchronize_session=False)
                 )
             await release(db, run_id)
-            await continue_task(
-                db,
-                self._clock,
-                run_id,
-                max_unreported_runs=self._settings.max_unreported_runs,
-                stall_alert_runs=self._settings.stall_alert_runs,
-            )
+            await self._continue(db, run_id)
             await db.commit()
 
 

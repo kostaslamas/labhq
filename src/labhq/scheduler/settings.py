@@ -19,9 +19,11 @@ class SchedulerSettings(BaseSettings):
     # Time a timed-out run gets to honour its interrupt before it is abandoned.
     interrupt_grace_seconds: int = Field(default=30, gt=0)
     tick_seconds: float = Field(default=5.0, gt=0)
-    # An agent that ends a turn without a handoff gets another turn. 0 keeps it going until
-    # the task is resolved (the owner's choice); its budget and the plan-usage cap still stop
-    # it. A positive limit marks the task blocked and sends it to the reviewer instead.
+    # An agent that ends a turn without a handoff gets another turn (the owner's choice, #140).
+    # Turning this off leaves the next turn to a wakeup from somewhere else.
+    auto_next_turn: bool = True
+    # 0 keeps an agent going until its task is resolved; its budget and the plan-usage cap still
+    # stop it. A positive limit marks the task blocked and sends it to the reviewer instead.
     max_unreported_runs: int = Field(default=0, ge=0)
     # Every this many silent turns the reviewer (the parent task's assignee) is woken to look
     # at the stuck task while it keeps going. 0 never alerts.
