@@ -1,18 +1,21 @@
 """An org to put to work: a CEO, two projects with their teams, and role tools bound to it."""
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable, Iterable
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adapters import AgentTool
+from labhq.adoption import Adoptions
 from labhq.agenttools import AgentToolRegistry, ToolContext, bind
 from labhq.approvals import ApprovalService, default_actions, default_confirmations
 from labhq.approvals.executors import Executor, default_executors
 from labhq.approvals.registry import Registry
+from labhq.ceoorg.settings import CeoSettings
 from labhq.clock import FakeClock
 from labhq.db import create_engine, session_factory
 from labhq.db.enums import AgentStatus
@@ -20,6 +23,23 @@ from labhq.db.models import Agent, Approval, Project, Task, WakeupRequest
 from labhq.hierarchy import HierarchySettings
 from labhq.prompts import RoleRegistry
 from labhq.roles import RoleServices, register
+
+CEILING = 5_000_000
+
+
+@dataclass(frozen=True)
+class OrgServices(RoleServices):
+    """The role services with the process table replaced by a list the test fills."""
+
+    processes: Callable[[], Iterable[Any]] = list
+
+    def adoptions(self, context: ToolContext) -> Adoptions:
+        return Adoptions(
+            context.sessions,
+            clock=context.clock,
+            approvals=self.approvals(context),
+            processes=self.processes,
+        )
 
 
 @dataclass
@@ -42,6 +62,10 @@ class Org:
     shop_manager: int
     shop_worker: int
     shop_task: int
+    # The one folder the CEO may browse and add projects from.
+    root: Path
+    # What the process table holds: a test appends the CLI processes it wants discovered.
+    processes: list[Any]
 
     def tool(self, tool: str, agent_id: int) -> AgentTool:
         (spec,) = [spec for spec in self.tools if spec.name == tool]
@@ -106,8 +130,11 @@ async def _add[T](db: AsyncSession, row: T) -> T:
 
 
 @pytest.fixture
-async def org(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) -> Org:
+async def org(sessions: async_sessionmaker[AsyncSession], clock: FakeClock, tmp_path: Path) -> Org:
     now = clock.now()
+    root = tmp_path / "projects"
+    root.mkdir()
+    processes: list[Any] = []
     async with sessions() as db:
         site = await _add(
             db, Project(name="site", repo_path="/srv/site", created_at=now, updated_at=now)
@@ -143,8 +170,11 @@ async def org(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) -> O
             confirmations=default_confirmations.copy(),
         )
 
-    services = RoleServices(
+    services = OrgServices(
         approvals=approvals,
+        ceo_settings=lambda: CeoSettings(budget_ceiling_micros=CEILING),
+        browse_roots=lambda: [root],
+        processes=lambda: processes,
         hierarchy_settings=lambda: HierarchySettings(
             approve_new_agents=True, max_team_size=8, org_adapter="fake"
         ),
@@ -169,4 +199,6 @@ async def org(sessions: async_sessionmaker[AsyncSession], clock: FakeClock) -> O
         shop_manager.id,
         shop_worker.id,
         shop_task.id,
+        root,
+        processes,
     )

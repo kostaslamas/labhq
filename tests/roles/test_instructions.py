@@ -21,6 +21,18 @@ from labhq.runs import RunService
 
 IT_CONFIG = {PERMISSION_MODE_KEY: READ_ONLY_MODE}
 ROLES = ["ceo", "manager", "lead", "worker", "it"]
+CEO_ORG_TOOLS = (
+    "discover_projects",
+    "add_project",
+    "adopt_session",
+    "assign_saved_session",
+    "staff_team",
+    "create_agent",
+    "request_merge",
+    "start_meeting",
+    "set_priority",
+    "set_budget",
+)
 
 
 def test_every_role_has_its_instruction_registered() -> None:
@@ -96,6 +108,7 @@ async def test_each_roles_run_carries_its_instruction(
                 "delegate_task",
                 "task_overview",
                 "review_task",
+                *CEO_ORG_TOOLS,
                 "report_to_owner",
                 "owner_decision",
             },

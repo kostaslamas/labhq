@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from labhq.agenttools import AgentToolSpec, ToolContext
 from labhq.agenttools.whoami import NoArguments
+from labhq.ceoorg.record import record_action
 from labhq.ceosessions import ceo_session_name
 from labhq.db.enums import AgentStatus, RunStatus
 from labhq.db.models import Agent, Project, Run, RunEvent
@@ -54,7 +55,8 @@ async def list_projects(context: ToolContext, arguments: NoArguments) -> str:
         led = (
             f"manager agent {manager.id} ({manager.status})"
             if manager is not None
-            else "no manager"
+            else "NO MANAGER: give it one with `assign_manager`, `adopt_session` or "
+            "`assign_saved_session`"
         )
         lines.append(f"- {project.name} (id {project.id}, {project.status}): {led}")
     return "\n".join(lines)
@@ -128,16 +130,16 @@ def ceo_tools(services: RoleServices) -> list[AgentToolSpec]:
 
     @refusing
     async def assign_manager(context: ToolContext, arguments: AssignManager) -> str:
-        assignment = await services.hierarchy(context).assign_manager(
+        # The owner lets the CEO assign managers unasked, so the manager starts active.
+        assignment = await services.ceo_hierarchy(context).assign_manager(
             arguments.project, title=arguments.title
         )
-        manager = assignment.manager
-        if assignment.approval is None:
-            return f"Agent {manager.id} now manages {arguments.project}."
-        return (
-            f"Agent {manager.id} will manage {arguments.project} once the owner approves "
-            f"A{assignment.approval.id} ({assignment.approval.risk_class})."
+        await record_action(
+            context,
+            "assign_manager",
+            {"project": arguments.project, "manager": assignment.manager.id},
         )
+        return f"Agent {assignment.manager.id} now manages {arguments.project}."
 
     return [
         AgentToolSpec(
@@ -159,8 +161,7 @@ def ceo_tools(services: RoleServices) -> list[AgentToolSpec]:
         AgentToolSpec(
             name="assign_manager",
             description=(
-                "Give a project without a manager its manager, reporting to you. "
-                "The new manager waits for the owner's approval."
+                "Give a project without a manager its manager, reporting to you. No approval."
             ),
             input_model=AssignManager,
             roles=frozenset({CEO}),

@@ -2,10 +2,22 @@
 
 from labhq.db.enums import AgentStatus, ApprovalStatus, RiskClass, RunStatus
 from labhq.db.models import Agent, Project, Run, RunEvent
-from labhq.hierarchy import CREATE_AGENT, CREATE_TEAM
+from labhq.hierarchy import CREATE_TEAM
 from tests.roles.conftest import Org
 
 NEW_PROJECT = "blog"
+CEO_ORG_TOOLS = (
+    "discover_projects",
+    "add_project",
+    "adopt_session",
+    "assign_saved_session",
+    "staff_team",
+    "create_agent",
+    "request_merge",
+    "start_meeting",
+    "set_priority",
+    "set_budget",
+)
 
 
 async def add_project(org: Org, name: str) -> None:
@@ -15,19 +27,19 @@ async def add_project(org: Org, name: str) -> None:
         await db.commit()
 
 
-async def test_assign_manager_leaves_a_pending_light_approval(org: Org) -> None:
+async def test_assign_manager_starts_the_manager_without_an_approval(org: Org) -> None:
     await add_project(org, NEW_PROJECT)
 
     answer = await org.call("assign_manager", org.ceo, project=NEW_PROJECT)
 
-    [approval] = await org.approvals()
-    assert (approval.type, approval.risk_class) == (CREATE_AGENT, RiskClass.LIGHT)
-    assert approval.status is ApprovalStatus.PENDING
-    assert approval.requested_by_agent_id == org.ceo
-    manager = await org.get(Agent, approval.payload["agent_id"])
-    assert (manager.role, manager.reports_to) == ("manager", org.ceo)
-    assert manager.status is AgentStatus.PENDING_APPROVAL
-    assert f"A{approval.id}" in answer
+    assert await org.approvals() == []
+    [manager] = [
+        agent
+        for agent in await org.all(Agent)
+        if agent.role == "manager" and agent.title == "blog manager"
+    ]
+    assert (manager.reports_to, manager.status) == (org.ceo, AgentStatus.ACTIVE)
+    assert f"Agent {manager.id} now manages {NEW_PROJECT}" in answer
 
 
 async def test_assign_manager_refuses_a_project_that_has_one(org: Org) -> None:
@@ -136,6 +148,7 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         "delegate_task",
         "task_overview",
         "review_task",
+        *CEO_ORG_TOOLS,
         "report_to_owner",
         "owner_decision",
     }

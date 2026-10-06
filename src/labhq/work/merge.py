@@ -67,6 +67,7 @@ async def request_merge(
     *,
     target: str = DEFAULT_TARGET,
     remote: str = "origin",
+    requested_by: int | None = None,
 ) -> Approval:
     """Request the heavy `merge` approval for a task's branch into `target`.
 
@@ -86,4 +87,4 @@ async def request_merge(
     if db.bind is None:
         raise RuntimeError("request_merge needs a session bound to an engine")
     service = ApprovalService(async_sessionmaker(db.bind, expire_on_commit=False), clock=clock)
-    return await service.request(MERGE_ACTION, payload, task_id=task.id)
+    return await service.request(MERGE_ACTION, payload, task_id=task.id, agent_id=requested_by)
