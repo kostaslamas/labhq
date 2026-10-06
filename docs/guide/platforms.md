@@ -8,10 +8,12 @@ labhq runs where Python 3.12 and `uv` run. How well each platform is supported f
 | Linux | Official |
 | macOS | Official |
 | Windows through WSL2 or Docker Desktop | Official |
-| Native Windows | Best effort, tested in the CI matrix |
+| Native Windows | Best effort; its CI job is paused for now |
 
 The `Platforms` workflow (`.github/workflows/platforms.yml`) runs the whole test suite on
-`ubuntu-latest`, `macos-latest` and `windows-latest` on every push and pull request.
+`ubuntu-latest` and `macos-latest` on every push and pull request. The `windows-latest` job is
+paused by the owner's decision for the current phase; native Windows support is documented
+below as before, and the job returns by adding `windows-latest` back to the matrix.
 
 ## Windows
 

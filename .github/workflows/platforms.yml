@@ -21,9 +21,11 @@ jobs:
       # One platform's failure must not hide another's.
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        # Windows is paused by the owner's decision for the current phase (its jobs take
+        # about 45 minutes). To re-enable it, add windows-latest back to this list.
+        os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    # Native Windows runs the suite in about 26 minutes; leave room before the cut-off.
+    # Leave room before the cut-off; native Windows, when enabled, is the slowest.
     timeout-minutes: 60
     env:
       LABHQ_DATA_DIR: ${{ github.workspace }}/.ci-data
