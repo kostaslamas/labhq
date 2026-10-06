@@ -105,7 +105,7 @@ async def test_the_owner_returns_a_task_with_feedback_to_its_manager(
         wakeup = await db.scalar(select(WakeupRequest).where(WakeupRequest.task_id == task_id))
     assert comment is not None and comment.body == "Add keyboard support"
     assert wakeup is not None
-    assert (wakeup.agent_id, wakeup.source) == (manager_id, WakeupSource.COMMENT)
+    assert (wakeup.agent_id, wakeup.source) == (manager_id, WakeupSource.TASK_RETURNED)
 
 
 async def test_an_unknown_task_is_not_found(signed_in: TestClient) -> None:
