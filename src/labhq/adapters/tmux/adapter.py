@@ -53,6 +53,9 @@ from labhq.clock import Clock
 
 INTERRUPT_REASON = "interrupt_sent"
 SIGNAL_FILE = "turn-end.json"
+# Written when a persistent pane's turn ends, removed when the next one starts: its presence
+# means the pane is idle and says since when (`labhq.adapters.tmux.idle`).
+IDLE_FILE = "idle-since"
 STATUSLINE_FILE = "statusline.json"
 # The last lines of the pane are what a limit notice or a usage report occupies.
 FINAL_SCREEN_LINES = 80
@@ -184,6 +187,7 @@ class TmuxAdapter:
         variables = session_environment(self._environ)
         if self._persistent:
             variables["LABHQ_CEO_SESSION"] = name
+            (run_dir / IDLE_FILE).unlink(missing_ok=True)
             signal = self._read(SIGNAL_FILE)
             prior = _json_object(signal) if signal else None
             for filename in (SIGNAL_FILE, STATUSLINE_FILE):
@@ -285,6 +289,8 @@ class TmuxAdapter:
             await asyncio.to_thread(self._server.kill_session, name)
         if self._run_dir is not None and not self._persistent:
             shutil.rmtree(self._run_dir, ignore_errors=True)
+        if self._run_dir is not None and self._persistent and name is not None:
+            (self._run_dir / IDLE_FILE).write_text(self._clock.now().isoformat(), encoding="utf-8")
 
     def _argv(self, kind: AgentKind, request: RunRequest, run_dir: Path) -> list[str]:
         stored_kind, stored_id = split_session(request.resume_session_id)
