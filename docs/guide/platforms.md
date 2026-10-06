@@ -76,12 +76,14 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
-| `tests/adoption/test_checkout.py` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_checkout.py::test_git_push_from_the_adopted_agent_fails_through_the_environment_alone` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_checkout.py::test_the_rules_file_is_excluded_and_git_status_does_not_show_it` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adoption/test_checkout.py::test_uncommitted_changes_stay_unchanged_and_appear_in_the_status` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_checks.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_move.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_observe.py::test_ending_an_agent_its_parent_never_reaps_returns_once_it_is_a_zombie` | POSIX zombie processes and /bin/sh |
-| `tests/adoption/test_saved.py` | saved CLI sessions run through the tmux adapter |
-| `tests/api/authoring/test_adoption.py::test_project_lists_and_requests_an_exact_saved_session` | saved CLI sessions run through the tmux adapter |
+| `tests/adoption/test_saved.py::test_approved_saved_session_starts_as_manager_with_selected_id` | saved CLI sessions run through the tmux adapter |
+| `tests/adoption/test_saved.py::test_discovery_lists_only_sessions_in_the_chosen_directory` | saved CLI sessions run through the tmux adapter |
 | `tests/api/test_serve.py::test_labhq_serve_answers_health_and_mcp_on_one_port` | POSIX stop signals |
 | `tests/callcenter/screens/test_call_center_reads.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/callcenter/screens/test_calls_in_tmux.py` | the tmux adapter does not run on native Windows (ADR 0003) |

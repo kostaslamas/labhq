@@ -1,6 +1,6 @@
 """Signed-in directory picker for projects on the machine running labhq."""
 
-from pathlib import Path
+from pathlib import Path, PurePath, PureWindowsPath
 
 from fastapi import APIRouter, Query, Request
 from pydantic import BaseModel
@@ -31,10 +31,9 @@ def repository_browser_suggest(
     if len(needle) < 2:
         return []
     roots = _roots(request)
-    if query.startswith("/"):
-        typed = Path(query)
-        parent = typed if query.endswith("/") else typed.parent
-        prefix = "" if query.endswith("/") else typed.name.casefold()
+    typed_path = typed_directory(query)
+    if typed_path is not None:
+        parent, prefix = Path(typed_path[0]), typed_path[1]
         root = _within_root(parent, roots)
         if root is None or any(part.startswith(".") for part in parent.relative_to(root).parts):
             return []
@@ -74,6 +73,21 @@ def repository_browser_suggest(
             continue
         stack.extend((child, depth + 1) for child in reversed(children))
     return found
+
+
+def typed_directory(query: str, path_type: type[PurePath] = Path) -> tuple[PurePath, str] | None:
+    """Split a typed absolute path into the folder to list and the name prefix to match.
+
+    Windows paths start with a drive and use both separators, so a leading "/" test would
+    send every one of them to the name search. A trailing separator means "list this folder".
+    """
+    typed = path_type(query)
+    if not typed.is_absolute():
+        return None
+    separators = "/\\" if issubclass(path_type, PureWindowsPath) else "/"
+    if query.endswith(tuple(separators)):
+        return typed, ""
+    return typed.parent, typed.name.casefold()
 
 
 def _roots(request: Request) -> list[Path]:
