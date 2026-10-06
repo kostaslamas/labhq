@@ -10,6 +10,7 @@ from labhq.agenttools import default_registry as default_tools
 from labhq.prompts import RoleRegistry, default_roles
 from labhq.roles.ceo_org import ceo_org_tools
 from labhq.roles.common import RoleServices, agent_reference
+from labhq.roles.departments import department_tools
 from labhq.roles.instructions import INSTRUCTIONS, register_instructions
 from labhq.roles.it import it_tools
 from labhq.roles.org import ceo_tools, manager_tools
@@ -21,6 +22,7 @@ def role_tools(services: RoleServices) -> list[AgentToolSpec]:
     return [
         *ceo_tools(services),
         *ceo_org_tools(services),
+        *department_tools(services),
         *report_tools(),
         *manager_tools(services),
         *task_tools(),

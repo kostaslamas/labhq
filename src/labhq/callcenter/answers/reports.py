@@ -9,13 +9,14 @@ wakes the CEO or any agent.
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.callcenter.answers.phrasing import clean
 from labhq.clock import Clock
-from labhq.db.enums import AgentStatus, ProjectStatus
-from labhq.db.models import Agent, Comment, Project, Run, StatusUpdate, Task
+from labhq.db.enums import AgentStatus, DepartmentStatus, ProjectStatus
+from labhq.db.models import Agent, Comment, Department, Project, Run, StatusUpdate, Task
+from labhq.departments import find_department
 from labhq.speech import join_sentences, say_ago, speakable
 from labhq.work import WorkError, find_project
 
@@ -41,12 +42,23 @@ def _reporter(agent: Agent) -> str:
     return f"{clean(agent.title)}, the {clean(agent.role)}"
 
 
-async def _comment_reports(db: AsyncSession, project_id: int) -> list[Report]:
+type Scope = tuple[ColumnElement[bool], ColumnElement[bool]]
+
+
+def _of_project(project_id: int) -> Scope:
+    return Task.project_id == project_id, Agent.project_id == project_id
+
+
+def _of_department(department_id: int) -> Scope:
+    return Task.department_id == department_id, Agent.department_id == department_id
+
+
+async def _comment_reports(db: AsyncSession, tasks_in: ColumnElement[bool]) -> list[Report]:
     rows = await db.execute(
         select(Comment, Task, Agent)
         .join(Task, Task.id == Comment.task_id)
         .join(Agent, Agent.id == Comment.author_agent_id)
-        .where(Task.project_id == project_id)
+        .where(tasks_in)
         .order_by(Comment.created_at.desc(), Comment.id.desc())
         .limit(SCANNED)
     )
@@ -62,11 +74,11 @@ async def _comment_reports(db: AsyncSession, project_id: int) -> list[Report]:
     ]
 
 
-async def _status_reports(db: AsyncSession, project_id: int) -> list[Report]:
+async def _status_reports(db: AsyncSession, agents_in: ColumnElement[bool]) -> list[Report]:
     rows = await db.execute(
         select(StatusUpdate, Agent)
         .join(Agent, Agent.id == StatusUpdate.agent_id)
-        .where(Agent.project_id == project_id)
+        .where(agents_in)
         .order_by(StatusUpdate.observed_at.desc(), StatusUpdate.id.desc())
         .limit(SCANNED)
     )
@@ -103,15 +115,16 @@ async def _say_report(db: AsyncSession, clock: Clock, report: Report) -> list[st
     return parts
 
 
-async def _project_reports(db: AsyncSession, clock: Clock, project: Project) -> list[str]:
-    found = await _comment_reports(db, project.id) + await _status_reports(db, project.id)
+async def _scope_reports(db: AsyncSession, clock: Clock, label: str, scope: Scope) -> list[str]:
+    tasks_in, agents_in = scope
+    found = await _comment_reports(db, tasks_in) + await _status_reports(db, agents_in)
     latest: dict[int, Report] = {}
     for report in sorted(found, key=lambda report: report.at, reverse=True):
         if report.agent.status is not AgentStatus.RETIRED:
             latest.setdefault(report.agent.id, report)
     if not latest:
-        return [f"In {clean(project.name)}, nobody has reported yet"]
-    parts = [f"Reports in {clean(project.name)}"]
+        return [f"In {clean(label)}, nobody has reported yet"]
+    parts = [f"Reports in {clean(label)}"]
     for report in list(latest.values())[:AGENTS_PER_PROJECT]:
         parts += await _say_report(db, clock, report)
     if len(latest) > AGENTS_PER_PROJECT:
@@ -119,22 +132,38 @@ async def _project_reports(db: AsyncSession, clock: Clock, project: Project) -> 
     return parts
 
 
+async def _named(db: AsyncSession, reference: str) -> tuple[str, Scope]:
+    """The project, or else the department, a caller named."""
+    try:
+        project = await find_project(db, reference)
+    except WorkError:
+        department = await find_department(db, reference)
+        return department.name, _of_department(department.id)
+    return project.name, _of_project(project.id)
+
+
 async def reports(db: AsyncSession, clock: Clock, project: str | None = None) -> str:
-    """The latest report of each agent, per project, or for the one project named."""
+    """The latest report of each agent, per project and department, or for the one named."""
+    scopes: list[tuple[str, Scope]] = []
     if project:
         try:
-            projects = [await find_project(db, project)]
+            scopes = [await _named(db, project)]
         except WorkError as error:
             return speakable(f"I could not find that project. {error}.")
     else:
-        projects = list(
-            await db.scalars(
-                select(Project).where(Project.status == ProjectStatus.ACTIVE).order_by(Project.name)
-            )
-        )
-    if not projects:
+        for each in await db.scalars(
+            select(Project).where(Project.status == ProjectStatus.ACTIVE).order_by(Project.name)
+        ):
+            scopes.append((each.name, _of_project(each.id)))
+        for unit in await db.scalars(
+            select(Department)
+            .where(Department.status == DepartmentStatus.ACTIVE)
+            .order_by(Department.name)
+        ):
+            scopes.append((unit.name, _of_department(unit.id)))
+    if not scopes:
         return speakable("There are no projects yet.")
     parts: list[str] = []
-    for each in projects:
-        parts += await _project_reports(db, clock, each)
+    for label, scope in scopes:
+        parts += await _scope_reports(db, clock, label, scope)
     return speakable(join_sentences(parts))

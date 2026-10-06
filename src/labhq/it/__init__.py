@@ -1,6 +1,7 @@
 """The IT department's agent and what wakes it (plan §2.2). Its tools live in `labhq.roles`."""
 
-from labhq.it.agent import IT_CONFIG, ensure_it_agent, find_it_agent
+from labhq.departments import IT_CONFIG
+from labhq.it.agent import ensure_it_agent, find_it_agent
 from labhq.it.department import ItDepartment, ItPass, it_step
 from labhq.it.settings import ItSettings
 from labhq.it.wakeups import (

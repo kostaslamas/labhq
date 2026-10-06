@@ -10,12 +10,19 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from labhq.callcenter.status import IngestResult, ingest_status
 from labhq.cli.workspace import plain_status_path, project_worktrees
 from labhq.clock import Clock
-from labhq.db.models import Project, Run, Task
+from labhq.db.models import Department, Project, Run, Task
 from labhq.settings import Settings
 from labhq.work import has_git_commit
 from labhq.worktrees import GitError
 
 log = logging.getLogger(__name__)
+
+
+async def _owner(db: AsyncSession, task: Task) -> Project | Department:
+    if task.department_id is not None:
+        return await db.get_one(Department, task.department_id)
+    assert task.project_id is not None
+    return await db.get_one(Project, task.project_id)
 
 
 async def ingest_statuses(
@@ -32,9 +39,12 @@ async def ingest_statuses(
             if run.task_id is None:
                 continue
             task = await db.get_one(Task, run.task_id)
-            project = await db.get_one(Project, task.project_id)
-            folder = Path(project.repo_path)
-            if folder.is_dir() and not await asyncio.to_thread(has_git_commit, folder):
+            owner = await _owner(db, task)
+            # A department's folder is plain: there is no worktree to look for.
+            folder = Path(owner.folder if isinstance(owner, Department) else owner.repo_path)
+            if folder.is_dir() and (
+                isinstance(owner, Department) or not await asyncio.to_thread(has_git_commit, folder)
+            ):
                 result = await ingest_status(
                     db,
                     clock,
@@ -47,10 +57,11 @@ async def ingest_statuses(
                 if result.changed:
                     changed.append(result)
                 continue
+            if isinstance(owner, Department):
+                # Its folder is missing: there is nothing to ingest.
+                continue
             try:
-                worktree = await asyncio.to_thread(
-                    project_worktrees(settings, project).find, task.id
-                )
+                worktree = await asyncio.to_thread(project_worktrees(settings, owner).find, task.id)
             except (GitError, OSError):
                 # A run that failed because its repository vanished must still report that.
                 log.warning("cannot read the worktree of task %s; no status ingested", task.id)

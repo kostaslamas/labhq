@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from labhq.adapters import AdapterRegistry, AgentTool
 from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
-from labhq.db.models import Agent, Project, Task
+from labhq.db.models import Agent, Department, Project, Task
 from labhq.economy import RtkHook, rtk_hook
 from labhq.guards import push_guard_matcher
 from labhq.runs import ActiveRun, RunService
@@ -114,6 +114,12 @@ class WorkspaceRunService(RunService):
     async def _task_workspace(self, task_id: int) -> tuple[Path, bool]:
         async with self._workspace_sessions() as db:
             task = await db.get_one(Task, task_id)
+            if task.department_id is not None:
+                # Non-code work never gets a worktree, whatever the folder holds.
+                department = await db.get_one(Department, task.department_id)
+                folder = Path(department.folder)
+                folder.mkdir(parents=True, exist_ok=True)
+                return folder, True
             project = await db.get_one(Project, task.project_id)
         folder = Path(project.repo_path)
         if not folder.is_dir():

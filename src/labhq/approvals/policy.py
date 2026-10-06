@@ -48,6 +48,17 @@ PHASE_1_ACTIONS: tuple[ActionType, ...] = (
     ActionType("host_intervention", RiskClass.HEAVY),
 )
 
+# Outward-facing actions of departments (issue #171): they reach people or services outside
+# labhq, so each is heavy and needs the owner's passkey. No executor is registered yet: they
+# can be requested and approved, and executors arrive later as registrations.
+OUTWARD_ACTIONS: tuple[ActionType, ...] = (
+    ActionType("send_email", RiskClass.HEAVY),
+    ActionType("send_message", RiskClass.HEAVY),
+    ActionType("publish", RiskClass.HEAVY),
+    ActionType("make_payment", RiskClass.HEAVY),
+    ActionType("sign_up_service", RiskClass.HEAVY),
+)
+
 # The local operator at the CLI holds the machine already. The Call Center voice line is
 # light only (plan §5, rule 7), and so is a tap in the web UI. A passkey is the strong
 # confirmation that may approve heavy: the API accepts it only after a step-up assertion
@@ -66,7 +77,7 @@ PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
 )
 
 default_actions = Registry[ActionType]("action type")
-for _action in PHASE_1_ACTIONS:
+for _action in (*PHASE_1_ACTIONS, *OUTWARD_ACTIONS):
     default_actions.register(_action.key, _action)
 
 default_confirmations = Registry[ConfirmationKind]("confirmation kind")

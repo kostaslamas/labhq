@@ -1,14 +1,17 @@
 """Task handoffs travel up the reporting tree; rejected work travels back down."""
 
+from pathlib import Path
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.ceoreports import record_report
 from labhq.clock import Clock
 from labhq.db.enums import TaskStatus, WakeupSource
-from labhq.db.models import Agent, Comment, Task
+from labhq.db.models import Agent, Comment, Department, Task
 from labhq.hierarchy.roles import CEO
 from labhq.scheduler import Wakeup, enqueue
+from labhq.work.deliverables import default_deliverables, has_document
 from labhq.work.service import WorkError
 
 CLOSED = frozenset({TaskStatus.DONE, TaskStatus.CANCELLED})
@@ -62,6 +65,15 @@ async def _wake(
         result.request.reason += f"\nTask #{comment.task_id} changed."
 
 
+async def _check_deliverable(db: AsyncSession, task: Task) -> None:
+    """A task that owes a document cannot be reported ready before the file exists."""
+    if not default_deliverables.get(task.deliverable).needs_document:
+        return
+    department = await db.get(Department, task.department_id) if task.department_id else None
+    if department is None or not has_document(Path(department.folder), task.deliverable_ref):
+        raise WorkError(f"task {task.id} delivers a document: save it with `write_document` first")
+
+
 async def report_task(
     db: AsyncSession, clock: Clock, task: Task, agent_id: int, *, summary: str, blocked: bool
 ) -> None:
@@ -75,6 +87,8 @@ async def report_task(
         )
         if unfinished is not None:
             raise WorkError(f"task {task.id} still has unfinished child task {unfinished}")
+    if not blocked:
+        await _check_deliverable(db, task)
     reviewer_id, wake_task_id = await reviewer(db, task)
     task.status = TaskStatus.BLOCKED if blocked else TaskStatus.IN_REVIEW
     task.updated_at = clock.now()
@@ -96,8 +110,11 @@ async def review_task(
     if accept and task.status is TaskStatus.BLOCKED:
         raise WorkError(f"blocked task {task.id} cannot be accepted")
     reviewer_agent = await db.get_one(Agent, agent_id)
-    # The CEO can recommend acceptance, but the owner alone closes a root objective.
-    owner_decides = reviewer_agent.role == CEO and task.parent_id is None
+    # The CEO can recommend acceptance, but the owner alone closes a root project objective.
+    # A department's root task is the CEO's to close: it runs departments unasked.
+    owner_decides = (
+        reviewer_agent.role == CEO and task.parent_id is None and task.department_id is None
+    )
     if not (accept and owner_decides):
         task.status = TaskStatus.DONE if accept else TaskStatus.TODO
     task.updated_at = clock.now()
@@ -115,9 +132,36 @@ async def review_task(
             refs=[f"T{task.id}"],
             task_id=task.id,
         )
+    if accept and reviewer_agent.role == CEO and task.department_id is not None:
+        await _report_department_result(db, clock, task, agent_id, feedback)
     if not accept:
         assert task.assignee_id is not None
         await _wake(db, clock, agent_id=task.assignee_id, task_id=task.id, comment=comment)
+
+
+async def _report_department_result(
+    db: AsyncSession, clock: Clock, task: Task, agent_id: int, feedback: str
+) -> None:
+    """Tell the owner what a department delivered: the Call Center answers status from it."""
+    department = await db.get_one(Department, task.department_id)
+    delivered = await db.scalar(
+        select(Comment.body)
+        .where(Comment.task_id == task.id, Comment.author_agent_id == task.assignee_id)
+        .order_by(Comment.id.desc())
+        .limit(1)
+    )
+    where = f" ({task.deliverable_ref})" if task.deliverable_ref else ""
+    await record_report(
+        db,
+        clock,
+        agent_id=agent_id,
+        text=(
+            f"{department.name} delivered T{task.id} {task.title}, a {task.deliverable}"
+            f"{where}.\n{delivered or feedback}"
+        ),
+        refs=[f"T{task.id}", department.name],
+        task_id=task.id,
+    )
 
 
 async def owner_decide(

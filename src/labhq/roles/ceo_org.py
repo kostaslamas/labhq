@@ -116,7 +116,7 @@ class SetBudget(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     scope: BudgetScope
-    id: int | str = Field(description="An agent's id, or a project's name or id.")
+    id: int | str = Field(description="An agent's id, or a project's or department's name or id.")
     micros: int = Field(gt=0, description="The budget in micro-USD (1 USD = 1,000,000).")
 
 
@@ -398,8 +398,8 @@ def ceo_org_tools(services: RoleServices) -> list[AgentToolSpec]:
         ),
         spec(
             "set_budget",
-            "Set an agent's or a project's budget in micro-USD, up to the owner's ceiling. "
-            "Never your own.",
+            "Set an agent's, project's or department's budget in micro-USD, up to the owner's "
+            "ceiling. Never your own.",
             SetBudget,
             set_budget_tool,
         ),

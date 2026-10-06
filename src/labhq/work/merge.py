@@ -77,6 +77,8 @@ async def request_merge(
     task = await db.get(Task, task_id)
     if task is None:
         raise WorkError(f"no task {task_id}")
+    if task.project_id is None:
+        raise WorkError(f"task {task_id} belongs to a department and has no branch to merge")
     project = await db.get_one(Project, task.project_id)
     if not await asyncio.to_thread(has_git_commit, Path(project.repo_path)):
         raise WorkError(f"project {project.name!r} has no Git branch to merge")

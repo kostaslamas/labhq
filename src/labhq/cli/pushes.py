@@ -33,6 +33,8 @@ async def _push_target(db: AsyncSession, settings: Settings, run: Run) -> tuple[
     if run.status is not RunStatus.SUCCEEDED or run.task_id is None:
         return None
     task = await db.get_one(Task, run.task_id)
+    if task.project_id is None:
+        return None
     project = await db.get_one(Project, task.project_id)
     if not await asyncio.to_thread(has_git_commit, Path(project.repo_path)):
         return None
