@@ -1413,6 +1413,11 @@ export interface components {
       team: components['schemas']['TeamMember'][]
     }
     /**
+     * ProposalStatus
+     * @enum {string}
+     */
+    ProposalStatus: 'pending' | 'sent' | 'rejected'
+    /**
      * QuestionStatus
      * @enum {string}
      */
@@ -1648,6 +1653,11 @@ export interface components {
        * @description Every value of `ProjectStatus`.
        */
       project_status: components['schemas']['ProjectStatus'][]
+      /**
+       * Proposal Status
+       * @description Every value of `ProposalStatus`.
+       */
+      proposal_status: components['schemas']['ProposalStatus'][]
       /**
        * Question Status
        * @description Every value of `QuestionStatus`.

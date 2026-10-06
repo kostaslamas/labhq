@@ -68,6 +68,12 @@ export const statusMap: StatusMapping<Vocabulary> = {
     paused: 'idle',
     archived: 'done',
   },
+  proposal_status: {
+    // A Call Center wording waits for the owner's yes before the CEO gets it.
+    pending: 'waiting_on_you',
+    sent: 'done',
+    rejected: 'idle',
+  },
   question_status: {
     pending: 'waiting_on_you',
     answered: 'done',
