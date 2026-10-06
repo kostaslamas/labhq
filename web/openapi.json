@@ -614,7 +614,7 @@
         "type": "object"
       },
       "BudgetScope": {
-        "enum": ["agent", "project"],
+        "enum": ["agent", "project", "department"],
         "title": "BudgetScope",
         "type": "string"
       },
@@ -945,6 +945,11 @@
         "required": ["task_id", "title", "branch", "commits", "cost_micros", "done_at"],
         "title": "Deliverable",
         "type": "object"
+      },
+      "DepartmentStatus": {
+        "enum": ["active", "paused", "archived"],
+        "title": "DepartmentStatus",
+        "type": "string"
       },
       "EnrollOptionsBody": {
         "properties": {
@@ -2560,6 +2565,14 @@
             "title": "Call Status",
             "type": "array"
           },
+          "department_status": {
+            "description": "Every value of `DepartmentStatus`.",
+            "items": {
+              "$ref": "#/components/schemas/DepartmentStatus"
+            },
+            "title": "Department Status",
+            "type": "array"
+          },
           "host_status": {
             "description": "Every value of `HostStatus`.",
             "items": {
@@ -2646,6 +2659,7 @@
           "approval_status",
           "call_request_status",
           "call_status",
+          "department_status",
           "host_status",
           "incident_status",
           "meeting_status",

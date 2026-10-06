@@ -9,6 +9,12 @@ class ProjectStatus(StrEnum):
     ARCHIVED = "archived"
 
 
+class DepartmentStatus(StrEnum):
+    ACTIVE = "active"
+    PAUSED = "paused"
+    ARCHIVED = "archived"
+
+
 class AgentStatus(StrEnum):
     # New agents need approval by default (plan §5, rule 4).
     PENDING_APPROVAL = "pending_approval"
@@ -87,6 +93,7 @@ class IncidentStatus(StrEnum):
 class BudgetScope(StrEnum):
     AGENT = "agent"
     PROJECT = "project"
+    DEPARTMENT = "department"
 
 
 class CallStatus(StrEnum):
