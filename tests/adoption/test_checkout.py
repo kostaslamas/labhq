@@ -15,8 +15,6 @@ from labhq.db.models import StatusUpdate
 from labhq.worktrees.git import run_git
 from tests.adoption.conftest import World, adopt, wait_for
 
-pytestmark = pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
-
 
 def refs(world: World) -> str:
     remote = world.repo.parent / "remote.git"
@@ -49,6 +47,7 @@ def test_a_plain_project_accepts_an_agent_in_a_subfolder(tmp_path: Path) -> None
     assert not works_on_project(unrelated, project)
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_the_rules_file_is_excluded_and_git_status_does_not_show_it(world: World) -> None:
     await adopt(world)
 
@@ -63,6 +62,7 @@ async def test_the_rules_file_is_excluded_and_git_status_does_not_show_it(world:
     assert ".labhq" not in run_git("diff", "--cached", "--name-only", cwd=world.repo)
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_uncommitted_changes_stay_unchanged_and_appear_in_the_status(world: World) -> None:
     (world.repo / "README.md").write_text("half-done edit\n", encoding="utf-8")
     (world.repo / "notes.txt").write_text("untracked notes\n", encoding="utf-8")
@@ -82,6 +82,7 @@ async def test_uncommitted_changes_stay_unchanged_and_appear_in_the_status(world
     assert "README.md" in status_file
 
 
+@pytest.mark.posix_only("the tmux adapter does not run on native Windows (ADR 0003)")
 async def test_git_push_from_the_adopted_agent_fails_through_the_environment_alone(
     world: World,
 ) -> None:
