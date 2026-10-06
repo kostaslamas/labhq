@@ -18,9 +18,8 @@ from labhq.clock import SystemClock
 from labhq.db import create_engine, session_factory
 from labhq.db.models import Agent, Project
 
-pytestmark = pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 
-
+@pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 def test_discovery_lists_only_sessions_in_the_chosen_directory(tmp_path: Path, monkeypatch) -> None:
     project = tmp_path / "project"
     other = tmp_path / "other"
@@ -87,6 +86,7 @@ def test_selected_resume_uses_the_exact_id_and_keeps_agent_flags(tmp_path: Path)
             assert "--yolo" in argv
 
 
+@pytest.mark.posix_only("saved CLI sessions run through the tmux adapter")
 async def test_approved_saved_session_starts_as_manager_with_selected_id(
     tmp_path: Path, database_url: str, monkeypatch
 ) -> None:
