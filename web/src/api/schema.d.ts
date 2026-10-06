@@ -301,6 +301,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/capacity': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Capacity Get
+     * @description Runs against the global cap, free memory against its floor, and what waits for them.
+     */
+    get: operations['capacity_get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/health': {
     parameters: {
       query?: never
@@ -1582,6 +1602,21 @@ export interface components {
      * @enum {string}
      */
     RiskClass: 'light' | 'heavy'
+    /** RunCapacity */
+    RunCapacity: {
+      /** Free Memory Percent */
+      free_memory_percent: number
+      /** Max Running */
+      max_running: number
+      /** Min Free Memory Percent */
+      min_free_memory_percent: number
+      /** Paused For Memory */
+      paused_for_memory: boolean
+      /** Running */
+      running: number
+      /** Waiting */
+      waiting: number
+    }
     /**
      * RunStatus
      * @enum {string}
@@ -2398,6 +2433,35 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AutonomyState']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  capacity_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RunCapacity']
         }
       }
       /** @description Error */
