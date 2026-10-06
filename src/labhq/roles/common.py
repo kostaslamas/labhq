@@ -13,6 +13,7 @@ from labhq.approvals import ApprovalService, UnknownEntryError
 from labhq.approvals.service import ApprovalError
 from labhq.ceoorg.meetings import meeting_service
 from labhq.ceoorg.settings import CeoSettings
+from labhq.controlkeys import ControlKeyService, default_control_keys
 from labhq.hierarchy import Hierarchy, HierarchySettings
 from labhq.meetings import MeetingError, MeetingService
 from labhq.settings import Settings
@@ -57,6 +58,9 @@ class RoleServices:
     ceo_settings: Callable[[], CeoSettings] = CeoSettings
     browse_roots: Callable[[], list[Path]] = default_browse_roots
     data_dir: Callable[[], Path] = default_data_dir
+    control_keys: Callable[[ToolContext], ControlKeyService] = lambda context: default_control_keys(
+        context.sessions, context.clock
+    )
 
     def hierarchy(self, context: ToolContext) -> Hierarchy:
         return Hierarchy(

@@ -11,6 +11,7 @@ from labhq.callcenter.screens.reader import (
     Screen,
     ScreenReader,
     default_screen_reader,
+    pane_of_run,
     running_tmux_run,
     screen_tail,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "ScreenLog",
     "ScreenReader",
     "default_screen_reader",
+    "pane_of_run",
     "running_tmux_run",
     "screen_tail",
 ]

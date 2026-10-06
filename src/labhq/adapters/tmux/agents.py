@@ -117,6 +117,9 @@ class AgentKind:
     display_name: str = ""
     # Dialogs the agent can stop on before or during a turn (see `blocking`).
     blocking_screens: tuple[BlockingScreen, ...] = ()
+    # Names from `controlkeys.CONTROL_KEYS` the owner may send to this agent; a key the CLI
+    # does not act on is not listed.
+    control_keys: tuple[str, ...] = ()
 
     @property
     def process_names(self) -> tuple[str, ...]:
@@ -267,6 +270,8 @@ CLAUDE_CODE = AgentKind(
         "checked 2026-10-03"
     ),
     tool_launch="claude_mcp",
+    # Esc stops the turn, Shift+Tab cycles normal, auto-accept and plan mode, Ctrl+C cancels.
+    control_keys=("escape", "shift_tab", "ctrl_c"),
     blocking_screens=CLAUDE_BLOCKING_SCREENS,
     reply_key="last_assistant_message",
     continue_=(
@@ -337,6 +342,8 @@ CODEX = AgentKind(
     reply_pattern=r"^• (?!Working \()",
     reply_key="last_assistant_message",
     tool_launch="codex_mcp",
+    # Shift+Tab is left out: nothing checked says Codex binds it.
+    control_keys=("escape", "ctrl_c"),
     source=(
         "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "
         "codex-rs/utils/cli/src/{shared_options,config_override}.rs, "
@@ -370,6 +377,7 @@ GEMINI = AgentKind(
     launch=None,
     hooks=None,
     usage_command="/stats",
+    control_keys=("escape", "ctrl_c"),
     # MCP servers come only from Gemini CLI's settings files, which labhq does not write.
     source=(
         "google-gemini/gemini-cli main: packages/cli/src/config/config.ts (--session-id, "
@@ -412,6 +420,7 @@ AIDER = AgentKind(
     hooks=None,
     # `--message` exits after the reply, whose screen already carries the token and cost line.
     usage_command=None,
+    control_keys=("ctrl_c",),
     source=(
         "Aider-AI/aider main: aider/website/docs/config/options.md (--message, "
         "--restore-chat-history, --yes-always, --no-pretty, --no-fancy-input); checked 2026-10-03"
