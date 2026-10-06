@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import select, update
 
 from labhq.adapters import FakeAdapter
-from labhq.db.enums import WakeupSource
+from labhq.db.enums import AgentStatus, WakeupSource
 from labhq.db.models import Agent, Run, Task, WakeupRequest
 from labhq.scheduler import Wakeup
 from tests.scheduler.conftest import World
@@ -75,3 +75,26 @@ class DeafAdapter(FakeAdapter):
 
     async def interrupt(self) -> None:
         self.script.interrupts += 1
+
+
+async def give_manager(world: World) -> int:
+    """Make the world's worker report to a new manager and assign it the world's task."""
+    async with world.sessions() as db:
+        now = world.clock.now()
+        manager = Agent(
+            project_id=world.project_id,
+            role="manager",
+            title="Manager",
+            adapter="fake",
+            status=AgentStatus.ACTIVE,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(manager)
+        await db.flush()
+        worker = await db.get_one(Agent, world.agent_id)
+        worker.reports_to = manager.id
+        task = await db.get_one(Task, world.task_id)
+        task.assignee_id = worker.id
+        await db.commit()
+        return manager.id

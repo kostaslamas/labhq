@@ -31,6 +31,12 @@ def roomy_machine(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
+def auto_next_turn() -> bool:
+    """Whether a scheduler under test gives an unreporting agent another turn (#150)."""
+    return False
+
+
+@pytest.fixture
 def clock() -> FakeClock:
     return FakeClock(datetime(2026, 10, 2, 9, 0, tzinfo=UTC))
 

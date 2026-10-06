@@ -17,7 +17,7 @@ from labhq.approvals.policy import default_actions as builtin_actions
 from labhq.approvals.policy import default_confirmations as builtin_confirmations
 from labhq.approvals.registry import Registry
 from labhq.clock import Clock
-from labhq.db.enums import ApprovalStatus
+from labhq.db.enums import ApprovalStatus, WakeupSource
 from labhq.db.models import Approval
 from labhq.notify.outbox import enqueue
 
@@ -205,6 +205,32 @@ class ApprovalService:
         if result.rowcount != 1:
             current = await self.get(approval_id)
             raise ApprovalNotPendingError(f"approval {approval_id} is already {current.status}")
+        await self._wake_requester(approval_id, status)
+
+    async def _wake_requester(self, approval_id: int, status: ApprovalStatus) -> None:
+        # Imported here: the scheduler imports the approvals package through the work service.
+        from labhq.scheduler import Wakeup, enqueue
+
+        async with self._sessions() as db:
+            approval = await db.get_one(Approval, approval_id)
+            if approval.requested_by_agent_id is None:
+                return
+            # Only the decision wakes the requester; executing it afterwards does not.
+            await enqueue(
+                db,
+                Wakeup(
+                    agent_id=approval.requested_by_agent_id,
+                    source=WakeupSource.APPROVAL_RESOLVED,
+                    idempotency_key=f"approval-resolved:{approval_id}",
+                    task_id=approval.task_id,
+                    reason=f"Approval A{approval_id} ({approval.type}) was {status.value}."
+                    + (
+                        f" Owner's note: {approval.decision_note}" if approval.decision_note else ""
+                    ),
+                ),
+                self._clock,
+            )
+            await db.commit()
 
     async def _execute(self, approval_id: int, executor: Executor) -> Approval:
         async with self._sessions() as db:
