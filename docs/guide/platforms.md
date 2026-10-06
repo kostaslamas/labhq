@@ -74,6 +74,7 @@ and CI fails when it does not match them.
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_variable_only_in_the_clients_environment_stays_out_of_the_session` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_a_worker_sees_no_credentials_even_when_the_caller_has_them` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_environment.py::test_the_server_is_private_and_configured_by_labhq` | the tmux adapter does not run on native Windows (ADR 0003) |
+| `tests/adapters/tmux/test_tmux_idle.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_push.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adapters/tmux/test_tmux_runs.py` | the tmux adapter does not run on native Windows (ADR 0003) |
 | `tests/adoption/test_checkout.py` | the tmux adapter does not run on native Windows (ADR 0003) |
