@@ -154,9 +154,11 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         *CEO_ORG_TOOLS,
         "report_to_owner",
         "owner_decision",
+        "send_control_key",
     }
     assert names("manager") == {
         "propose_team",
+        "send_control_key",
         "create_task",
         "assign_task",
         "task_overview",
@@ -164,6 +166,7 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         "review_task",
     }
     assert names("lead") == {
+        "send_control_key",
         "create_task",
         "assign_task",
         "task_overview",
