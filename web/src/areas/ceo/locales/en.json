@@ -17,5 +17,14 @@
   "loadFailed": "The conversation could not be loaded.",
   "sendFailed": "The message could not be sent. Try again.",
   "budgetStop": "The CEO's budget is exhausted.",
-  "inactive": "The CEO is not active."
+  "inactive": "The CEO is not active.",
+  "report": "CEO report",
+  "accept": "Accept",
+  "return": "Return",
+  "returnWhy": "What still needs work?",
+  "sendBack": "Send back",
+  "cancel": "Cancel",
+  "decideFailed": "The decision could not be saved. Try again.",
+  "latest": "Latest from the CEO",
+  "openChat": "Open the CEO chat"
 }

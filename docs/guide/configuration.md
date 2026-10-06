@@ -33,6 +33,7 @@ The `tmux` adapter: Claude Code, Codex CLI, Gemini CLI, Aider or any CLI agent (
 | Variable | Type | Default | Description |
 |---|---|---|---|
 | `LABHQ_TMUX_SOCKET` | `str` | `labhq` | The private server's socket: `tmux -L labhq attach -t run-<id>` watches a run. |
+| `LABHQ_TMUX_IDLE_SUSPEND_SECONDS` | `int` | `1800` | A persistent pane (the CEO's) idle this long has its CLI process stopped to give the RAM back; its session id is kept and the next turn resumes it. 0 never stops one. |
 
 ## `labhq.adoption.settings.AdoptionSettings`
 
@@ -130,6 +131,14 @@ Call timing, read from `LABHQ_CALLCENTER_*` environment variables.
 |---|---|---|---|
 | `LABHQ_CALLCENTER_CALL_WINDOW_SECONDS` | `int` | `300` | A call with no activity for this long is treated as hung up. |
 | `LABHQ_CALLCENTER_TICKET_EXPIRY_SECONDS` | `int` | `3600` | A request nobody answered within this time becomes `expired` instead of waiting forever. |
+
+## `labhq.ceoreports.CeoReportSettings`
+
+How the CEO's reports reach the owner.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_CEO_REPORTS_DIGEST_SECONDS` | `int` | `900` | At most one report notification per window; later reports wait and go out as one digest. |
 
 ## `labhq.chat.discord.settings.DiscordSettings`
 
@@ -334,6 +343,8 @@ Scheduler limits, read from `LABHQ_SCHEDULER_*`, and their per-agent overrides.
 | `LABHQ_SCHEDULER_AUTO_NEXT_TURN` | `bool` | `true` | An agent that ends a turn without a handoff gets another turn (the owner's choice, #140). Turning this off leaves the next turn to a wakeup from somewhere else. |
 | `LABHQ_SCHEDULER_MAX_UNREPORTED_RUNS` | `int` | `5` | After this many turns without a handoff the task is marked blocked and its manager is told, so an agent that never reports stops instead of spending until its budget. 0 means no limit: only its budget and the plan-usage cap stop it. |
 | `LABHQ_SCHEDULER_STALL_ALERT_RUNS` | `int` | `3` | Every this many silent turns the reviewer (the parent task's assignee) is woken to look at the stuck task while it keeps going. 0 never alerts. |
+| `LABHQ_SCHEDULER_MAX_RUNNING` | `int \| None` | unset | Runs active at once across all agents. Unset, it follows the machine: about one per 1.5 GB of RAM, between 1 and 8 (`labhq.scheduler.memory`). |
+| `LABHQ_SCHEDULER_MIN_FREE_MEMORY_PERCENT` | `float` | `15.0` | Below this share of free RAM no run starts; wakeups wait. 0 turns the check off. |
 
 ## `labhq.settings.Settings`
 

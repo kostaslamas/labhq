@@ -96,6 +96,8 @@ async def test_each_roles_run_carries_its_instruction(
                 "delegate_task",
                 "task_overview",
                 "review_task",
+                "report_to_owner",
+                "owner_decision",
             },
         ),
         (

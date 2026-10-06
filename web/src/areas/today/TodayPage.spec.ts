@@ -11,6 +11,7 @@ vi.mock('@/live', () => ({ useLiveTopic: vi.fn(), liveState: { value: 'idle' } }
 const answer: Today = {
   since: '2026-10-01T09:00:00Z',
   until: '2026-10-02T09:00:00Z',
+  ceo_report: null,
   deliverables: [
     {
       task_id: 7,
@@ -86,6 +87,32 @@ describe('TodayPage', () => {
     expect(delivered).toContain('labhq/task-7-add-a-hello-file')
     expect(delivered).toContain('2 commits')
     expect(delivered).toContain('$1.25')
+  })
+
+  it("opens with the CEO's latest report", async () => {
+    respondWith({
+      ...answer,
+      ceo_report: {
+        id: 5,
+        text: 'T7 Add a HELLO file is done and waits for your decision.',
+        refs: ['T7'],
+        task_id: 7,
+        task_title: 'Add a HELLO file',
+        awaiting_decision: true,
+        created_at: '2026-10-02T08:45:00Z',
+      },
+    })
+    const { root } = await renderApp('/today')
+    await settle()
+
+    const section = root.querySelector('[data-testid="today-ceo-report"]')
+    const needs = root.querySelector('[data-testid="needs-you"]')
+    expect(section?.textContent).toContain('T7 Add a HELLO file is done')
+    expect(section?.querySelector('[data-testid="report-accept"]')).not.toBeNull()
+    // At the top: before what needs the owner.
+    expect(section && needs && section.compareDocumentPosition(needs)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 
   it('never lists agents at work', async () => {

@@ -6,7 +6,15 @@ import { useLiveTopic } from '@/live'
 export type Today = components['schemas']['Today']
 
 // Every table the page reads (ADR 0006): a change in any of them refetches the whole answer.
-export const TODAY_TOPICS = ['approvals', 'tasks', 'questions', 'incidents', 'costs'] as const
+// CEO reports are written by CEO runs, so `runs` brings the latest one.
+export const TODAY_TOPICS = [
+  'approvals',
+  'tasks',
+  'questions',
+  'incidents',
+  'costs',
+  'runs',
+] as const
 
 export function useToday() {
   const today = ref<Today | null>(null)

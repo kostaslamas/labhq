@@ -24,6 +24,7 @@ from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupSource, WakeupStatus
 from labhq.db.models import Agent, Run, Task, WakeupRequest
+from labhq.scheduler.admission import Admission
 from labhq.scheduler.checkout import checkout
 from labhq.scheduler.reaper import LIVE_STATUSES
 from labhq.scheduler.settings import AgentLimits, SchedulerSettings
@@ -43,12 +44,18 @@ class Verdict(StrEnum):
     QUEUED = "queued"
     AGENT_INACTIVE = "agent_inactive"
     AT_CONCURRENCY = "at_concurrency"
+    # The machine-wide cap on active runs, or the free-memory floor; both are retried.
+    AT_CAPACITY = "at_capacity"
+    LOW_MEMORY = "low_memory"
     TASK_HELD = "task_held"
     BUDGET_STOP = "budget_stop"
     # The agent kind is past its plan window share and has no free fallback; retried.
     PLAN_PAUSED = "plan_paused"
     # Another dispatcher took or refused the wakeup first.
     GONE = "gone"
+
+
+_REFUSALS = {"capacity": Verdict.AT_CAPACITY, "low_memory": Verdict.LOW_MEMORY}
 
 
 @dataclass(frozen=True)
@@ -84,6 +91,7 @@ async def dispatch_one(
     settings: SchedulerSettings,
     budget_settings: BudgetSettings | None,
     usage_settings: UsageSettings | None = None,
+    admission: Admission | None = None,
 ) -> Dispatch:
     """Try to queue a run for `wakeup_id`. Commits on success and on refusal."""
     request = await session.get_one(WakeupRequest, wakeup_id, populate_existing=True)
@@ -96,6 +104,10 @@ async def dispatch_one(
     concurrency = 1 if agent.role == CEO_ROLE else limits.max_concurrency
     if await _live_runs(session, agent.id) >= concurrency:
         return Dispatch(Verdict.AT_CONCURRENCY)
+    if admission is not None and (refused := await admission.refusal(session)) is not None:
+        # Commit the owner's low-memory notice; the wakeup itself stays pending.
+        await session.commit()
+        return Dispatch(_REFUSALS[refused])
 
     # Plan §7 rule 3: checked at enqueue and again here, since spend moves in between.
     budget = await check(session, agent.id, clock, budget_settings)

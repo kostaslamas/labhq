@@ -704,6 +704,128 @@
         "title": "CeoChatTurn",
         "type": "object"
       },
+      "CeoReport": {
+        "properties": {
+          "awaiting_decision": {
+            "title": "Awaiting Decision",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refs",
+            "type": "array"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Title"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "refs",
+          "task_id",
+          "task_title",
+          "awaiting_decision",
+          "created_at"
+        ],
+        "title": "CeoReport",
+        "type": "object"
+      },
+      "CeoReportOut": {
+        "properties": {
+          "awaiting_decision": {
+            "title": "Awaiting Decision",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Refs",
+            "type": "array"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          },
+          "task_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Title"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "refs",
+          "task_id",
+          "task_title",
+          "awaiting_decision",
+          "created_at"
+        ],
+        "title": "CeoReportOut",
+        "type": "object"
+      },
       "Credential": {
         "description": "What the UI may know about a passkey. The public key stays on the server.",
         "properties": {
@@ -1513,6 +1635,32 @@
         "title": "OpenIncident",
         "type": "object"
       },
+      "OwnerDecisionBody": {
+        "properties": {
+          "feedback": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Feedback",
+            "type": "string"
+          }
+        },
+        "title": "OwnerDecisionBody",
+        "type": "object"
+      },
+      "OwnerDecisionOut": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "integer"
+          }
+        },
+        "required": ["task_id", "status"],
+        "title": "OwnerDecisionOut",
+        "type": "object"
+      },
       "Page_ApprovalOut_": {
         "properties": {
           "items": {
@@ -2131,6 +2279,16 @@
       },
       "Today": {
         "properties": {
+          "ceo_report": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CeoReport"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "deliverables": {
             "items": {
               "$ref": "#/components/schemas/TodayDeliverable"
@@ -2159,7 +2317,14 @@
             "type": "string"
           }
         },
-        "required": ["since", "until", "deliverables", "needs_you", "spend_without_output"],
+        "required": [
+          "since",
+          "until",
+          "ceo_report",
+          "deliverables",
+          "needs_you",
+          "spend_without_output"
+        ],
         "title": "Today",
         "type": "object"
       },
@@ -3620,6 +3785,142 @@
           }
         },
         "summary": "Ceo Messages Post",
+        "tags": ["org"]
+      }
+    },
+    "/api/org/ceo/reports": {
+      "get": {
+        "description": "The CEO's recent reports to the owner, oldest first.",
+        "operationId": "ceo_reports_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CeoReportOut"
+                  },
+                  "title": "Response Ceo Reports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Ceo Reports Get",
+        "tags": ["org"]
+      }
+    },
+    "/api/org/tasks/{task_id}/accept": {
+      "post": {
+        "description": "The owner closes a root objective the CEO reported as done.",
+        "operationId": "task_accept",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerDecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Task Accept",
+        "tags": ["org"]
+      }
+    },
+    "/api/org/tasks/{task_id}/return": {
+      "post": {
+        "description": "The owner sends a root objective back to its manager with what still needs work.",
+        "operationId": "task_return",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OwnerDecisionBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerDecisionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Task Return",
         "tags": ["org"]
       }
     },

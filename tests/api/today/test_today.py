@@ -250,7 +250,14 @@ async def test_no_running_work_is_exposed(client: httpx.AsyncClient, context: Co
     await seed(context)
     body = (await client.get("/api/today")).json()
 
-    assert set(body) == {"since", "until", "deliverables", "needs_you", "spend_without_output"}
+    assert set(body) == {
+        "since",
+        "until",
+        "ceo_report",
+        "deliverables",
+        "needs_you",
+        "spend_without_output",
+    }
 
 
 async def test_the_window_defaults_to_the_last_24_hours(
