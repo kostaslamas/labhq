@@ -122,6 +122,16 @@ Call timing, read from `LABHQ_CALLCENTER_*` environment variables.
 | `LABHQ_CALLCENTER_CALL_WINDOW_SECONDS` | `int` | `300` | A call with no activity for this long is treated as hung up. |
 | `LABHQ_CALLCENTER_TICKET_EXPIRY_SECONDS` | `int` | `3600` | A request nobody answered within this time becomes `expired` instead of waiting forever. |
 
+## `labhq.ceoorg.settings.CeoSettings`
+
+What the owner alone decides about the CEO, read from `LABHQ_CEO_*` variables.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_CEO_BUDGET_CEILING_MICROS` | `int \| None` | unset | The most the CEO may set as any one agent's or project's budget, in micro-USD. Unset means the owner has not delegated budgets yet, so `set_budget` refuses everything. |
+| `LABHQ_CEO_DISCOVERY_DEPTH` | `int` | `3` | How many directory levels `discover_projects` looks below the folder it is given. |
+| `LABHQ_CEO_DISCOVERY_LIMIT` | `int` | `100` | The most folders and sessions one `discover_projects` answer lists. |
+
 ## `labhq.chat.discord.settings.DiscordSettings`
 
 Discord bot credentials and placement, from `LABHQ_DISCORD_*` variables or the data directory.
