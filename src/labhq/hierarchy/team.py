@@ -11,11 +11,15 @@ from labhq.adapters import UnknownAdapterError
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus
 from labhq.db.models import Agent
-from labhq.hierarchy.roles import MANAGER, HierarchyError, check_reports_to
+from labhq.hierarchy.roles import HEAD, MANAGER, HierarchyError, check_reports_to
 from labhq.hierarchy.settings import HierarchySettings
 
 # A manager's `config` key that overrides the `max_team_size` setting for its team.
 TEAM_SIZE_KEY = "max_team_size"
+# The roles that lead a team: a project's manager, a department's head.
+TEAM_LEADERS = frozenset({MANAGER, HEAD})
+# `agents.config` key holding a department's kind, name and folder, for the agent's prompt.
+DEPARTMENT_KEY = "department"
 
 
 class TeamSizeError(HierarchyError):
@@ -38,6 +42,8 @@ class TeamProposal(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     manager_id: int
+    # The role of the agent the members report to: a manager, or a department head.
+    root_role: str = MANAGER
     members: tuple[ProposedMember, ...] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -50,7 +56,7 @@ class TeamProposal(BaseModel):
         for member in self.members:
             if member.reports_to is not None and member.reports_to not in roles:
                 raise ValueError(f"{member.key!r} reports to {member.reports_to!r}, not proposed")
-            parent = MANAGER if member.reports_to is None else roles[member.reports_to]
+            parent = self.root_role if member.reports_to is None else roles[member.reports_to]
             check_reports_to(member.role, parent)
         return self
 
@@ -77,8 +83,8 @@ def check_adapters(proposal: TeamProposal, adapters: Collection[str]) -> None:
 
 async def find_manager(db: AsyncSession, manager_id: int) -> Agent:
     manager = await db.get(Agent, manager_id)
-    if manager is None or manager.role != MANAGER:
-        raise HierarchyError(f"agent {manager_id} is not a manager")
+    if manager is None or manager.role not in TEAM_LEADERS:
+        raise HierarchyError(f"agent {manager_id} is not a manager or a department head")
     if manager.status is not AgentStatus.ACTIVE:
         raise HierarchyError(f"manager {manager_id} is {manager.status}, not active")
     return manager
@@ -86,9 +92,12 @@ async def find_manager(db: AsyncSession, manager_id: int) -> Agent:
 
 async def team_of(db: AsyncSession, manager: Agent) -> list[Agent]:
     """Every agent under `manager`, directly or through a lead; retired agents left out."""
-    query = select(Agent).where(
-        Agent.project_id == manager.project_id, Agent.status != AgentStatus.RETIRED
+    scope = (
+        Agent.department_id == manager.department_id
+        if manager.department_id is not None
+        else Agent.project_id == manager.project_id
     )
+    query = select(Agent).where(scope, Agent.status != AgentStatus.RETIRED)
     reports: dict[int | None, list[Agent]] = {}
     for agent in await db.scalars(query):
         reports.setdefault(agent.reports_to, []).append(agent)
@@ -120,6 +129,11 @@ async def check_team_size(
         )
 
 
+def member_config(manager: Agent) -> dict[str, object]:
+    """What a team member inherits from its leader: the department it works in."""
+    return {key: manager.config[key] for key in (DEPARTMENT_KEY, "tools") if key in manager.config}
+
+
 async def create_team(
     db: AsyncSession, clock: Clock, proposal: TeamProposal, settings: HierarchySettings
 ) -> dict[str, int]:
@@ -131,10 +145,12 @@ async def create_team(
     for member in proposal.in_creation_order():
         agent = Agent(
             project_id=manager.project_id,
+            department_id=manager.department_id,
             role=member.role,
             title=member.title,
             reports_to=ids[member.reports_to],
             adapter=member.adapter,
+            config=member_config(manager),
             status=AgentStatus.ACTIVE,
             created_at=now,
             updated_at=now,

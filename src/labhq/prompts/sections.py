@@ -4,6 +4,7 @@ from labhq.db.models import Agent, Task
 from labhq.economy.graphify import GRAPHIFY_POSITION, GRAPHIFY_SECTION, default_section
 from labhq.economy.style import StyleRegistry, styled_system_prompt
 from labhq.economy.style import default_registry as default_styles
+from labhq.prompts.department import DEPARTMENT_POSITION, DEPARTMENT_SECTION, department_section
 from labhq.prompts.registry import PromptRegistry, SectionBuilder
 from labhq.prompts.roles import RoleRegistry, default_roles
 
@@ -38,6 +39,7 @@ def builtin_registry(
         output_style_section(styles if styles is not None else default_styles()),
         position=OUTPUT_STYLE_POSITION,
     )
+    registry.register(DEPARTMENT_SECTION, department_section, position=DEPARTMENT_POSITION)
     registry.register(GRAPHIFY_SECTION, default_section, position=GRAPHIFY_POSITION)
     return registry
 

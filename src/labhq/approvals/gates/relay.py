@@ -112,7 +112,8 @@ class GateRelay:
             return ""
         async with self._sessions() as db:
             task = await db.get(Task, approval.task_id)
-            project = await db.get(Project, task.project_id) if task is not None else None
+            project_id = task.project_id if task is not None else None
+            project = await db.get(Project, project_id) if project_id is not None else None
         return project.repo_path if project is not None else ""
 
     async def _poll(self, approval: Approval) -> int:

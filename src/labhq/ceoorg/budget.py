@@ -1,4 +1,4 @@
-"""`set_budget`: the CEO sets an agent's or a project's budget, below the owner's ceiling."""
+"""`set_budget`: the CEO sets an agent's, project's or department's budget, below the ceiling."""
 
 from enum import StrEnum
 
@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.ceoorg.settings import CeoSettings
 from labhq.clock import Clock
-from labhq.db.models import Agent, Project
+from labhq.db.models import Agent, Department, Project
+from labhq.departments import find_department
 from labhq.hierarchy import CEO
 from labhq.money import format_micros
 from labhq.work import WorkError, find_agent, find_project
@@ -15,6 +16,7 @@ from labhq.work import WorkError, find_agent, find_project
 class BudgetScope(StrEnum):
     AGENT = "agent"
     PROJECT = "project"
+    DEPARTMENT = "department"
 
 
 class BudgetRefusedError(WorkError):
@@ -44,7 +46,7 @@ async def set_budget(
         raise BudgetRefusedError(
             f"{format_micros(micros)} is above the owner's ceiling of {format_micros(ceiling)}"
         )
-    row: Agent | Project
+    row: Agent | Project | Department
     if scope is BudgetScope.AGENT:
         if not target.isdigit():
             raise BudgetRefusedError("name an agent by its numeric id")
@@ -52,6 +54,9 @@ async def set_budget(
         if row.id == caller or row.role == CEO:
             raise BudgetRefusedError("the CEO's own budget is the owner's to change")
         label = f"agent {row.id} ({row.title})"
+    elif scope is BudgetScope.DEPARTMENT:
+        row = await find_department(db, target)
+        label = f"department {row.name}"
     else:
         row = await find_project(db, target)
         label = f"project {row.name}"

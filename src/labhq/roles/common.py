@@ -15,6 +15,7 @@ from labhq.ceoorg.meetings import meeting_service
 from labhq.ceoorg.settings import CeoSettings
 from labhq.hierarchy import Hierarchy, HierarchySettings
 from labhq.meetings import MeetingError, MeetingService
+from labhq.settings import Settings
 from labhq.work import WorkError
 
 # Errors whose message tells the agent what to change. Anything else is a defect and surfaces.
@@ -31,6 +32,11 @@ REFUSALS: tuple[type[Exception], ...] = (
 
 def default_approvals(context: ToolContext) -> ApprovalService:
     return ApprovalService(context.sessions, clock=context.clock)
+
+
+def default_data_dir() -> Path:
+    # Read per call, not cached: one process may serve several configurations (tests).
+    return Settings().data_dir
 
 
 def default_browse_roots() -> list[Path]:
@@ -50,6 +56,7 @@ class RoleServices:
     adapters: Callable[[], list[str]] = default_adapters.adapter_keys
     ceo_settings: Callable[[], CeoSettings] = CeoSettings
     browse_roots: Callable[[], list[Path]] = default_browse_roots
+    data_dir: Callable[[], Path] = default_data_dir
 
     def hierarchy(self, context: ToolContext) -> Hierarchy:
         return Hierarchy(

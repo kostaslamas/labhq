@@ -40,6 +40,11 @@ export const statusMap: StatusMapping<Vocabulary> = {
     open: 'working',
     closed: 'done',
   },
+  department_status: {
+    active: 'working',
+    paused: 'idle',
+    archived: 'done',
+  },
   host_status: {
     unknown: 'idle',
     up: 'done',

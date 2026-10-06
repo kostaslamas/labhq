@@ -59,6 +59,8 @@ CEO_LINE_TABLES = {"wording_proposals"}
 CEO_REPORT_TABLES = {"ceo_reports"}
 # Runtime switches such as the global autonomy (issue #169).
 PROGRAM_STATE_TABLES = {"program_state"}
+# Non-code departments (issue #171).
+DEPARTMENT_TABLES = {"departments"}
 ALL_TABLES = (
     PHASE_1_TABLES
     | PHASE_2_TABLES
@@ -68,6 +70,7 @@ ALL_TABLES = (
     | CEO_LINE_TABLES
     | CEO_REPORT_TABLES
     | PROGRAM_STATE_TABLES
+    | DEPARTMENT_TABLES
 )
 
 
@@ -81,7 +84,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0015"]
+    assert heads == ["0016"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:

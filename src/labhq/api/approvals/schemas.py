@@ -62,7 +62,8 @@ def text_of(payload: dict[str, Any], key: str) -> str | None:
 
 async def describe(db: AsyncSession, approval: Approval) -> ApprovalOut:
     task = await db.get(Task, approval.task_id) if approval.task_id is not None else None
-    project = await db.get(Project, task.project_id) if task is not None else None
+    project_id = task.project_id if task is not None else None
+    project = await db.get(Project, project_id) if project_id is not None else None
     agent_id = approval.requested_by_agent_id
     agent = await db.get(Agent, agent_id) if agent_id is not None else None
     return ApprovalOut(

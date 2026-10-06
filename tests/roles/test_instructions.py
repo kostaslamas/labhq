@@ -20,7 +20,7 @@ from labhq.roles import INSTRUCTIONS
 from labhq.runs import RunService
 
 IT_CONFIG = {PERMISSION_MODE_KEY: READ_ONLY_MODE}
-ROLES = ["ceo", "manager", "lead", "worker", "it"]
+ROLES = ["ceo", "manager", "head", "lead", "worker", "it"]
 CEO_ORG_TOOLS = (
     "discover_projects",
     "add_project",
@@ -109,6 +109,9 @@ async def test_each_roles_run_carries_its_instruction(
                 "task_overview",
                 "review_task",
                 *CEO_ORG_TOOLS,
+                "list_departments",
+                "create_department",
+                "delegate_department_task",
                 "report_to_owner",
                 "owner_decision",
             },
@@ -130,6 +133,18 @@ async def test_each_roles_run_carries_its_instruction(
             {"whoami", "create_task", "assign_task", "task_overview", "report_task", "review_task"},
         ),
         ("worker", {"whoami", "task_overview", "report_task"}),
+        (
+            "head",
+            {
+                "whoami",
+                "staff_department",
+                "create_task",
+                "assign_task",
+                "task_overview",
+                "report_task",
+                "review_task",
+            },
+        ),
         (
             "it",
             {

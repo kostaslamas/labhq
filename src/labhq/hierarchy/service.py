@@ -27,6 +27,7 @@ from labhq.hierarchy.team import (
     check_team_size,
     create_team,
     find_manager,
+    member_config,
     team_of,
 )
 from labhq.usage.plan import FALLBACK_ADAPTER_KEY, FALLBACK_KEY
@@ -186,12 +187,12 @@ class Hierarchy:
         self, manager_id: int, members: Iterable[ProposedMember | Mapping[str, Any]]
     ) -> Approval:
         """Record one heavy `create_team` approval; no agent exists until it is approved."""
-        proposal = TeamProposal.model_validate(
-            {"manager_id": manager_id, "members": tuple(members)}
-        )
-        check_adapters(proposal, self._adapters)
         async with self._sessions() as db:
             manager = await find_manager(db, manager_id)
+            proposal = TeamProposal.model_validate(
+                {"manager_id": manager_id, "root_role": manager.role, "members": tuple(members)}
+            )
+            check_adapters(proposal, self._adapters)
             await check_team_size(db, manager, len(proposal.members), self._settings)
         return await self._approvals.request(
             CREATE_TEAM, proposal.model_dump(mode="json"), agent_id=manager_id
@@ -204,11 +205,12 @@ class Hierarchy:
 
         For the CEO, which the owner lets staff teams (issue #168). A manager still proposes.
         """
-        proposal = TeamProposal.model_validate(
-            {"manager_id": manager_id, "members": tuple(members)}
-        )
-        check_adapters(proposal, self._adapters)
         async with self._sessions() as db:
+            leader = await find_manager(db, manager_id)
+            proposal = TeamProposal.model_validate(
+                {"manager_id": manager_id, "root_role": leader.role, "members": tuple(members)}
+            )
+            check_adapters(proposal, self._adapters)
             ids = await create_team(db, self._clock, proposal, self._settings)
             await db.commit()
         return ids
@@ -236,6 +238,8 @@ class Hierarchy:
             now = self._clock.now()
             agent = Agent(
                 project_id=manager.project_id,
+                department_id=manager.department_id,
+                config=member_config(manager),
                 role=role,
                 title=title,
                 reports_to=parent.id,

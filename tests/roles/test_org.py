@@ -142,6 +142,9 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         return {spec.name for spec in org.tools.for_agent(role, {})}
 
     assert names("ceo") == {
+        "list_departments",
+        "create_department",
+        "delegate_department_task",
         "list_projects",
         "list_agent_sessions",
         "assign_manager",

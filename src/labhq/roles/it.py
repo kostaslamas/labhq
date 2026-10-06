@@ -67,7 +67,8 @@ class RequestFix(BaseModel):
 async def ticket(db: AsyncSession, ticket_id: int) -> Task:
     """A task of the infra project: the IT agent writes nowhere else."""
     task = await db.get(Task, ticket_id)
-    project = await db.get(Project, task.project_id) if task is not None else None
+    project_id = task.project_id if task is not None else None
+    project = await db.get(Project, project_id) if project_id is not None else None
     if task is None or project is None or project.name != INFRA_PROJECT:
         raise WorkError(f"task {ticket_id} is not an infra ticket")
     return task

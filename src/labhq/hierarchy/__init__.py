@@ -14,6 +14,7 @@ from labhq.hierarchy.executors import (
 )
 from labhq.hierarchy.roles import (
     CEO,
+    HEAD,
     IT,
     LEAD,
     MANAGER,
@@ -39,6 +40,7 @@ __all__ = [
     "CEO",
     "CREATE_AGENT",
     "CREATE_TEAM",
+    "HEAD",
     "IT",
     "LEAD",
     "MANAGER",

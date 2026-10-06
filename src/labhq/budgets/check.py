@@ -1,4 +1,6 @@
-"""Budget check for an agent and its project, with the once-per-period warning record.
+"""Budget check for an agent, its project and its department, with the warning record.
+
+A warning is recorded once per period.
 
 The scheduler calls `check()` at enqueue and again before a run starts (plan §7, rules 3
 and 4). It flushes but never commits: the caller owns the transaction.
@@ -16,7 +18,7 @@ from labhq.budgets.periods import period_start
 from labhq.budgets.settings import BudgetSettings, get_budget_settings
 from labhq.clock import Clock
 from labhq.db.enums import BudgetScope
-from labhq.db.models import Agent, BudgetWarning, CostEvent, Project
+from labhq.db.models import Agent, BudgetWarning, CostEvent, Department, Project
 
 
 class UnknownAgentError(LookupError):
@@ -49,7 +51,7 @@ async def check(
     clock: Clock,
     settings: BudgetSettings | None = None,
 ) -> BudgetCheck:
-    """Decide whether `agent_id` may start work; the stricter of agent and project wins."""
+    """Decide whether `agent_id` may start work; the strictest level wins."""
     settings = settings or get_budget_settings()
     agent = await session.get(Agent, agent_id)
     if agent is None:
@@ -79,6 +81,22 @@ async def check(
                     project.id,
                     project.budget_micros,
                     CostEvent.project_id == project.id,
+                    start,
+                    now,
+                    settings,
+                )
+            )
+    if agent.department_id is not None:
+        department = await session.get(Department, agent.department_id)
+        if department is not None:
+            members = select(Agent.id).where(Agent.department_id == department.id)
+            levels.append(
+                await _check_level(
+                    session,
+                    BudgetScope.DEPARTMENT,
+                    department.id,
+                    department.budget_micros,
+                    CostEvent.agent_id.in_(members),
                     start,
                     now,
                     settings,

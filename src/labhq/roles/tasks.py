@@ -12,14 +12,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labhq.agenttools import AgentToolSpec, ToolContext
 from labhq.db.enums import TaskStatus
 from labhq.db.models import Agent, Comment, Run, Task
-from labhq.hierarchy import CEO, LEAD, MANAGER, WORKER, team_of
+from labhq.departments import add_department_task, department_of
+from labhq.hierarchy import CEO, HEAD, LEAD, MANAGER, WORKER, team_of
 from labhq.roles.common import refusing
 from labhq.scheduler import enqueue
 from labhq.work import WorkError, add_task, assignment, find_agent
+from labhq.work.deliverables import REPORT
 from labhq.work.progress import report_task as report_progress
 from labhq.work.progress import review_task as review_progress
 
-SCOPED_ROLES = frozenset({MANAGER, LEAD})
+SCOPED_ROLES = frozenset({MANAGER, LEAD, HEAD})
 CLOSED = frozenset({TaskStatus.DONE, TaskStatus.CANCELLED})
 
 
@@ -32,6 +34,10 @@ class CreateTask(BaseModel):
     assignee: int | None = Field(default=None, description="A member of your team, by id.")
     parent: int | None = Field(
         default=None, description="Task you are splitting; defaults to the task of this run."
+    )
+    deliverable: str | None = Field(
+        default=None,
+        description="In a department: document, report or decision. Default: the parent's.",
     )
 
 
@@ -68,6 +74,17 @@ def _caller_project(caller: Agent) -> int:
     return caller.project_id
 
 
+def _scope_word(caller: Agent) -> str:
+    return "department" if caller.department_id is not None else "project"
+
+
+def in_scope(task: Task, caller: Agent) -> bool:
+    """A task is in the caller's scope when it is in the caller's project or department."""
+    if caller.project_id is None and caller.department_id is None:
+        return False
+    return (task.project_id, task.department_id) == (caller.project_id, caller.department_id)
+
+
 async def check_in_team(db: AsyncSession, caller: Agent, agent_id: int) -> Agent:
     """The agent, if it is below `caller`; anything else is refused."""
     team = {member.id: member for member in await team_of(db, caller)}
@@ -81,28 +98,45 @@ async def check_in_team(db: AsyncSession, caller: Agent, agent_id: int) -> Agent
 async def create_task(context: ToolContext, arguments: CreateTask) -> str:
     async with context.sessions() as db:
         caller = await db.get_one(Agent, context.agent_id)
-        project_id = _caller_project(caller)
         if arguments.assignee is not None:
             await check_in_team(db, caller, arguments.assignee)
         parent_id = arguments.parent
         if parent_id is None and context.run_id is not None:
             run = await db.get(Run, context.run_id)
             parent_id = run.task_id if run is not None else None
-        if parent_id is not None:
-            parent = await db.get(Task, parent_id)
-            if parent is None or parent.project_id != project_id or parent.assignee_id != caller.id:
-                raise WorkError(f"parent task {parent_id} is not assigned to you in this project")
-        task = await add_task(
-            db,
-            context.clock,
-            project=str(project_id),
-            title=arguments.title,
-            description=arguments.description,
-            assignee=arguments.assignee,
-            priority=arguments.priority,
-            parent_id=parent_id,
-            reason=_reason(caller),
-        )
+        parent = await db.get(Task, parent_id) if parent_id is not None else None
+        if parent is not None and not (
+            in_scope(parent, caller) and parent.assignee_id == caller.id
+        ):
+            raise WorkError(
+                f"parent task {parent_id} is not assigned to you in this {_scope_word(caller)}"
+            )
+        if caller.department_id is not None:
+            department = await department_of(db, caller)
+            task = await add_department_task(
+                db,
+                context.clock,
+                department,
+                title=arguments.title,
+                description=arguments.description,
+                deliverable=arguments.deliverable or (parent.deliverable if parent else REPORT),
+                assignee=arguments.assignee,
+                priority=arguments.priority,
+                parent_id=parent_id,
+                reason=_reason(caller),
+            )
+        else:
+            task = await add_task(
+                db,
+                context.clock,
+                project=str(_caller_project(caller)),
+                title=arguments.title,
+                description=arguments.description,
+                assignee=arguments.assignee,
+                priority=arguments.priority,
+                parent_id=parent_id,
+                reason=_reason(caller),
+            )
         await db.commit()
     assigned = f", assigned to agent {task.assignee_id}" if task.assignee_id else ""
     parent_suffix = f", under task #{task.parent_id}" if task.parent_id else ""
@@ -113,7 +147,7 @@ async def task_overview(context: ToolContext, arguments: TaskReference) -> str:
     async with context.sessions() as db:
         caller = await db.get_one(Agent, context.agent_id)
         task = await db.get(Task, arguments.task)
-        if task is None or (caller.role != CEO and task.project_id != caller.project_id):
+        if task is None or (caller.role != CEO and not in_scope(task, caller)):
             raise WorkError(f"task {arguments.task} is outside your scope")
         if caller.role == WORKER and task.assignee_id != caller.id:
             raise WorkError(f"task {arguments.task} is outside your scope")
@@ -171,7 +205,12 @@ async def review_task(context: ToolContext, arguments: ReviewTask) -> str:
             feedback=arguments.feedback,
         )
         await db.commit()
-    if caller.role == CEO and arguments.accept and task.parent_id is None:
+    if (
+        caller.role == CEO
+        and arguments.accept
+        and task.parent_id is None
+        and task.department_id is None
+    ):
         return f"Task #{task.id} recommended to the owner; only the owner can close it."
     return f"Task #{task.id} is {task.status}."
 
@@ -179,10 +218,9 @@ async def review_task(context: ToolContext, arguments: ReviewTask) -> str:
 async def assign_task(context: ToolContext, arguments: AssignTask) -> str:
     async with context.sessions() as db:
         caller = await db.get_one(Agent, context.agent_id)
-        project_id = _caller_project(caller)
         task = await db.get(Task, arguments.task)
-        if task is None or task.project_id != project_id:
-            raise WorkError(f"task {arguments.task} is not in your project")
+        if task is None or not in_scope(task, caller):
+            raise WorkError(f"task {arguments.task} is not in your {_scope_word(caller)}")
         if task.status in CLOSED:
             raise WorkError(f"task {task.id} is {task.status}")
         if task.checkout_run_id is not None:
@@ -201,14 +239,15 @@ def task_tools() -> list[AgentToolSpec]:
             name="task_overview",
             description="Read a task, its children and recent reports.",
             input_model=TaskReference,
-            roles=frozenset({CEO, MANAGER, LEAD, WORKER}),
+            roles=frozenset({CEO, MANAGER, LEAD, WORKER, HEAD}),
             read_only=True,
             handler=refusing(task_overview),
         ),
         AgentToolSpec(
             name="create_task",
             description=(
-                "Create a task in your project, optionally assigned to a member of your team."
+                "Create a task in your project or department, optionally assigned to a member of "
+                "your team."
             ),
             input_model=CreateTask,
             roles=SCOPED_ROLES,
@@ -217,7 +256,7 @@ def task_tools() -> list[AgentToolSpec]:
         ),
         AgentToolSpec(
             name="assign_task",
-            description="Give a task of your project to a member of your team; it wakes them.",
+            description="Give a task of your scope to a member of your team; it wakes them.",
             input_model=AssignTask,
             roles=SCOPED_ROLES,
             read_only=False,
@@ -227,7 +266,7 @@ def task_tools() -> list[AgentToolSpec]:
             name="report_task",
             description="Report your assigned task ready for review, or blocked, with a summary.",
             input_model=ReportTask,
-            roles=frozenset({MANAGER, LEAD, WORKER}),
+            roles=frozenset({MANAGER, LEAD, WORKER, HEAD}),
             read_only=False,
             handler=refusing(report_task),
         ),
@@ -235,7 +274,7 @@ def task_tools() -> list[AgentToolSpec]:
             name="review_task",
             description="Accept a direct report's reviewed task, or return it with feedback.",
             input_model=ReviewTask,
-            roles=frozenset({CEO, MANAGER, LEAD}),
+            roles=frozenset({CEO, MANAGER, LEAD, HEAD}),
             read_only=False,
             handler=refusing(review_task),
         ),

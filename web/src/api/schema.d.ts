@@ -1040,7 +1040,7 @@ export interface components {
      * BudgetScope
      * @enum {string}
      */
-    BudgetScope: 'agent' | 'project'
+    BudgetScope: 'agent' | 'project' | 'department'
     /**
      * CallRequestStatus
      * @enum {string}
@@ -1177,6 +1177,11 @@ export interface components {
       /** Title */
       title: string
     }
+    /**
+     * DepartmentStatus
+     * @enum {string}
+     */
+    DepartmentStatus: 'active' | 'paused' | 'archived'
     /** EnrollOptionsBody */
     EnrollOptionsBody: {
       /** Token */
@@ -1808,6 +1813,11 @@ export interface components {
        * @description Every value of `CallStatus`.
        */
       call_status: components['schemas']['CallStatus'][]
+      /**
+       * Department Status
+       * @description Every value of `DepartmentStatus`.
+       */
+      department_status: components['schemas']['DepartmentStatus'][]
       /**
        * Host Status
        * @description Every value of `HostStatus`.
