@@ -438,6 +438,21 @@
         "title": "AuthStatus",
         "type": "object"
       },
+      "Autonomy": {
+        "enum": ["on", "paused"],
+        "title": "Autonomy",
+        "type": "string"
+      },
+      "AutonomyState": {
+        "properties": {
+          "autonomy": {
+            "$ref": "#/components/schemas/Autonomy"
+          }
+        },
+        "required": ["autonomy"],
+        "title": "AutonomyState",
+        "type": "object"
+      },
       "BrowserFolder": {
         "properties": {
           "name": {
@@ -3300,6 +3315,73 @@
         },
         "summary": "Auth Step Up Options",
         "tags": ["auth"]
+      }
+    },
+    "/api/autonomy": {
+      "get": {
+        "operationId": "autonomy_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutonomyState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Autonomy Get",
+        "tags": ["autonomy"]
+      },
+      "put": {
+        "description": "`paused` stops timers, heartbeats and automatic next turns; owner messages still run.",
+        "operationId": "autonomy_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutonomyState"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutonomyState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Autonomy Put",
+        "tags": ["autonomy"]
       }
     },
     "/api/health": {

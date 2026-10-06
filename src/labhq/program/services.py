@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from labhq.approvals import ApprovalService
 from labhq.approvals.gates import GateRelay, GateSettings, build_gate
+from labhq.autonomy.loops import heartbeat_step, meetings_step
 from labhq.cli.context import Context
 from labhq.cli.engine import Engine
 from labhq.cli.statuses import ingest_statuses
@@ -55,6 +56,20 @@ def _statuses(services: Services) -> Step:
     return ingest_live
 
 
+def _heartbeat(services: Services) -> Step:
+    async def beat() -> int:
+        return await heartbeat_step(services.context, services.engine)
+
+    return beat
+
+
+def _meetings(services: Services) -> Step:
+    async def due() -> int:
+        return await meetings_step(services.context)
+
+    return due
+
+
 def _gates(services: Services) -> Step:
     async def relay_pass() -> int:
         # Read per pass, so configuring a gate needs no restart of the loop's wiring.
@@ -85,3 +100,5 @@ default_loops.register("graphify", "graphify_interval_seconds", refresh_loop)
 default_loops.register("it", "health_interval_seconds", it_step)
 default_loops.register("chat", "chat_interval_seconds", chat_step)
 default_loops.register("gates", "gate_interval_seconds", _gates)
+default_loops.register("heartbeat", "heartbeat_interval_seconds", _heartbeat)
+default_loops.register("meetings", "meetings_interval_seconds", _meetings)

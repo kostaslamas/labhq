@@ -57,6 +57,8 @@ PHASE_4_TABLES = {"passkey_credentials", "web_sessions", "webauthn_challenges"}
 CEO_LINE_TABLES = {"wording_proposals"}
 # The CEO's reports to the owner (issue #170).
 CEO_REPORT_TABLES = {"ceo_reports"}
+# Runtime switches such as the global autonomy (issue #169).
+PROGRAM_STATE_TABLES = {"program_state"}
 ALL_TABLES = (
     PHASE_1_TABLES
     | PHASE_2_TABLES
@@ -65,6 +67,7 @@ ALL_TABLES = (
     | PHASE_4_TABLES
     | CEO_LINE_TABLES
     | CEO_REPORT_TABLES
+    | PROGRAM_STATE_TABLES
 )
 
 

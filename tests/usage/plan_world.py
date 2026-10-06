@@ -24,7 +24,7 @@ async def on_kind(world: World, config: dict[str, Any]) -> Scheduler:
 
 
 def plan_scheduler(world: World, settings: UsageSettings = PLAN) -> Scheduler:
-    return Scheduler(
+    scheduler = Scheduler(
         world.sessions,
         clock=world.clock,
         runs=RunService(world.sessions, clock=world.clock, registry=world.registry),
@@ -32,6 +32,9 @@ def plan_scheduler(world: World, settings: UsageSettings = PLAN) -> Scheduler:
         budget_settings=BUDGETS,
         usage_settings=settings,
     )
+    # The world's teardown stops every scheduler it knows, so no run outlives its test (#150).
+    world.schedulers.append(scheduler)
+    return scheduler
 
 
 async def add_reading(
