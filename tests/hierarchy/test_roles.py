@@ -5,7 +5,14 @@ from pydantic import ValidationError
 
 from labhq.hierarchy import ROLES, ReportingLineError, TeamProposal, check_reports_to
 
-ALLOWED = [("worker", "lead"), ("lead", "manager"), ("manager", "ceo"), ("it", "ceo")]
+ALLOWED = [
+    ("worker", "lead"),
+    ("worker", "head"),
+    ("lead", "manager"),
+    ("manager", "ceo"),
+    ("it", "ceo"),
+    ("head", "ceo"),
+]
 
 
 @pytest.mark.parametrize(("child", "parent"), ALLOWED)

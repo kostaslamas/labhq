@@ -19,23 +19,30 @@ MANAGER = "manager"
 LEAD = "lead"
 WORKER = "worker"
 IT = "it"
+HEAD = "head"
 
 
 @dataclass(frozen=True)
 class Role:
     key: str
-    # The one role this role reports to; None only at the top.
-    reports_to: str | None
+    # The roles this role may report to; empty only at the top.
+    reports_to: frozenset[str]
+
+
+def _role(key: str, *reports_to: str) -> Role:
+    return Role(key, frozenset(reports_to))
 
 
 ROLES: Mapping[str, Role] = {
     role.key: role
     for role in (
-        Role(CEO, None),
-        Role(MANAGER, CEO),
-        Role(LEAD, MANAGER),
-        Role(WORKER, LEAD),
-        Role(IT, CEO),
+        _role(CEO),
+        _role(MANAGER, CEO),
+        _role(LEAD, MANAGER),
+        # A project worker reports to a lead; a department worker reports to its head.
+        _role(WORKER, LEAD, HEAD),
+        _role(IT, CEO),
+        _role(HEAD, CEO),
     )
 }
 
@@ -49,8 +56,9 @@ def role(key: str) -> Role:
 
 def check_reports_to(child: str, parent: str | None) -> None:
     """Refuse any reporting line the table does not list."""
-    expected = role(child).reports_to
-    if parent != expected:
-        above = "no one" if expected is None else f"a {expected}"
-        given = "no one" if parent is None else f"a {parent}"
-        raise ReportingLineError(f"a {child} reports to {above}, not to {given}")
+    allowed = role(child).reports_to
+    if (parent is None and not allowed) or parent in allowed:
+        return
+    above = " or ".join(f"a {key}" for key in sorted(allowed)) or "no one"
+    given = "no one" if parent is None else f"a {parent}"
+    raise ReportingLineError(f"a {child} reports to {above}, not to {given}")
