@@ -26,6 +26,11 @@ class SchedulerSettings(BaseSettings):
     # Every this many silent turns the reviewer (the parent task's assignee) is woken to look
     # at the stuck task while it keeps going. 0 never alerts.
     stall_alert_runs: int = Field(default=3, ge=0)
+    # Runs active at once across all agents. Unset, it follows the machine: about one per
+    # 1.5 GB of RAM, between 1 and 8 (`labhq.scheduler.memory`).
+    max_running: int | None = Field(default=None, gt=0)
+    # Below this share of free RAM no run starts; wakeups wait. 0 turns the check off.
+    min_free_memory_percent: float = Field(default=15.0, ge=0, le=100)
 
 
 class AgentLimits(BaseModel):
