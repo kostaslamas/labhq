@@ -61,6 +61,14 @@ CEO_REPORT_TABLES = {"ceo_reports"}
 PROGRAM_STATE_TABLES = {"program_state"}
 # Non-code departments (issue #171).
 DEPARTMENT_TABLES = {"departments"}
+# Federation: a downstream labhq managed by an upstream one (issue #188).
+FEDERATION_TABLES = {
+    "federation_nodes",
+    "federation_invites",
+    "federation_orders",
+    "federation_inbound",
+    "federation_reports",
+}
 ALL_TABLES = (
     PHASE_1_TABLES
     | PHASE_2_TABLES
@@ -71,6 +79,7 @@ ALL_TABLES = (
     | CEO_REPORT_TABLES
     | PROGRAM_STATE_TABLES
     | DEPARTMENT_TABLES
+    | FEDERATION_TABLES
 )
 
 
