@@ -1,0 +1,24 @@
+"""How a downstream instance reaches its upstream. Environment only: the key is never stored."""
+
+from functools import lru_cache
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class FederationSettings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="LABHQ_FEDERATION_", extra="ignore")
+
+    # The upstream's public URL (its exposure setting), without the `/api` path.
+    upstream_url: str | None = None
+    # The pairing key `labhq federation invite` printed here and `add` registered upstream.
+    upstream_key: SecretStr | None = None
+    # How orders from the upstream are labelled to this instance's CEO.
+    upstream_name: str = Field(default="upstream", min_length=1, max_length=100)
+    poll_interval_seconds: float = Field(default=30.0, gt=0)
+    request_timeout_seconds: float = Field(default=20.0, gt=0)
+
+
+@lru_cache(maxsize=1)
+def get_federation_settings() -> FederationSettings:
+    return FederationSettings()
