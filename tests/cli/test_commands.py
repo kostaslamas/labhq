@@ -85,6 +85,14 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("adopt", "discover"): (("adopt", "discover", "--kind", "nope"),),
     ("adopt", "request"): (("init",), ("adopt", "request", "999999999")),
     ("adopt", "check"): (("adopt", "check"),),
+    ("federation", "invite"): (("init",), ("federation", "invite", "--scope", "nope")),
+    ("federation", "add"): (
+        ("init",),
+        ("federation", "add", "https://b.example", "nope", "--project", "nope"),
+    ),
+    ("federation", "list"): (("federation", "list"),),
+    ("federation", "revoke"): (("init",), ("federation", "revoke", "42")),
+    ("federation", "poll"): (("federation", "poll"),),
 }
 
 

@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select
 
 from labhq.agenttools import AgentToolSpec, ToolContext
-from labhq.db.enums import AgentStatus, UpstreamStatus
+from labhq.db.enums import AgentStatus, ReportKind
 from labhq.db.models import Agent
 from labhq.federation.cap import over_cap
 from labhq.federation.errors import FederationError
@@ -33,7 +33,7 @@ class ReportUpstream(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     order: int
-    status: UpstreamStatus = Field(
+    status: ReportKind = Field(
         description="progress: still working. ready: done, awaiting upstream. blocked: stuck."
     )
     summary: str = Field(min_length=1, max_length=SUMMARY_CHARS)

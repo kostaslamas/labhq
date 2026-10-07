@@ -188,6 +188,17 @@ A graphify index per project, so managers and workers query code structure inste
 | `LABHQ_GRAPHIFY_BUILD_TIMEOUT_SECONDS` | `float` | `600.0` |  |
 | `LABHQ_GRAPHIFY_QUERY_BUDGET_TOKENS` | `int` | `2000` | graphify's own default; caps what one query adds to the agent's context. |
 
+## `labhq.federation.settings.FederationSettings`
+
+How a downstream instance reaches its upstream. Environment only: the key is never stored.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_FEDERATION_UPSTREAM_URL` | `str \| None` | unset | The upstream's public URL (its exposure setting), without the `/api` path. |
+| `LABHQ_FEDERATION_UPSTREAM_KEY` | `SecretStr \| None` | unset | The pairing key `labhq federation invite` printed here and `add` registered upstream. |
+| `LABHQ_FEDERATION_UPSTREAM_NAME` | `str` | `upstream` | How orders from the upstream are labelled to this instance's CEO. |
+| `LABHQ_FEDERATION_REQUEST_TIMEOUT_SECONDS` | `float` | `20.0` |  |
+
 ## `labhq.health.collectors.registry.CollectionSettings`
 
 Collectors per host kind, as a registry: `kind -> collector`. A new kind is a registration.

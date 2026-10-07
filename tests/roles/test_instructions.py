@@ -106,6 +106,8 @@ async def test_each_roles_run_carries_its_instruction(
                 "list_agent_sessions",
                 "assign_manager",
                 "delegate_task",
+                "delegate_upstream_order",
+                "report_upstream",
                 "task_overview",
                 "review_task",
                 *CEO_ORG_TOOLS,

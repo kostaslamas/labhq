@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from labhq.callcenter.answers.reports import reports
-from labhq.db.enums import OrderStatus, TaskStatus, WakeupSource
+from labhq.db.enums import OrderStage, TaskStatus, WakeupSource
 from labhq.db.models import Comment, FederationOrder, Run, Task, WakeupRequest
 from tests.federation.conftest import NODE_NAME, Pairing
 
@@ -33,14 +33,14 @@ async def test_an_order_runs_through_both_orgs_and_a_pointer_report_returns(
     # The remote manager's run only queued the order; the task is still A's to review.
     [order] = await a.all(FederationOrder)
     assert order.text == ORDER
-    assert order.status is OrderStatus.PENDING
+    assert order.status is OrderStage.PENDING
     task = await _task_on(a, "Ship the login page.")
     assert task.assignee_id == pairing.remote_manager
 
     # B dials out, stores the order and wakes its CEO with the words unchanged.
     first = await pairing.poll()
     assert (first.orders_received, first.reports_sent) == (1, 0)
-    assert (await a.all(FederationOrder))[0].status is OrderStatus.ACKNOWLEDGED
+    assert (await a.all(FederationOrder))[0].status is OrderStage.ACKNOWLEDGED
     [wakeup] = await b.all(WakeupRequest)
     assert wakeup.source is WakeupSource.UPSTREAM_ORDER
     await b.drain()

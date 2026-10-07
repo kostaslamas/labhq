@@ -2,7 +2,7 @@
 
 from sqlalchemy import select, update
 
-from labhq.db.enums import UpstreamStatus, WakeupSource, WakeupStatus
+from labhq.db.enums import ReportKind, WakeupSource, WakeupStatus
 from labhq.db.models import Agent, FederationNode, FederationReport, Run, Task, WakeupRequest
 from labhq.federation.cap import CAP_SUMMARY
 from labhq.scheduler import Wakeup
@@ -61,7 +61,7 @@ async def test_work_past_the_orders_cap_is_refused_and_reported_blocked(
     refused = [w for w in await b.all(WakeupRequest) if w.status is WakeupStatus.REFUSED]
     assert [w.idempotency_key for w in refused] == ["third"]
     [blocked] = await b.all(FederationReport)
-    assert (blocked.status, blocked.summary) == (UpstreamStatus.BLOCKED, CAP_SUMMARY)
+    assert (blocked.status, blocked.summary) == (ReportKind.BLOCKED, CAP_SUMMARY)
 
     # The refusal reaches A as a blocked task, so the owner's CEO sees why it stopped.
     await pairing.poll()

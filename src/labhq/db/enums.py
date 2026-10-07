@@ -147,7 +147,9 @@ class TranscriptSource(StrEnum):
     SYSTEM = "system"
 
 
-class OrderStatus(StrEnum):
+# Not named `*Status`: the web vocabulary publishes every `*Status` enum, and these two are
+# federation plumbing the UI never shows.
+class OrderStage(StrEnum):
     """An order sent to a remote manager: queued, fetched by the node, then stored by it."""
 
     PENDING = "pending"
@@ -155,7 +157,7 @@ class OrderStatus(StrEnum):
     ACKNOWLEDGED = "acknowledged"
 
 
-class UpstreamStatus(StrEnum):
+class ReportKind(StrEnum):
     """What a downstream labhq tells its upstream about an order."""
 
     PROGRESS = "progress"

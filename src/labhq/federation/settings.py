@@ -15,7 +15,6 @@ class FederationSettings(BaseSettings):
     upstream_key: SecretStr | None = None
     # How orders from the upstream are labelled to this instance's CEO.
     upstream_name: str = Field(default="upstream", min_length=1, max_length=100)
-    poll_interval_seconds: float = Field(default=30.0, gt=0)
     request_timeout_seconds: float = Field(default=20.0, gt=0)
 
 

@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.clock import Clock
-from labhq.db.enums import UpstreamStatus
+from labhq.db.enums import ReportKind
 from labhq.db.models import CostEvent, FederationInbound, FederationReport, Run, Task
 
 CAP_SUMMARY = "Spend cap reached on this instance; no more work is started for this order."
@@ -83,7 +83,7 @@ async def refuse_over_cap(db: AsyncSession, clock: Clock, task_id: int) -> bool:
             FederationReport(
                 inbound_id=order.id,
                 seq=order.report_seq,
-                status=UpstreamStatus.BLOCKED,
+                status=ReportKind.BLOCKED,
                 summary=CAP_SUMMARY,
                 ref=f"order {order.upstream_order_id}",
                 created_at=clock.now(),

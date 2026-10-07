@@ -11,7 +11,7 @@ from sqlalchemy import JSON, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from labhq.db.base import Base, enum_column, micros_column
-from labhq.db.enums import OrderStatus, UpstreamStatus
+from labhq.db.enums import OrderStage, ReportKind
 
 
 class FederationNode(Base):
@@ -64,8 +64,8 @@ class FederationOrder(Base):
     run_id: Mapped[int | None] = mapped_column(ForeignKey("runs.id", ondelete="SET NULL"))
     text: Mapped[str] = mapped_column(Text)
     spend_cap_micros: Mapped[int | None] = micros_column(nullable=True)
-    status: Mapped[OrderStatus] = mapped_column(
-        enum_column(OrderStatus, "federation_order_status"), default=OrderStatus.PENDING
+    status: Mapped[OrderStage] = mapped_column(
+        enum_column(OrderStage, "federation_order_status"), default=OrderStage.PENDING
     )
     # The last report sequence number applied, so a repeated report changes nothing.
     report_seq: Mapped[int] = mapped_column(default=0)
@@ -102,9 +102,7 @@ class FederationReport(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     inbound_id: Mapped[int] = mapped_column(ForeignKey("federation_inbound.id", ondelete="CASCADE"))
     seq: Mapped[int]
-    status: Mapped[UpstreamStatus] = mapped_column(
-        enum_column(UpstreamStatus, "federation_report_status")
-    )
+    status: Mapped[ReportKind] = mapped_column(enum_column(ReportKind, "federation_report_status"))
     summary: Mapped[str] = mapped_column(Text)
     ref: Mapped[str] = mapped_column(String(100), default="")
     created_at: Mapped[datetime]

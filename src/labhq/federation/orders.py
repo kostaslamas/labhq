@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.clock import Clock
-from labhq.db.enums import OrderStatus, UpstreamStatus
+from labhq.db.enums import OrderStage, ReportKind
 from labhq.db.models import Agent, Comment, FederationNode, FederationOrder, Run, Task
 from labhq.federation.errors import FederationError
 from labhq.federation.nodes import NODE_CONFIG_KEY
@@ -81,15 +81,15 @@ async def fetch_pending(
             select(FederationOrder)
             .where(
                 FederationOrder.node_id == node.id,
-                FederationOrder.status != OrderStatus.ACKNOWLEDGED,
+                FederationOrder.status != OrderStage.ACKNOWLEDGED,
             )
             .order_by(FederationOrder.id)
         )
     )
     now = clock.now()
     for order in orders:
-        if order.status is OrderStatus.PENDING:
-            order.status = OrderStatus.DELIVERED
+        if order.status is OrderStage.PENDING:
+            order.status = OrderStage.DELIVERED
             order.delivered_at = now
     return orders
 
@@ -106,8 +106,8 @@ async def acknowledge(
     db: AsyncSession, clock: Clock, node: FederationNode, order_id: int
 ) -> FederationOrder:
     order = await _own_order(db, node, order_id)
-    if order.status is not OrderStatus.ACKNOWLEDGED:
-        order.status = OrderStatus.ACKNOWLEDGED
+    if order.status is not OrderStage.ACKNOWLEDGED:
+        order.status = OrderStage.ACKNOWLEDGED
         order.acknowledged_at = clock.now()
         order.delivered_at = order.delivered_at or order.acknowledged_at
     return order
@@ -125,7 +125,7 @@ async def receive_report(
     *,
     order_id: int,
     seq: int,
-    status: UpstreamStatus,
+    status: ReportKind,
     summary: str,
     ref: str,
 ) -> bool:
@@ -138,7 +138,7 @@ async def receive_report(
     task = await db.get_one(Task, order.task_id)
     body = report_body(node, summary, ref)
     try:
-        if status is UpstreamStatus.PROGRESS:
+        if status is ReportKind.PROGRESS:
             db.add(
                 Comment(
                     task_id=task.id,
@@ -155,7 +155,7 @@ async def receive_report(
                 task,
                 node.manager_agent_id,
                 summary=body,
-                blocked=status is UpstreamStatus.BLOCKED,
+                blocked=status is ReportKind.BLOCKED,
             )
     except WorkError as error:
         raise FederationError(str(error)) from None

@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.clock import Clock
-from labhq.db.enums import UpstreamStatus, WakeupSource
+from labhq.db.enums import ReportKind, WakeupSource
 from labhq.db.models import FederationInbound, FederationReport, Task, WakeupRequest
 from labhq.federation.errors import FederationError
 from labhq.hierarchy import find_ceo
@@ -91,7 +91,7 @@ async def receive_order(
         clock,
     )
     if result.outcome is Outcome.REFUSED:
-        add_report(db, clock, inbound, UpstreamStatus.BLOCKED, BUDGET_SUMMARY, "")
+        add_report(db, clock, inbound, ReportKind.BLOCKED, BUDGET_SUMMARY, "")
     return Received(inbound, new=True)
 
 
@@ -99,7 +99,7 @@ def add_report(
     db: AsyncSession,
     clock: Clock,
     inbound: FederationInbound,
-    status: UpstreamStatus,
+    status: ReportKind,
     summary: str,
     ref: str,
 ) -> FederationReport:

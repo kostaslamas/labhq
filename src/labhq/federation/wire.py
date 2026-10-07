@@ -4,7 +4,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from labhq.db.enums import UpstreamStatus
+from labhq.db.enums import ReportKind
 
 API_PATH = "/api/federation"
 ORDERS_PATH = f"{API_PATH}/orders"
@@ -32,7 +32,7 @@ class ReportBody(BaseModel):
     order_id: int
     # Per-order, rising: the upstream applies a sequence number once.
     seq: int = Field(ge=1)
-    status: UpstreamStatus
+    status: ReportKind
     summary: str = Field(min_length=1, max_length=500)
     ref: str = Field(default="", max_length=100)
 
