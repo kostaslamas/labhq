@@ -33,7 +33,7 @@ async def test_racing_enqueues_of_one_key_still_produce_one_request(world: World
 async def test_every_source_is_registered_and_enqueues(world: World, source: WakeupSource) -> None:
     wakeup = (
         Wakeup(agent_id=world.agent_id, source=source, idempotency_key=f"{source}:1")
-        if source is WakeupSource.OWNER_MESSAGE
+        if source in {WakeupSource.OWNER_MESSAGE, WakeupSource.UPSTREAM_ORDER}
         else on_task(world, f"{source}:1", source=source)
     )
     result = await world.scheduler.enqueue(wakeup)

@@ -9,6 +9,7 @@ from labhq import __version__
 from labhq.cli.adopt import adopt_app
 from labhq.cli.approvals import approvals_app
 from labhq.cli.demo import demo
+from labhq.cli.federation import federation_app
 from labhq.cli.gate import gate_app
 from labhq.cli.health import health
 from labhq.cli.hosts import hosts_app
@@ -48,6 +49,7 @@ app.command()(serve)
 app.command()(onboard)
 app.command()(ready)
 app.add_typer(adopt_app, name="adopt")
+app.add_typer(federation_app, name="federation")
 
 
 def _print_version(value: bool) -> None:

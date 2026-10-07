@@ -17,6 +17,7 @@ from labhq.adapters.contract import CHECKS, ContractViolationError, check_interr
 from tests.adapters.fake_ollama import FakeOllama
 from tests.adapters.stub_sdk import StubScript, stub_claude
 from tests.adapters.tmux.contract_harness import tmux_harness
+from tests.federation.harness import remote_harness
 
 Harness = Callable[[str, Path, contextlib.ExitStack], AdapterFactory]
 
@@ -34,11 +35,13 @@ def _ollama(check: str, tmp_path: Path, stack: contextlib.ExitStack) -> AdapterF
     return FakeOllama(hold=check == "interrupt").factory(tmp_path / "sessions")
 
 
-# The tmux adapter runs the fake agent in a real private tmux server.
+# The tmux adapter runs the fake agent in a real private tmux server; the remote adapter
+# queues its order in a recording double.
 HARNESSES: dict[str, Harness] = {
     "fake": _fake,
     "claude": _claude,
     "ollama": _ollama,
+    "remote": remote_harness,
     "tmux": tmux_harness,
 }
 

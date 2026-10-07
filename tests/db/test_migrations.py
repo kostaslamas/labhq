@@ -61,6 +61,14 @@ CEO_REPORT_TABLES = {"ceo_reports"}
 PROGRAM_STATE_TABLES = {"program_state"}
 # Non-code departments (issue #171).
 DEPARTMENT_TABLES = {"departments"}
+# Federation: a downstream labhq managed by an upstream one (issue #188).
+FEDERATION_TABLES = {
+    "federation_nodes",
+    "federation_invites",
+    "federation_orders",
+    "federation_inbound",
+    "federation_reports",
+}
 ALL_TABLES = (
     PHASE_1_TABLES
     | PHASE_2_TABLES
@@ -71,6 +79,7 @@ ALL_TABLES = (
     | CEO_REPORT_TABLES
     | PROGRAM_STATE_TABLES
     | DEPARTMENT_TABLES
+    | FEDERATION_TABLES
 )
 
 
@@ -84,7 +93,7 @@ def test_models_declare_exactly_the_known_tables() -> None:
 
 def test_the_chain_has_a_single_head() -> None:
     heads = ScriptDirectory.from_config(alembic_config("sqlite://")).get_heads()
-    assert heads == ["0017"]
+    assert heads == ["0018"]
 
 
 def test_upgrade_head_builds_the_full_schema_from_empty(database_url: str) -> None:

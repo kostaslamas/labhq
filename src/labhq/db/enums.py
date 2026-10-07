@@ -42,6 +42,8 @@ class WakeupSource(StrEnum):
     OWNER_MESSAGE = "owner_message"
     CHILD_REPORT = "child_report"
     TASK_RETURNED = "task_returned"
+    # An order from the upstream labhq that registered this one as a remote manager.
+    UPSTREAM_ORDER = "upstream_order"
 
 
 class WakeupStatus(StrEnum):
@@ -143,3 +145,21 @@ class TranscriptSource(StrEnum):
     AGENT = "agent"
     OWNER = "owner"
     SYSTEM = "system"
+
+
+# Not named `*Status`: the web vocabulary publishes every `*Status` enum, and these two are
+# federation plumbing the UI never shows.
+class OrderStage(StrEnum):
+    """An order sent to a remote manager: queued, fetched by the node, then stored by it."""
+
+    PENDING = "pending"
+    DELIVERED = "delivered"
+    ACKNOWLEDGED = "acknowledged"
+
+
+class ReportKind(StrEnum):
+    """What a downstream labhq tells its upstream about an order."""
+
+    PROGRESS = "progress"
+    READY = "ready"
+    BLOCKED = "blocked"

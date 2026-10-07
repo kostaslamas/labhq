@@ -24,6 +24,7 @@ from labhq.ceosessions import CEO_ROLE
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, RunStatus, TaskStatus, WakeupSource, WakeupStatus
 from labhq.db.models import Agent, Run, Task, WakeupRequest
+from labhq.federation.cap import refuse_over_cap
 from labhq.scheduler.admission import Admission
 from labhq.scheduler.checkout import checkout
 from labhq.scheduler.reaper import LIVE_STATUSES
@@ -113,6 +114,12 @@ async def dispatch_one(
     budget = await check(session, agent.id, clock, budget_settings)
     now = clock.now()
     if budget.decision is Decision.STOP:
+        request.status = WakeupStatus.REFUSED
+        request.updated_at = now
+        await session.commit()
+        return Dispatch(Verdict.BUDGET_STOP)
+    # An upstream order's own spend cap, set by the instance that gave the order (issue #188).
+    if request.task_id is not None and await refuse_over_cap(session, clock, request.task_id):
         request.status = WakeupStatus.REFUSED
         request.updated_at = now
         await session.commit()

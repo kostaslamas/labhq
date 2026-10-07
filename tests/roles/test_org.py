@@ -149,6 +149,8 @@ def test_each_role_sees_its_own_org_tools(org: Org) -> None:
         "list_agent_sessions",
         "assign_manager",
         "delegate_task",
+        "delegate_upstream_order",
+        "report_upstream",
         "task_overview",
         "review_task",
         *CEO_ORG_TOOLS,

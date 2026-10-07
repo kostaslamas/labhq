@@ -13,6 +13,13 @@ from labhq.db.models.callcenter import (
     WordingProposal,
 )
 from labhq.db.models.chat import ChatBinding
+from labhq.db.models.federation import (
+    FederationInbound,
+    FederationInvite,
+    FederationNode,
+    FederationOrder,
+    FederationReport,
+)
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
 from labhq.db.models.meetings import (
     Meeting,
@@ -41,6 +48,11 @@ __all__ = [
     "CostEvent",
     "Delivery",
     "Department",
+    "FederationInbound",
+    "FederationInvite",
+    "FederationNode",
+    "FederationOrder",
+    "FederationReport",
     "HealthRule",
     "HealthSample",
     "Host",
