@@ -16,6 +16,7 @@ from labhq.economy.graphify import refresh_loop
 from labhq.health.monitor import health_step
 from labhq.it import it_step
 from labhq.live import live_feed
+from labhq.logins.program import login_duty
 from labhq.meetings.channels.loop import chat_step
 from labhq.notify import Dispatcher
 from labhq.program.loops import LoopRegistry, Step
@@ -54,6 +55,13 @@ def _statuses(services: Services) -> Step:
         return len(await ingest_statuses(context.sessions, context.clock, context.settings, live))
 
     return ingest_live
+
+
+def _logins(services: Services) -> Step:
+    async def watch() -> int:
+        return await login_duty(services.context)
+
+    return watch
 
 
 def _heartbeat(services: Services) -> Step:
@@ -100,5 +108,7 @@ default_loops.register("graphify", "graphify_interval_seconds", refresh_loop)
 default_loops.register("it", "health_interval_seconds", it_step)
 default_loops.register("chat", "chat_interval_seconds", chat_step)
 default_loops.register("gates", "gate_interval_seconds", _gates)
+# Paced with the status files: a login the owner finished is confirmed within that interval.
+default_loops.register("logins", "status_interval_seconds", _logins)
 default_loops.register("heartbeat", "heartbeat_interval_seconds", _heartbeat)
 default_loops.register("meetings", "meetings_interval_seconds", _meetings)
