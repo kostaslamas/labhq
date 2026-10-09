@@ -92,7 +92,8 @@ async def _unsent(db: AsyncSession) -> list[tuple[FederationReport, FederationIn
     rows = await db.execute(
         select(FederationReport, FederationInbound)
         .join(FederationInbound, FederationInbound.id == FederationReport.inbound_id)
-        .where(FederationReport.delivered_at.is_(None))
+        # An order taken over A2A is read back by the upstream; there is nothing to post.
+        .where(FederationReport.delivered_at.is_(None), FederationInbound.invite_id.is_(None))
         .order_by(FederationReport.inbound_id, FederationReport.seq)
     )
     return [(report, inbound) for report, inbound in rows]

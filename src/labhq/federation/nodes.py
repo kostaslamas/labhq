@@ -50,9 +50,11 @@ class Nodes:
         name: str | None = None,
         scopes: Sequence[str] = ALL_SCOPES,
         spend_cap_micros: int | None = None,
+        a2a_url: str | None = None,
     ) -> AddedNode:
-        if urlsplit(url).scheme not in {"http", "https"}:
-            raise FederationError(f"{url!r} is not an http or https URL")
+        for address in (url, a2a_url):
+            if address is not None and urlsplit(address).scheme not in {"http", "https"}:
+                raise FederationError(f"{address!r} is not an http or https URL")
         if not looks_like_key(key):
             raise FederationError("that is not a pairing key; print one with `federation invite`")
         if spend_cap_micros is not None and spend_cap_micros <= 0:
@@ -87,6 +89,7 @@ class Nodes:
             node = FederationNode(
                 name=label,
                 url=url,
+                a2a_url=a2a_url,
                 key_hash=hash_key(key),
                 scopes=chosen,
                 spend_cap_micros=spend_cap_micros,

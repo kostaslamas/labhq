@@ -198,6 +198,7 @@ How a downstream instance reaches its upstream. Environment only: the key is nev
 | `LABHQ_FEDERATION_UPSTREAM_KEY` | `SecretStr \| None` | unset | The pairing key `labhq federation invite` printed here and `add` registered upstream. |
 | `LABHQ_FEDERATION_UPSTREAM_NAME` | `str` | `upstream` | How orders from the upstream are labelled to this instance's CEO. |
 | `LABHQ_FEDERATION_REQUEST_TIMEOUT_SECONDS` | `float` | `20.0` |  |
+| `LABHQ_FEDERATION_NODE_KEYS` | `dict[str, SecretStr]` | `{}` | Upstream side, A2A nodes: node name -> the key its `invite` printed. Only the hash is stored in the database, and sending an order needs the key itself, so it comes from here like the downstream's own key does. A JSON object: {"lab-b": "lhqf_..."}. |
 
 ## `labhq.health.collectors.registry.CollectionSettings`
 

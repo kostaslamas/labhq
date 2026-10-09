@@ -1,4 +1,4 @@
-"""`labhq federation invite|add|list|revoke|poll`: pair two labhq instances (issue #188).
+"""`labhq federation invite|add|list|revoke|poll|sync`: pair two labhq instances (issue #188).
 
 `invite` and `poll` run on the downstream instance, `add` on the upstream one. `list` and
 `revoke` work on whichever side holds the thing: nodes upstream, invites downstream.
@@ -11,6 +11,7 @@ import typer
 
 from labhq.cli.context import CliError, Context, execute
 from labhq.db.models import FederationInvite, FederationNode
+from labhq.federation.a2a.sync import SyncResult, a2a_nodes, sync_once
 from labhq.federation.invites import Invites
 from labhq.federation.keys import ALL_SCOPES
 from labhq.federation.nodes import Nodes
@@ -32,9 +33,10 @@ Scopes = Annotated[
 def node_line(node: FederationNode) -> str:
     cap = format_micros(node.spend_cap_micros) if node.spend_cap_micros is not None else "none"
     state = "revoked" if node.revoked_at is not None else "active"
+    transport = f", A2A at {node.a2a_url}" if node.a2a_url else ""
     return (
         f"node {node.id} {node.name} ({node.url}): {state}, scopes {','.join(node.scopes)}, "
-        f"manager agent {node.manager_agent_id}, per-order cap {cap}"
+        f"manager agent {node.manager_agent_id}, per-order cap {cap}{transport}"
     )
 
 
@@ -75,6 +77,13 @@ def add(
     spend_cap_usd: Annotated[
         str | None, typer.Option(help="Per-order spend cap attached to every order, in USD.")
     ] = None,
+    a2a_url: Annotated[
+        str | None,
+        typer.Option(
+            help="The node's A2A base URL. Set: orders are sent there (`federation sync`). "
+            "Unset: the node polls for them."
+        ),
+    ] = None,
     scope: Scopes = None,
 ) -> None:
     """Register a downstream instance as a remote manager in the CEO's org chart."""
@@ -91,6 +100,7 @@ def add(
             name=name,
             scopes=scope or ALL_SCOPES,
             spend_cap_micros=cap,
+            a2a_url=a2a_url,
         )
         return added.node
 
@@ -150,5 +160,34 @@ def poll(
                 if every is None:
                     return result
                 await asyncio.sleep(every)
+
+    execute(body)
+
+
+@federation_app.command("sync")
+def sync(
+    every: Annotated[
+        float | None, typer.Option(help="Keep syncing, pausing this many seconds between rounds.")
+    ] = None,
+) -> None:
+    """Send queued orders to A2A nodes and read their tasks back as reports."""
+    settings = FederationSettings()
+
+    async def body(context: Context) -> SyncResult:
+        async with context.sessions() as db:
+            if not await a2a_nodes(db):
+                raise CliError(
+                    "no node has an A2A URL; register one with `federation add --a2a-url`"
+                )
+        while True:
+            result = await sync_once(context.sessions, context.clock, settings)
+            typer.echo(
+                f"orders sent {result.orders_sent}, reports applied {result.reports_applied}"
+            )
+            for name, reason in result.failures.items():
+                typer.echo(f"node {name}: {reason}")
+            if every is None:
+                return result
+            await asyncio.sleep(every)
 
     execute(body)

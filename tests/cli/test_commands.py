@@ -93,6 +93,7 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("federation", "list"): (("federation", "list"),),
     ("federation", "revoke"): (("init",), ("federation", "revoke", "42")),
     ("federation", "poll"): (("federation", "poll"),),
+    ("federation", "sync"): (("init",), ("federation", "sync")),
 }
 
 

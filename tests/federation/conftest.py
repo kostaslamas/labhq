@@ -5,7 +5,7 @@ node "lab-b". The downstream instance ("B") has its own CEO, project and manager
 A's federation endpoint through an in-process ASGI transport, so nothing touches a network.
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -86,8 +86,15 @@ def _migrated(path: Path) -> str:
     return url
 
 
+QueueFactory = Callable[[async_sessionmaker[AsyncSession], FakeClock], DatabaseOrderQueue]
+
+
 async def _build(
-    name: str, url: str, clock: FakeClock, remote_queue: bool
+    name: str,
+    url: str,
+    clock: FakeClock,
+    remote_queue: bool,
+    queue_factory: QueueFactory = DatabaseOrderQueue,
 ) -> AsyncIterator[Instance]:
     path = Path(url.rpartition("///")[2])
     engine = create_engine(url)
@@ -96,7 +103,7 @@ async def _build(
     registry: AdapterRegistry = default_registry.copy()
     registry.register("fake", lambda: FakeAdapter(fake), replace=True)
     if remote_queue:
-        queue = DatabaseOrderQueue(sessions, clock)
+        queue = queue_factory(sessions, clock)
         registry.register("remote", lambda: RemoteAdapter(queue), replace=True)
     tools = AgentToolRegistry()
     register(RoleRegistry(), tools)
