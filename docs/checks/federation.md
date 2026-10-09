@@ -106,6 +106,67 @@ it is managed by A and dials out to it, so it needs no open port and may sit beh
    Revoking the invite on B (`labhq federation revoke --invite 1`) stops B's polling at once,
    without reaching A.
 
+## The same check over A2A, through a tunnel
+
+Federation can speak the Agent2Agent (A2A) protocol instead of polling. The roles flip for
+the network path: A dials B, so **B must be reachable** and A needs no open port. Use this
+when B can expose a URL (a quick tunnel is enough) and you want A to send orders at once
+rather than wait for B's poll. A node with no inbound route keeps polling; the transport is
+chosen per node, and both can be paired to the same A.
+
+| Step | Passes when |
+|---|---|
+| Card | `curl $B_URL/api/federation/a2a/.well-known/agent-card.json` prints a v1.0 card with a bearer scheme, no key needed |
+| Auth | The same URL's `POST /api/federation/a2a` answers `401` without the key or with a revoked one |
+| Order | An order reaches B's CEO at once, unchanged and labelled as the upstream's, with no `poll` running on B |
+| Report | `progress`, `ready` and `blocked` reach A as `working`, `completed` and `input-required` tasks, then as pointer reports in `task_overview` and the Call Center |
+| Cap | An order past A's per-order cap is refused on B and comes back blocked, as in step 6 |
+| Authority | A's key opens no approvals route on B, as in step 7 |
+| Revoke | After `labhq federation revoke --invite <id>` on B, A's next `sync` reports that B refused the key |
+
+1. **Expose B.** On B, run `labhq serve` behind a tunnel (`docs/checks/connector.md`) and call
+   the URL `$B_URL`. Check the card:
+
+   ```sh
+   curl -s "$B_URL/api/federation/a2a/.well-known/agent-card.json"
+   ```
+
+2. **Pair for A2A.** On B, `labhq federation invite --label office` as in step 1 and copy the
+   key. On A, register B with its A2A base URL, and give A the key in its environment: only
+   the key's hash is stored, but sending an order needs the key itself, so it is read from
+   `LABHQ_FEDERATION_NODE_KEYS`, a JSON object of node name to key:
+
+   ```sh
+   labhq federation add "$B_URL" lhqf_... --project lab --name lab-b --spend-cap-usd 2 \
+     --a2a-url "$B_URL/api/federation/a2a"
+   export LABHQ_FEDERATION_NODE_KEYS='{"lab-b": "lhqf_..."}'
+   labhq federation list
+   ```
+
+   `list` shows node `lab-b` with `A2A at ...`. B sets `LABHQ_FEDERATION_UPSTREAM_NAME="Lab A"`
+   to label A's orders. B runs `labhq run` and needs no `poll`.
+
+3. **Send and read.** Give A's CEO a job for `lab` as in step 3. The remote manager's run sends
+   the order straight away (the run's text says `sent to node lab-b over A2A`); if B was
+   unreachable it says `Not sent yet` and the order waits. On A, keep the reader running:
+
+   ```sh
+   labhq federation sync --every 30
+   ```
+
+   Each round sends any order still waiting and reads every open task from B with `GetTask`,
+   applying new reports once (a repeated round prints `orders sent 0, reports applied 0`).
+
+4. **Steps 4 to 8** are the same as above: B's CEO run starts with `Order 1 from upstream Lab A.
+   Its words, unchanged:`; `ready` shows on A at the next `sync`; the cap and authority rows
+   behave as before. To check revocation, revoke the invite on B and watch A's `sync` print
+   `node lab-b: the node refused the key: it is revoked or unknown there`.
+
+Not offered in this version: A2A streaming (SSE) and push notifications. A reads B's tasks
+with `GetTask` instead, so B never needs to dial A back. An A2A client that speaks only the
+older 0.3 protocol is refused with `VersionNotSupportedError`; send the `A2A-Version: 1.0`
+header.
+
 ## Record the result
 
 Copy the table above into the pull request or the issue with the date, both machines'
