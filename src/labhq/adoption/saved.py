@@ -133,6 +133,31 @@ def _aider(project: Path) -> list[SavedSession]:
     return [SavedSession("aider", path.name, _modified(path))]
 
 
+def _aider_reader(project: Path, home: Path) -> list[SavedSession]:
+    return _aider(project)
+
+
+# Kinds whose store is read by directory here; every other kind is read through the
+# machine-wide store layouts of `labhq.inventory.stores`, filtered to this folder.
+_READERS = {
+    "claude-code": _claude,
+    "codex": _codex,
+    "gemini": _gemini,
+    "aider": _aider_reader,
+}
+
+
+def _store_sessions(kind: str, project: Path, home: Path) -> list[SavedSession]:
+    from labhq.inventory.stores import Bases, Context, read_all
+
+    entries = read_all(Context(Bases.for_user(home), os.environ), {kind})
+    return [
+        SavedSession(e.tool, e.session_id, e.updated_at)
+        for e in entries
+        if e.folder.resolve() == project
+    ]
+
+
 def list_saved_sessions(
     kind: str, project: Path, *, home: Path | None = None
 ) -> list[SavedSession]:
@@ -142,16 +167,8 @@ def list_saved_sessions(
         return []
     project = project.resolve()
     home = home or Path.home()
-    if kind == "claude-code":
-        found = _claude(project, home)
-    elif kind == "codex":
-        found = _codex(project, home)
-    elif kind == "gemini":
-        found = _gemini(project, home)
-    elif kind == "aider":
-        found = _aider(project)
-    else:
-        found = []
+    reader = _READERS.get(kind)
+    found = reader(project, home) if reader is not None else _store_sessions(kind, project, home)
     return sorted(found, key=lambda session: session.updated_at, reverse=True)
 
 

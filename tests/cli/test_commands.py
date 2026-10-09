@@ -98,6 +98,11 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("federation", "revoke"): (("init",), ("federation", "revoke", "42")),
     ("federation", "poll"): (("federation", "poll"),),
     ("federation", "sync"): (("init",), ("federation", "sync")),
+    ("sessions", "scan"): (("sessions", "scan"),),
+    ("sessions", "analyse"): (("init",), ("sessions", "analyse", "nope")),
+    ("sessions", "close"): (("init",), ("sessions", "close", "nope", "1")),
+    ("sessions", "continue"): (("init",), ("sessions", "continue", "nope", "--pid", "1")),
+    ("sessions", "folder"): (("init",), ("sessions", "folder", "nope")),
 }
 
 
