@@ -195,7 +195,8 @@ def manager_tools(services: RoleServices) -> list[AgentToolSpec]:
             name="propose_team",
             description=(
                 "Propose team members (leads and workers) for your project. Each member has a "
-                "key, a role, a title, an adapter and optionally the key it reports to; "
+                "key, a role, a title, optionally an adapter (workers default to headless) and "
+                "optionally the key it reports to; "
                 "without one it reports to you. The owner approves the team as a whole."
             ),
             input_model=ProposeTeam,

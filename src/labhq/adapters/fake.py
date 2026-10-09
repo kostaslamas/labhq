@@ -47,6 +47,8 @@ class FakeScript:
     inputs: list[str] = field(default_factory=list)
     interrupts: int = 0
     closes: int = 0
+    # Processes a real headless adapter would hold: started by `start`, gone at `close`.
+    live_processes: int = 0
 
 
 class FakeAdapter:
@@ -59,6 +61,7 @@ class FakeAdapter:
     async def start(self, request: RunRequest) -> None:
         self._request = request
         self.script.requests.append(request)
+        self.script.live_processes += 1
 
     async def events(self) -> AsyncIterator[AdapterEvent]:
         if self._request is None:
@@ -86,6 +89,7 @@ class FakeAdapter:
 
     async def close(self) -> None:
         self.script.closes += 1
+        self.script.live_processes -= 1
 
     def _final_result(self) -> AdapterResult:
         assert self._request is not None
