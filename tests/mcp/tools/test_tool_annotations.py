@@ -15,6 +15,7 @@ EXPECTED: dict[str, tuple[bool, bool | None]] = {
     "ask_ceo": (False, False),
     "get_reply": (True, None),
     "meeting_minutes": (True, None),
+    "channel_setup": (True, None),
 }
 
 
