@@ -8,6 +8,7 @@ import labhq.roles  # noqa: F401  (registers the role instructions and tools)
 from labhq import __version__
 from labhq.cli.adopt import adopt_app
 from labhq.cli.approvals import approvals_app
+from labhq.cli.channels import channels_app
 from labhq.cli.demo import demo
 from labhq.cli.federation import federation_app
 from labhq.cli.gate import gate_app
@@ -39,6 +40,7 @@ app.command()(health)
 app.add_typer(gate_app, name="gate")
 app.add_typer(hosts_app, name="hosts")
 app.add_typer(mcp_app, name="mcp")
+app.add_typer(channels_app, name="channels")
 app.add_typer(notify_app, name="notify")
 app.add_typer(org_app, name="org")
 app.add_typer(passkey_app, name="passkey")

@@ -69,6 +69,41 @@
         "title": "ActionItem",
         "type": "object"
       },
+      "AddBody": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 64,
+            "title": "Name",
+            "type": "string"
+          },
+          "values": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Values",
+            "type": "object"
+          }
+        },
+        "required": ["kind", "name"],
+        "title": "AddBody",
+        "type": "object"
+      },
       "AddedAgent": {
         "properties": {
           "adapter": {
@@ -862,6 +897,71 @@
         "title": "CeoReportOut",
         "type": "object"
       },
+      "ChannelOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_test_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Test Error"
+          },
+          "last_test_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Test Ok"
+          },
+          "last_tested_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Tested At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "enabled",
+          "last_test_ok",
+          "last_test_error",
+          "last_tested_at"
+        ],
+        "title": "ChannelOut",
+        "type": "object"
+      },
       "Credential": {
         "description": "What the UI may know about a passkey. The public key stays on the server.",
         "properties": {
@@ -1121,6 +1221,36 @@
         "title": "ExecutedApproval",
         "type": "object"
       },
+      "FieldOut": {
+        "properties": {
+          "default": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "boolean"
+          }
+        },
+        "required": ["name", "label", "secret", "default"],
+        "title": "FieldOut",
+        "type": "object"
+      },
       "Health": {
         "properties": {
           "version": {
@@ -1289,6 +1419,32 @@
         },
         "required": ["text"],
         "title": "JoinBody",
+        "type": "object"
+      },
+      "KindOut": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldOut"
+            },
+            "title": "Fields",
+            "type": "array"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": ["kind", "label", "fields", "available"],
+        "title": "KindOut",
         "type": "object"
       },
       "MeetingDetail": {
@@ -2082,6 +2238,24 @@
         "title": "RegisteredProject",
         "type": "object"
       },
+      "RemoveBody": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          }
+        },
+        "title": "RemoveBody",
+        "type": "object"
+      },
       "RiskClass": {
         "enum": ["light", "heavy"],
         "title": "RiskClass",
@@ -2287,6 +2461,29 @@
         "title": "StepUpBody",
         "type": "object"
       },
+      "SwitchBody": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": ["enabled"],
+        "title": "SwitchBody",
+        "type": "object"
+      },
       "TaskCount": {
         "properties": {
           "count": {
@@ -2385,6 +2582,27 @@
           "reports"
         ],
         "title": "TeamMember",
+        "type": "object"
+      },
+      "Tested": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/ChannelOut"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "required": ["channel", "error"],
+        "title": "Tested",
         "type": "object"
       },
       "Today": {
@@ -3655,6 +3873,241 @@
         },
         "summary": "Capacity Get",
         "tags": ["capacity"]
+      }
+    },
+    "/api/channels": {
+      "get": {
+        "operationId": "channels_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ChannelOut"
+                  },
+                  "title": "Response Channels List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels List",
+        "tags": ["channels"]
+      },
+      "post": {
+        "description": "Add a channel with a passkey, send its test message and show how that went.",
+        "operationId": "channels_add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels Add",
+        "tags": ["channels"]
+      }
+    },
+    "/api/channels/kinds": {
+      "get": {
+        "operationId": "channels_kinds",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KindOut"
+                  },
+                  "title": "Response Channels Kinds",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels Kinds",
+        "tags": ["channels"]
+      }
+    },
+    "/api/channels/{channel_id}": {
+      "delete": {
+        "operationId": "channels_remove",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel_id",
+            "required": true,
+            "schema": {
+              "title": "Channel Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels Remove",
+        "tags": ["channels"]
+      },
+      "patch": {
+        "operationId": "channels_switch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel_id",
+            "required": true,
+            "schema": {
+              "title": "Channel Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels Switch",
+        "tags": ["channels"]
+      }
+    },
+    "/api/channels/{channel_id}/test": {
+      "post": {
+        "operationId": "channels_test",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "channel_id",
+            "required": true,
+            "schema": {
+              "title": "Channel Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Tested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Channels Test",
+        "tags": ["channels"]
       }
     },
     "/api/health": {

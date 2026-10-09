@@ -21,6 +21,7 @@ from labhq.db.models.federation import (
     FederationReport,
 )
 from labhq.db.models.health import HealthRule, HealthSample, Host, Incident
+from labhq.db.models.logins import LoginRequest, NotificationChannel
 from labhq.db.models.meetings import (
     Meeting,
     MeetingActionItem,
@@ -57,12 +58,14 @@ __all__ = [
     "HealthSample",
     "Host",
     "Incident",
+    "LoginRequest",
     "Meeting",
     "MeetingActionItem",
     "MeetingDecision",
     "MeetingParticipant",
     "MeetingTranscriptEntry",
     "Notification",
+    "NotificationChannel",
     "PasskeyCredential",
     "ProgramState",
     "Project",

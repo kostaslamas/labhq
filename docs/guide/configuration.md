@@ -285,6 +285,17 @@ Live-update settings, read from `LABHQ_LIVE_*` environment variables.
 |---|---|---|---|
 | `LABHQ_LIVE_HEARTBEAT_SECONDS` | `float` | `20.0` | Below the 100 s idle timeout of Cloudflare and the 60 s default of nginx and Caddy, so an idle socket is never cut by a proxy; the client treats twice this silence as a dead link. |
 
+## `labhq.logins.settings.LoginSettings`
+
+How long a login request waits for a link and how often the program looks again.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_LOGIN_URL_WAIT_SECONDS` | `float` | `20.0` | How long the tool gets to print its login link after its login command starts. |
+| `LABHQ_LOGIN_POLL_SECONDS` | `float` | `1.0` |  |
+| `LABHQ_LOGIN_STATUS_TIMEOUT_SECONDS` | `float` | `15.0` |  |
+| `LABHQ_LOGIN_BLOCKED_RUN_WINDOW_SECONDS` | `float` | `900.0` | A run that stopped on a login screen is looked at again for this long. |
+
 ## `labhq.meetings.channels.settings.ChannelSettings`
 
 Meeting channel settings, read from `LABHQ_CHANNELS_*` environment variables.

@@ -43,7 +43,15 @@ def test_first_run_reaches_a_verified_system_without_any_account(
     (row,) = cli.rows("SELECT kind, status FROM notifications")
     assert (row["kind"], row["status"].lower()) == ("onboard", "sent")
     topic = (data_dir / TOPIC_FILENAME).read_text().strip()
-    assert [message["topic"] for message in ntfy.messages] == [topic]
+    # The notifier's own check, then the test message of the first channel it became.
+    assert [message["topic"] for message in ntfy.messages] == [topic, topic]
+    (channel,) = cli.rows("SELECT name, kind, enabled, last_test_ok FROM notification_channels")
+    assert (channel["name"], channel["kind"], channel["enabled"], channel["last_test_ok"]) == (
+        "first",
+        "ntfy",
+        1,
+        1,
+    )
     assert f"Subscribe in the ntfy app: {ntfy.url}/{topic}" in output
     # No account anywhere: the model login stays a suggestion for later, not a failure.
     assert "Later, model login:" in output
@@ -78,8 +86,8 @@ def test_a_second_run_keeps_token_topic_and_data_and_checks_again(
     assert (data_dir / TOKEN_FILENAME).read_text() == token
     assert (data_dir / TOPIC_FILENAME).read_text() == topic
     assert connector_url(output).endswith(token.strip())
-    # The end-to-end check ran again: a second notification, the first row still there.
-    assert len(ntfy.messages) == 2
+    # The end-to-end check ran again: a third message, the channel already proved itself.
+    assert len(ntfy.messages) == 3
     assert [r["status"].lower() for r in cli.rows("SELECT status FROM notifications")] == [
         "sent",
         "sent",

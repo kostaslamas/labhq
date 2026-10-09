@@ -4,6 +4,7 @@ import httpx
 import typer
 from sqlalchemy import select
 
+from labhq.channels import ChannelRuntime, FanOutNotifier
 from labhq.cli.context import Context, execute, fail
 from labhq.db.enums import NotificationStatus
 from labhq.db.models import Notification
@@ -21,7 +22,15 @@ async def _flush(context: Context) -> int:
             notifier = build_notifier(settings, client, context.settings.data_dir)
         except NotifyError as error:
             fail(str(error))
-        dispatcher = Dispatcher(context.sessions, notifier, clock=context.clock, settings=settings)
+        channels = ChannelRuntime(
+            context.sessions, client, context.settings.data_dir, context.clock, settings
+        )
+        dispatcher = Dispatcher(
+            context.sessions,
+            FanOutNotifier(channels, notifier),
+            clock=context.clock,
+            settings=settings,
+        )
         return await dispatcher.dispatch_pending()
 
 

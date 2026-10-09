@@ -12,6 +12,7 @@ from pydantic import ValidationError
 
 from labhq.auth.public_url import load_public_url, store_public_url
 from labhq.auth.settings import AuthSettings
+from labhq.channels import ChannelRuntime, FanOutNotifier
 from labhq.cli.context import Context, execute, fail
 from labhq.cli.engine import Engine
 from labhq.expose import ExposureError, expose_running, exposures, verify_connector
@@ -99,10 +100,23 @@ def serve(
                 notifier = build_notifier(settings, client, context.settings.data_dir)
             except NotifyError as error:
                 fail(str(error))
+            # Every enabled channel gets each message; with none, the notifier above does.
+            channels = ChannelRuntime(
+                context.sessions,
+                client,
+                context.settings.data_dir,
+                context.clock,
+                settings,
+            )
             services = Services(
                 context,
                 Engine(context),
-                Dispatcher(context.sessions, notifier, clock=context.clock, settings=settings),
+                Dispatcher(
+                    context.sessions,
+                    FanOutNotifier(channels, notifier),
+                    clock=context.clock,
+                    settings=settings,
+                ),
             )
             # No access log: the secret path would land in it.
             mcp_app = build_app(default_registry, secret)
