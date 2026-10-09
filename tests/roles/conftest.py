@@ -176,7 +176,7 @@ async def org(sessions: async_sessionmaker[AsyncSession], clock: FakeClock, tmp_
         browse_roots=lambda: [root],
         processes=lambda: processes,
         hierarchy_settings=lambda: HierarchySettings(
-            approve_new_agents=True, max_team_size=8, org_adapter="fake"
+            approve_new_agents=True, max_team_size=8, org_adapter="fake", role_adapters={}
         ),
         adapters=lambda: ["fake"],
     )

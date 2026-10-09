@@ -33,7 +33,8 @@ class ProposedMember(BaseModel):
     key: str = Field(min_length=1, max_length=64)
     role: str
     title: str = Field(min_length=1, max_length=200)
-    adapter: str = Field(min_length=1, max_length=64)
+    # None takes the role's default adapter (`HierarchySettings.role_adapters`).
+    adapter: str | None = Field(default=None, min_length=1, max_length=64)
     # Another member's key; None reports to the proposing manager.
     reports_to: str | None = None
 
@@ -75,10 +76,13 @@ class TeamProposal(BaseModel):
         return ordered
 
 
-def check_adapters(proposal: TeamProposal, adapters: Collection[str]) -> None:
+def check_adapters(
+    proposal: TeamProposal, adapters: Collection[str], settings: HierarchySettings
+) -> None:
     for member in proposal.members:
-        if member.adapter not in adapters:
-            raise UnknownAdapterError(f"no adapter registered as {member.adapter!r}")
+        chosen = settings.adapter_for(member.role, member.adapter)
+        if chosen not in adapters:
+            raise UnknownAdapterError(f"no adapter registered as {chosen!r}")
 
 
 async def find_manager(db: AsyncSession, manager_id: int) -> Agent:
@@ -149,7 +153,7 @@ async def create_team(
             role=member.role,
             title=member.title,
             reports_to=ids[member.reports_to],
-            adapter=member.adapter,
+            adapter=settings.adapter_for(member.role, member.adapter),
             config=member_config(manager),
             status=AgentStatus.ACTIVE,
             created_at=now,

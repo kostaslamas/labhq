@@ -67,12 +67,13 @@ def test_every_listed_key_is_a_known_control_key() -> None:
         assert set(default_kinds.get(name).control_keys) <= CONTROL_KEYS.keys()
 
 
-async def test_an_sdk_agent_has_no_pane_to_send_to(world: World) -> None:
+async def test_a_headless_agent_refuses_control_keys_with_a_clear_message(world: World) -> None:
     with pytest.raises(ControlKeyError) as refused:
         await world.service.send(OWNER_SENDER, world.ids["sdk"], "escape")
 
-    assert refused.value.code == "no_pane"
-    assert "no live tmux pane" in str(refused.value)
+    assert refused.value.code == "headless"
+    assert "runs headless (claude)" in str(refused.value)
+    assert "tmux-only" in str(refused.value)
     assert world.panes.sent == []
     assert (await world.service.support(world.ids["sdk"])).keys == []
 

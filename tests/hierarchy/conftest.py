@@ -61,7 +61,9 @@ async def sessions(database_url: str) -> AsyncIterator[async_sessionmaker[AsyncS
 
 @pytest.fixture
 def settings() -> HierarchySettings:
-    return HierarchySettings(approve_new_agents=True, max_team_size=CAP, org_adapter="fake")
+    return HierarchySettings(
+        approve_new_agents=True, max_team_size=CAP, org_adapter="fake", role_adapters={}
+    )
 
 
 @pytest.fixture

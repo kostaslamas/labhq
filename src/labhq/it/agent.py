@@ -46,7 +46,7 @@ async def ensure_it_agent(
     if existing is not None:
         return existing
     hierarchy = hierarchy or HierarchySettings()
-    chosen = adapter or hierarchy.org_adapter
+    chosen = hierarchy.adapter_for(IT, adapter)
     if chosen not in adapters:
         raise UnknownAdapterError(f"no adapter registered as {chosen!r}")
     ceo = await Hierarchy(sessions, clock=clock, adapters=adapters, settings=hierarchy).ensure_ceo()

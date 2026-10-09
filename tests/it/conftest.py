@@ -45,7 +45,7 @@ async def start_it_agent(org: Org) -> int:
         org.sessions,
         org.clock,
         adapters=["fake"],
-        hierarchy=HierarchySettings(org_adapter="fake"),
+        hierarchy=HierarchySettings(org_adapter="fake", role_adapters={}),
     )
     return agent.id
 

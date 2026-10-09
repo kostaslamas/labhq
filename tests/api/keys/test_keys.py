@@ -53,7 +53,7 @@ def test_the_keys_of_a_tmux_agent_are_listed_and_an_sdk_agent_has_none(
     [
         ("hello", "worker_a", 422, "key_refused"),
         ("Escape", "worker_a", 422, "key_refused"),
-        ("escape", "sdk", 409, "no_pane"),
+        ("escape", "sdk", 409, "headless"),
     ],
 )
 def test_refusals_carry_a_status_and_a_code(
