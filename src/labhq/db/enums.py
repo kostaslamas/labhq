@@ -163,3 +163,14 @@ class ReportKind(StrEnum):
     PROGRESS = "progress"
     READY = "ready"
     BLOCKED = "blocked"
+
+
+# Not named `*Status`: the web vocabulary publishes every `*Status` enum, and this one is
+# login plumbing the UI never shows.
+class LoginStage(StrEnum):
+    """A request to log a tool in: waiting for the owner, then done, expired or failed."""
+
+    PENDING = "pending"
+    COMPLETED = "completed"
+    EXPIRED = "expired"
+    FAILED = "failed"
