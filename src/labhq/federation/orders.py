@@ -75,7 +75,13 @@ async def queue_order(db: AsyncSession, clock: Clock, run_id: int) -> Federation
 async def fetch_pending(
     db: AsyncSession, clock: Clock, node: FederationNode
 ) -> list[FederationOrder]:
-    """Orders the node has not acknowledged, oldest first. The caller commits."""
+    """Orders the node has not acknowledged, oldest first. The caller commits.
+
+    A node with an A2A URL is sent its orders instead (`federation.a2a.sync`), so its poll
+    finds none: the mode is the node's, and an order is never delivered twice.
+    """
+    if node.a2a_url is not None:
+        return []
     orders = list(
         await db.scalars(
             select(FederationOrder)

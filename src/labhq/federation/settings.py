@@ -16,6 +16,10 @@ class FederationSettings(BaseSettings):
     # How orders from the upstream are labelled to this instance's CEO.
     upstream_name: str = Field(default="upstream", min_length=1, max_length=100)
     request_timeout_seconds: float = Field(default=20.0, gt=0)
+    # Upstream side, A2A nodes: node name -> the key its `invite` printed. Only the hash is
+    # stored in the database, and sending an order needs the key itself, so it comes from here
+    # like the downstream's own key does. A JSON object: {"lab-b": "lhqf_..."}.
+    node_keys: dict[str, SecretStr] = Field(default_factory=dict)
 
 
 @lru_cache(maxsize=1)
