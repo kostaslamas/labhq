@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.clock import Clock
 from labhq.db.models import FederationInvite
-from labhq.federation.errors import FederationError
+from labhq.federation.errors import FederationError, UnauthorizedError
 from labhq.federation.keys import ALL_SCOPES, check_scopes, hash_key, new_key
 
 
@@ -59,3 +59,19 @@ async def revoked_locally(db: AsyncSession, key: str) -> bool:
         select(FederationInvite.revoked_at).where(FederationInvite.key_hash == hash_key(key))
     )
     return revoked_at is not None
+
+
+async def authenticate_invite(db: AsyncSession, clock: Clock, key: str | None) -> FederationInvite:
+    """The invite a valid, unrevoked key belongs to: who may call this instance's A2A routes.
+
+    Every failure is the same `UnauthorizedError`, like `authenticate` for nodes, so a caller
+    cannot tell a revoked key from one that never existed. Scopes are checked per method.
+    """
+    if not key:
+        raise UnauthorizedError("a federation key is required")
+    invite = await db.scalar(
+        select(FederationInvite).where(FederationInvite.key_hash == hash_key(key))
+    )
+    if invite is None or invite.revoked_at is not None:
+        raise UnauthorizedError("the federation key is not valid for this call")
+    return invite
