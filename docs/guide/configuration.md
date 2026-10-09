@@ -237,6 +237,7 @@ Hierarchy switches and caps, read from `LABHQ_*` environment variables.
 | `LABHQ_APPROVE_NEW_AGENTS` | `bool` | `true` | Plan §5, rule 4: a new agent waits for a human unless the owner turns this off. |
 | `LABHQ_MAX_TEAM_SIZE` | `int` | `8` | Agents under one manager, leads included. Provisional: plan §13 question 4 is open, so this is a setting and a manager's `config["max_team_size"]` overrides it. |
 | `LABHQ_ORG_ADAPTER` | `str` | `claude` | The adapter the CEO and the managers it assigns run on, unless the caller names one. |
+| `LABHQ_ROLE_ADAPTERS` | `dict[str, str]` | *computed* | The adapter a role runs on when the caller names none. Workers and IT run headless: a CLI turn that resumes its session and exits, so an idle agent holds no RAM (issue #190). Leaders keep `org_adapter`, which tmux replaces when the owner adopts a session. An explicit adapter always wins. |
 
 ## `labhq.it.settings.ItSettings`
 

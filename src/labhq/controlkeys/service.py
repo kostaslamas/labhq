@@ -15,6 +15,7 @@ from typing import Protocol
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from labhq.adapters.kinds import TMUX_ADAPTER
 from labhq.adapters.tmux import (
     TmuxError,
     TmuxServer,
@@ -105,6 +106,8 @@ class ControlKeyService:
         async with self._sessions() as db:
             agent = await _active_agent(db, agent_id)
             await _check_sender(db, sender, agent, key)
+            if agent.adapter != TMUX_ADAPTER:
+                raise ControlKeyError("headless", _HEADLESS.format(agent.id, agent.adapter))
             panes = self._panes
             run = await running_tmux_run(db, agent_id=agent.id)
             if run is None or panes is None:
@@ -156,6 +159,10 @@ class ControlKeyService:
 
 
 _NO_PANE = "Agent {} has no live tmux pane, so there is nothing to send the key to."
+_HEADLESS = (
+    "Agent {} runs headless ({}): each turn is a short CLI process with no terminal, so "
+    "control keys are tmux-only. Interrupt its run instead."
+)
 
 
 async def _active_agent(db: AsyncSession, agent_id: int) -> Agent:

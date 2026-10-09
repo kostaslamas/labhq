@@ -17,6 +17,7 @@ STATUS_BY_CODE = {
     "key_refused": 422,
     "not_permitted": 403,
     "no_pane": 409,
+    "headless": 409,
 }
 
 

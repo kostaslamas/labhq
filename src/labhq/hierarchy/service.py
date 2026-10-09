@@ -192,7 +192,7 @@ class Hierarchy:
             proposal = TeamProposal.model_validate(
                 {"manager_id": manager_id, "root_role": manager.role, "members": tuple(members)}
             )
-            check_adapters(proposal, self._adapters)
+            check_adapters(proposal, self._adapters, self._settings)
             await check_team_size(db, manager, len(proposal.members), self._settings)
         return await self._approvals.request(
             CREATE_TEAM, proposal.model_dump(mode="json"), agent_id=manager_id
@@ -210,7 +210,7 @@ class Hierarchy:
             proposal = TeamProposal.model_validate(
                 {"manager_id": manager_id, "root_role": leader.role, "members": tuple(members)}
             )
-            check_adapters(proposal, self._adapters)
+            check_adapters(proposal, self._adapters, self._settings)
             ids = await create_team(db, self._clock, proposal, self._settings)
             await db.commit()
         return ids
@@ -221,7 +221,7 @@ class Hierarchy:
         *,
         role: str,
         title: str,
-        adapter: str,
+        adapter: str | None = None,
         reports_to: int | None = None,
     ) -> Agent:
         """Add one agent to a manager's team, under the manager or one of its members."""
@@ -232,8 +232,9 @@ class Hierarchy:
             if parent is None:
                 raise HierarchyError(f"agent {reports_to} is not in manager {manager_id}'s team")
             check_reports_to(role, parent.role)
-            if adapter not in self._adapters:
-                raise UnknownAdapterError(f"no adapter registered as {adapter!r}")
+            chosen = self._settings.adapter_for(role, adapter)
+            if chosen not in self._adapters:
+                raise UnknownAdapterError(f"no adapter registered as {chosen!r}")
             await check_team_size(db, manager, 1, self._settings)
             now = self._clock.now()
             agent = Agent(
@@ -243,7 +244,7 @@ class Hierarchy:
                 role=role,
                 title=title,
                 reports_to=parent.id,
-                adapter=adapter,
+                adapter=chosen,
                 status=AgentStatus.ACTIVE,
                 created_at=now,
                 updated_at=now,

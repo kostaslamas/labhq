@@ -86,7 +86,12 @@ class CreateAgent(BaseModel):
     manager: int = Field(description="The project manager's agent id.")
     role: str
     title: str = Field(min_length=1, max_length=200)
-    adapter: str = Field(min_length=1, max_length=64)
+    adapter: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=64,
+        description="Default: the role's adapter; workers run headless.",
+    )
     reports_to: int | None = Field(
         default=None, description="A member of the manager's team; default the manager."
     )
