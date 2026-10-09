@@ -14,7 +14,7 @@ from tests.adapters.tmux.conftest import require_tmux
 
 URL = "https://auth.openai.com/oauth/authorize?state=" + "x" * 120
 # A fake login command: prints a link longer than a line and waits, like a real one.
-SCRIPT = f"import time; print('Open this link:'); print({URL!r}); time.sleep(30)"
+SCRIPT = f"print('Open this link:'); print({URL!r}); input()"
 
 
 @pytest.fixture
