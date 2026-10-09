@@ -240,6 +240,32 @@ Hierarchy switches and caps, read from `LABHQ_*` environment variables.
 | `LABHQ_ORG_ADAPTER` | `str` | `claude` | The adapter the CEO and the managers it assigns run on, unless the caller names one. |
 | `LABHQ_ROLE_ADAPTERS` | `dict[str, str]` | *computed* | The adapter a role runs on when the caller names none. Workers and IT run headless: a CLI turn that resumes its session and exits, so an idle agent holds no RAM (issue #190). Leaders keep `org_adapter`, which tmux replaces when the owner adopts a session. An explicit adapter always wins. |
 
+## `labhq.inventory.settings.InventorySettings`
+
+Session inventory settings, from `LABHQ_INVENTORY_*`. Thresholds and prices are data.
+
+| Variable | Type | Default | Description |
+|---|---|---|---|
+| `LABHQ_INVENTORY_IDLE_CLOSE_HOURS` | `float` | `12.0` | A running agent quiet this long is proposed for closing. |
+| `LABHQ_INVENTORY_HISTORY_DAYS` | `float` | `14.0` | A saved conversation older than this is kept as history, not continued. |
+| `LABHQ_INVENTORY_SAMPLE_SECONDS` | `float` | `0.5` | How long the process table is sampled to tell a working agent from a quiet one. |
+| `LABHQ_INVENTORY_BUSY_CPU_SECONDS` | `float` | `0.05` | CPU seconds per sample above which a process counts as working. |
+| `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. |
+| `LABHQ_INVENTORY_FOLDER_MANAGER_MIN_PROJECTS` | `int` | `2` | A parent folder with at least this many projects gets a folder-manager proposal. |
+| `LABHQ_INVENTORY_USE_GH` | `bool` | `true` | Ask GitHub for the open pull request of a branch, if `gh` is logged in. |
+| `LABHQ_INVENTORY_COMMAND_TIMEOUT_SECONDS` | `float` | `15.0` |  |
+| `LABHQ_INVENTORY_ANALYSIS_KIND_ORDER` | `list[str]` | *computed* | Analysis: who may run it, cheapest first; kinds that made the project's sessions come last (or never, see `allow_original_tool`). A name is an agent kind or `ollama`. |
+| `LABHQ_INVENTORY_ALLOW_ORIGINAL_TOOL` | `bool` | `false` |  |
+| `LABHQ_INVENTORY_NO_LOGIN_KINDS` | `list[str]` | *computed* | Kinds that need no login (a model on this machine). |
+| `LABHQ_INVENTORY_PRICE_PER_MILLION_TOKENS_MICROS` | `dict[str, int]` | *computed* | What an estimate assumes a million tokens cost on each kind, in micro-USD (ADR 0002). A kind not listed is priced at the default. |
+| `LABHQ_INVENTORY_DEFAULT_PRICE_PER_MILLION_MICROS` | `int` | `5000000` |  |
+| `LABHQ_INVENTORY_TRANSCRIPT_TAIL_CHARS` | `int` | `6000` | Size bounds of what one analysis reads. |
+| `LABHQ_INVENTORY_GIT_LOG_COMMITS` | `int` | `30` |  |
+| `LABHQ_INVENTORY_DIFF_CHARS` | `int` | `20000` |  |
+| `LABHQ_INVENTORY_CODE_CHARS` | `int` | `40000` |  |
+| `LABHQ_INVENTORY_CHARS_PER_TOKEN` | `int` | `4` |  |
+| `LABHQ_INVENTORY_REPLY_TOKENS` | `int` | `4000` | The estimate adds this share to cover the model's own reply and tool use. |
+
 ## `labhq.it.settings.ItSettings`
 
 IT department switches, read from `LABHQ_IT_*` environment variables.
