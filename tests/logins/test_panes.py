@@ -1,7 +1,6 @@
 """The login command runs in a real private tmux pane, and its link is read off the screen."""
 
 import sys
-import time
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
@@ -9,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from labhq.adapters.tmux import TmuxServer
+from labhq.clock import SystemClock
 from labhq.logins import TmuxPanes, login_tools
 from tests.adapters.tmux.conftest import require_tmux
 
@@ -31,7 +31,7 @@ def panes(tmp_path: Path) -> Iterator[TmuxPanes]:
         server.kill_server()
 
 
-def test_the_link_is_read_whole_from_a_real_pane_and_the_pane_is_killed(
+async def test_the_link_is_read_whole_from_a_real_pane_and_the_pane_is_killed(
     panes: TmuxPanes, tmp_path: Path
 ) -> None:
     panes.start("login-codex-1", (sys.executable, "-c", SCRIPT), tmp_path / "work")
@@ -41,7 +41,7 @@ def test_the_link_is_read_whole_from_a_real_pane_and_the_pane_is_killed(
         screen = panes.screen("login-codex-1")
         if URL in screen:
             break
-        time.sleep(0.05)  # a real child process, so this waits on the OS and not on a clock
+        await SystemClock().sleep(0.05)  # a real child process: the OS, not a fake clock
 
     assert login_tools.get("codex").find_url(screen) == URL
     assert panes.alive("login-codex-1")
