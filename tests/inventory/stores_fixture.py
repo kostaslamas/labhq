@@ -7,6 +7,8 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
+from labhq.inventory.stores import Bases
+
 SECRET_TEXT = "secret conversation text zz9"
 SECRET_TOKEN = "SECRET-LOGIN-TOKEN"
 EPOCH_MS = 1_780_000_000_000  # 2026-05-28, in milliseconds
@@ -99,7 +101,7 @@ def cursor_ide(
 ) -> Path:
     """Cursor 3 layout: the chat index is in the global database; `chats` maps a composer id
     to (workspace folder, last update in ms). `legacy` adds a pre-3.0 workspace database."""
-    user = home / ".config" / "Cursor" / "User"
+    user = Bases.for_user(home, {}).config / "Cursor" / "User"
     (user / "globalStorage").mkdir(parents=True, exist_ok=True)
     path = user / "globalStorage" / "state.vscdb"
     headers = {
