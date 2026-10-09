@@ -1,0 +1,28 @@
+{
+  "title": "Notification channels",
+  "lead": "Where labhq reaches you: alerts, login links and the CEO's reports go to every enabled channel.",
+  "loading": "Loading channels…",
+  "empty": "No channel yet. Until you add one, labhq uses the notifier it was configured with.",
+  "load_failed": "The channels could not be loaded.",
+  "untested": "Not tested yet",
+  "test": "Send a test",
+  "test_ok": "Test message arrived, {date}",
+  "test_failed": "Test message failed, {date}: {reason}",
+  "enable": "Enable",
+  "disable": "Disable",
+  "disabled": "Disabled",
+  "remove": "Remove",
+  "add": "Add a channel",
+  "add_button": "Add and send a test",
+  "kind": "Kind",
+  "name": "Name",
+  "not_set_up": "not set up on this machine",
+  "passkey_note": "Adding, switching and removing a channel asks for your passkey. A token you type here is kept on this machine only and is never shown again.",
+  "errors": {
+    "refused": "Your passkey was not accepted. Nothing changed.",
+    "invalid": "Those settings are not valid. Check them and try again.",
+    "not_found": "That channel no longer exists.",
+    "failed": "That did not work. Try again.",
+    "network": "labhq could not be reached. Try again."
+  }
+}
