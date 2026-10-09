@@ -2,7 +2,6 @@
 
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -39,9 +38,8 @@ PROGRAM = "inventory_fake_agent.py"
 def agent_process(tmp_path: Path):
     """A real process the process table sees as a CLI named like the fake kind."""
     script = tmp_path / PROGRAM
-    script.write_text("import time\ntime.sleep(120)\n", encoding="utf-8")
+    script.write_text("import threading\nthreading.Event().wait(120)\n", encoding="utf-8")
     process = subprocess.Popen([sys.executable, str(script)], cwd=tmp_path)
-    time.sleep(0.3)
     yield process
     process.kill()
     process.wait()

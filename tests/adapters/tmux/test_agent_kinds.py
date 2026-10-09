@@ -29,11 +29,18 @@ CONTEXT = LaunchContext(
 )
 
 
-def test_the_four_agents_are_registered_with_their_sources() -> None:
-    assert default_kinds.names() == ["aider", "claude-code", "codex", "gemini"]
+def test_the_agents_are_registered_with_their_sources() -> None:
+    assert default_kinds.names() == [
+        "aider",
+        "claude-code",
+        "codex",
+        "cursor-agent",
+        "gemini",
+        "opencode",
+    ]
     for name in default_kinds.names():
         kind = default_kinds.get(name)
-        assert "checked 2026-10-03" in kind.source
+        assert "checked 2026-10-" in kind.source
         assert "{prompt}" in kind.start
         assert kind.interrupt_keys
 
