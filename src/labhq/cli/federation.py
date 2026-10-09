@@ -11,7 +11,7 @@ import typer
 
 from labhq.cli.context import CliError, Context, execute
 from labhq.db.models import FederationInvite, FederationNode
-from labhq.federation.a2a.sync import SyncResult, sync_once
+from labhq.federation.a2a.sync import SyncResult, a2a_nodes, sync_once
 from labhq.federation.invites import Invites
 from labhq.federation.keys import ALL_SCOPES
 from labhq.federation.nodes import Nodes
@@ -174,6 +174,11 @@ def sync(
     settings = FederationSettings()
 
     async def body(context: Context) -> SyncResult:
+        async with context.sessions() as db:
+            if not await a2a_nodes(db):
+                raise CliError(
+                    "no node has an A2A URL; register one with `federation add --a2a-url`"
+                )
         while True:
             result = await sync_once(context.sessions, context.clock, settings)
             typer.echo(
