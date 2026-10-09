@@ -15,6 +15,9 @@ EXPECTED: dict[str, tuple[bool, bool | None]] = {
     "ask_ceo": (False, False),
     "get_reply": (True, None),
     "meeting_minutes": (True, None),
+    # `sessions` files the scan as CEO reports; `analyse` only records an approval.
+    "sessions": (False, False),
+    "analyse": (False, False),
 }
 
 
@@ -50,3 +53,6 @@ def test_descriptions_state_the_rules() -> None:
     assert "never ask again" in specs["get_reply"].description
     assert "wait_seconds" in specs["ask_ceo"].description
     assert "asks which one" in specs["meeting_minutes"].description
+    assert "no model is called" in specs["sessions"].description
+    assert "ONE project" in specs["analyse"].description
+    assert "starts nothing" in specs["analyse"].description

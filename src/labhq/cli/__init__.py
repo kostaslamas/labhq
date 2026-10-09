@@ -23,6 +23,7 @@ from labhq.cli.ready import ready
 from labhq.cli.rules import rules_app
 from labhq.cli.running import run
 from labhq.cli.serve import serve
+from labhq.cli.sessions import sessions_app
 from labhq.cli.work import agent_app, init, project_app, task_app
 from labhq.it.cli import it_app
 
@@ -44,6 +45,7 @@ app.add_typer(passkey_app, name="passkey")
 app.add_typer(rules_app, name="rules")
 app.add_typer(meetings_app, name="meetings")
 app.add_typer(it_app, name="it")
+app.add_typer(sessions_app, name="sessions")
 app.command()(demo)
 app.command()(serve)
 app.command()(onboard)
