@@ -151,3 +151,16 @@ async def test_enter_is_never_sent_when_the_option_cannot_be_selected(
     assert run.status is RunStatus.FAILED
     assert "could not be selected" in run.exit["errors"][0]
     assert "exiting without trust" not in screen
+
+
+def test_codex_and_gemini_login_dialogs_are_blocking_screens_nobody_answers() -> None:
+    from labhq.adapters.tmux.agents import CODEX, GEMINI
+
+    codex = blocking_screen(CODEX.blocking_screens, "Welcome to Codex\n> Sign in with ChatGPT")
+    gemini = blocking_screen(
+        GEMINI.blocking_screens, "How would you like to authenticate for this project?"
+    )
+
+    assert codex is not None and codex.name == "login" and codex.accept_option is None
+    assert gemini is not None and gemini.name == "login" and gemini.accept_option is None
+    assert blocking_screen(CODEX.blocking_screens, "• Working (3s • esc to interrupt)") is None
