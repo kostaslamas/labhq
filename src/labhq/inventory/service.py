@@ -1,6 +1,7 @@
 """The scan as the CEO and the Call Center use it: scan, report to the CEO, speak."""
 
 import asyncio
+import shutil
 from dataclasses import dataclass
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -9,7 +10,7 @@ from labhq.adapters.tmux import AgentKinds, default_kinds
 from labhq.clock import Clock
 from labhq.hierarchy import find_ceo
 from labhq.inventory.analysis import AnalysisError, find_project
-from labhq.inventory.login import StatusRunner, run_status, tool_statuses
+from labhq.inventory.login import StatusRunner, Which, run_status, tool_statuses
 from labhq.inventory.model import Inventory, ProjectInventory, SessionInfo, ToolStatus
 from labhq.inventory.report import report_to_ceo, spoken
 from labhq.inventory.scan import SessionScanner
@@ -35,13 +36,14 @@ async def scan_and_report(
     kinds: AgentKinds = default_kinds,
     settings: InventorySettings | None = None,
     run: StatusRunner = run_status,
+    which: Which = shutil.which,
     report: bool = True,
 ) -> ScanResult:
     """Scan without a model, then give the CEO one report per project. The caller commits."""
     settings = settings or get_inventory_settings()
     found = scanner or SessionScanner(kinds=kinds, settings=settings, clock=clock)
     inventory = await asyncio.to_thread(found.scan)
-    tools = await tool_statuses(db, kinds, clock, settings, run=run)
+    tools = await tool_statuses(db, kinds, clock, settings, run=run, which=which)
     ids: list[int] = []
     if report:
         ceo = await find_ceo(db)

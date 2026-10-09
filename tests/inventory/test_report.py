@@ -43,6 +43,7 @@ async def test_the_ceo_receives_one_report_per_project_with_every_fact(
             scanner=scanner([FakeProcess(5, ["claude"], party)]),
             report=True,
             run=runner(0, "Logged in as owner@example.com"),
+            which=lambda name: f"/bin/{name}",
         )
         await db.commit()
         reports = list(await db.scalars(select(CeoReport).order_by(CeoReport.id)))
