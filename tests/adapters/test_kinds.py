@@ -55,4 +55,6 @@ def test_an_unknown_kind_lists_the_valid_ones() -> None:
     with pytest.raises(UnknownAgentChoiceError) as error:
         choice_named("nope")
 
-    assert "valid kinds: claude, aider, claude-code, codex, gemini" in str(error.value)
+    assert "valid kinds: claude, aider, claude-code, codex, cursor-agent, gemini, opencode" in str(
+        error.value
+    )

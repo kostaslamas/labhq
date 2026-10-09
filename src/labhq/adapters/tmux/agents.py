@@ -120,6 +120,11 @@ class AgentKind:
     # Names from `controlkeys.CONTROL_KEYS` the owner may send to this agent; a key the CLI
     # does not act on is not listed.
     control_keys: tuple[str, ...] = ()
+    # The tool's own non-interactive login check (no credential file is ever read by labhq):
+    # exit 0 means logged in, unless the output matches `logged_out_pattern`. None: the tool
+    # has no such command, and its login state is unknown.
+    login_status: tuple[str, ...] | None = None
+    logged_out_pattern: str | None = None
 
     @property
     def process_names(self) -> tuple[str, ...]:
@@ -274,6 +279,8 @@ CLAUDE_CODE = AgentKind(
     control_keys=("escape", "shift_tab", "ctrl_c"),
     blocking_screens=CLAUDE_BLOCKING_SCREENS,
     reply_key="last_assistant_message",
+    # code.claude.com/docs/en/cli-reference: `claude auth status` exits 1 when logged out.
+    login_status=("claude", "auth", "status"),
     continue_=(
         "claude",
         "--dangerously-skip-permissions",
@@ -344,6 +351,8 @@ CODEX = AgentKind(
     tool_launch="codex_mcp",
     # Shift+Tab is left out: nothing checked says Codex binds it.
     control_keys=("escape", "ctrl_c"),
+    # codex-rs/cli/src/login.rs: `codex login status` exits 1 when not logged in.
+    login_status=("codex", "login", "status"),
     source=(
         "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "
         "codex-rs/utils/cli/src/{shared_options,config_override}.rs, "
@@ -449,6 +458,57 @@ AIDER = AgentKind(
     ),
 )
 
+# sst/opencode dev: packages/opencode/src/cli/cmd/tui.ts (`--session`/`-s`, `--continue`/`-c`,
+# `--prompt`); checked 2026-10-09. It has no hook, statusline or session-id flag, so a turn ends
+# by quiescence and the id is read from the store (`labhq.inventory`).
+OPENCODE = AgentKind(
+    name="opencode",
+    display_name="OpenCode",
+    start=("opencode", "--prompt", "{prompt}"),
+    resume=("opencode", "--session", "{session_id}", "--prompt", "{prompt}"),
+    session_id=SessionIdSource.SIGNAL,
+    session_key="session_id",
+    interrupt_keys=("Escape",),
+    turn_end=TurnEnd.QUIESCENCE,
+    usage_source=UsageSource.SCREEN,
+    launch=None,
+    hooks=None,
+    usage_command=None,
+    control_keys=("escape", "ctrl_c"),
+    source="sst/opencode dev: packages/opencode/src/cli/cmd/tui.ts; checked 2026-10-09",
+    continue_=("opencode", "--continue"),
+    continue_selected=("opencode", "--session", "{session_id}"),
+    rules_injection=RulesInjection.FIRST_MESSAGE,
+    continue_source="sst/opencode dev: tui.ts (`--continue`, `--session <id>`); checked 2026-10-09",
+)
+
+# Cursor CLI: `--resume <chat-id>` and `--continue` (cursor.com/docs/cli/reference/parameters,
+# as summarised by community reports; checked 2026-10-09). The installed binary is now named
+# `agent`, too generic to match in the process table, so only `cursor-agent` is discovered.
+CURSOR_AGENT = AgentKind(
+    name="cursor-agent",
+    display_name="Cursor CLI",
+    start=("cursor-agent", "{prompt}"),
+    resume=("cursor-agent", "--resume", "{session_id}", "{prompt}"),
+    session_id=SessionIdSource.SIGNAL,
+    session_key="session_id",
+    interrupt_keys=("Escape",),
+    turn_end=TurnEnd.QUIESCENCE,
+    usage_source=UsageSource.SCREEN,
+    launch=None,
+    hooks=None,
+    usage_command=None,
+    control_keys=("escape", "ctrl_c"),
+    # `status` prints the account, or says it is not authenticated; its exit code is unverified.
+    login_status=("cursor-agent", "status"),
+    logged_out_pattern=r"not (?:logged in|authenticated)",
+    source="cursor.com/docs/cli/reference/parameters, /authentication; checked 2026-10-09",
+    continue_=("cursor-agent", "--continue"),
+    continue_selected=("cursor-agent", "--resume", "{session_id}"),
+    rules_injection=RulesInjection.FIRST_MESSAGE,
+    continue_source="cursor.com/docs/cli/reference/parameters (`--resume`, `--continue`)",
+)
+
 default_kinds = AgentKinds()
-for _kind in (CLAUDE_CODE, CODEX, GEMINI, AIDER):
+for _kind in (CLAUDE_CODE, CODEX, GEMINI, AIDER, OPENCODE, CURSOR_AGENT):
     default_kinds.register(_kind)
