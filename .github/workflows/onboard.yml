@@ -86,13 +86,15 @@ jobs:
           grep -q '^labhq is ready\.$' "${work}/first.log"
           token="$(cat "${LABHQ_DATA_DIR}/mcp-token")"
           grep -qF "Connector URL: https://onboard-check.trycloudflare.com/mcp/${token}" "${work}/first.log"
-          test "$(wc -l < "${work}/ntfy.log")" -eq 1
+          # The notifier's own check, then the test message of the first channel it became.
+          test "$(wc -l < "${work}/ntfy.log")" -eq 2
 
           # A second run keeps the token and repeats the end-to-end check.
           onboard | tee "${work}/second.log"
           grep -q '^labhq is ready\.$' "${work}/second.log"
           test "$(cat "${LABHQ_DATA_DIR}/mcp-token")" = "${token}"
-          test "$(wc -l < "${work}/ntfy.log")" -eq 2
+          # The channel already proved itself, so only the notifier check repeats.
+          test "$(wc -l < "${work}/ntfy.log")" -eq 3
 
           # A tunnel that does not answer fails, names the step and never says ready.
           if FAKE_TUNNEL_MODE=silent LABHQ_ONBOARD_VERIFY_ATTEMPTS=1 onboard > "${work}/silent.log" 2>&1; then
