@@ -312,6 +312,25 @@ CODEX_FLAGS = (
     "--no-alt-screen",
 )
 
+# The sign-in dialogs below are matched by wording, not checked on a machine yet: they only
+# end a run with a clear reason and start the owner's login link, never press a key. Re-check
+# them in docs/checks/login-links.md.
+CODEX_BLOCKING_SCREENS = (
+    BlockingScreen(
+        name="login",
+        pattern=r"Sign in with ChatGPT|Welcome to Codex.{0,200}Sign in",
+        reason="Codex is not logged in",
+    ),
+)
+
+GEMINI_BLOCKING_SCREENS = (
+    BlockingScreen(
+        name="login",
+        pattern=r"How would you like to authenticate|Waiting for auth",
+        reason="Gemini CLI is not logged in",
+    ),
+)
+
 CODEX = AgentKind(
     name="codex",
     display_name="Codex",
@@ -344,6 +363,7 @@ CODEX = AgentKind(
     tool_launch="codex_mcp",
     # Shift+Tab is left out: nothing checked says Codex binds it.
     control_keys=("escape", "ctrl_c"),
+    blocking_screens=CODEX_BLOCKING_SCREENS,
     source=(
         "openai/codex main 86a54b05: codex-rs/cli/src/main.rs, codex-rs/tui/src/cli.rs, "
         "codex-rs/utils/cli/src/{shared_options,config_override}.rs, "
@@ -378,6 +398,7 @@ GEMINI = AgentKind(
     hooks=None,
     usage_command="/stats",
     control_keys=("escape", "ctrl_c"),
+    blocking_screens=GEMINI_BLOCKING_SCREENS,
     # MCP servers come only from Gemini CLI's settings files, which labhq does not write.
     source=(
         "google-gemini/gemini-cli main: packages/cli/src/config/config.ts (--session-id, "

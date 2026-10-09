@@ -359,6 +359,79 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/channels': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Channels List */
+    get: operations['channels_list']
+    put?: never
+    /**
+     * Channels Add
+     * @description Add a channel with a passkey, send its test message and show how that went.
+     */
+    post: operations['channels_add']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/channels/kinds': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Channels Kinds */
+    get: operations['channels_kinds']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/channels/{channel_id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /** Channels Remove */
+    delete: operations['channels_remove']
+    options?: never
+    head?: never
+    /** Channels Switch */
+    patch: operations['channels_switch']
+    trace?: never
+  }
+  '/api/channels/{channel_id}/test': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /** Channels Test */
+    post: operations['channels_test']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/health': {
     parameters: {
       query?: never
@@ -870,6 +943,21 @@ export interface components {
       /** Text */
       text: string
     }
+    /** AddBody */
+    AddBody: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /** Kind */
+      kind: string
+      /** Name */
+      name: string
+      /** Values */
+      values?: {
+        [key: string]: string
+      }
+    }
     /** AddedAgent */
     AddedAgent: {
       /** Adapter */
@@ -1169,6 +1257,23 @@ export interface components {
       /** Text */
       text: string
     }
+    /** ChannelOut */
+    ChannelOut: {
+      /** Enabled */
+      enabled: boolean
+      /** Id */
+      id: number
+      /** Kind */
+      kind: string
+      /** Last Test Error */
+      last_test_error: string | null
+      /** Last Test Ok */
+      last_test_ok: boolean | null
+      /** Last Tested At */
+      last_tested_at: string | null
+      /** Name */
+      name: string
+    }
     /**
      * Credential
      * @description What the UI may know about a passkey. The public key stays on the server.
@@ -1295,6 +1400,17 @@ export interface components {
       /** Type */
       type: string
     }
+    /** FieldOut */
+    FieldOut: {
+      /** Default */
+      default: string | null
+      /** Label */
+      label: string
+      /** Name */
+      name: string
+      /** Secret */
+      secret: boolean
+    }
     /** Health */
     Health: {
       /** Version */
@@ -1377,6 +1493,17 @@ export interface components {
     JoinBody: {
       /** Text */
       text: string
+    }
+    /** KindOut */
+    KindOut: {
+      /** Available */
+      available: boolean
+      /** Fields */
+      fields: components['schemas']['FieldOut'][]
+      /** Kind */
+      kind: string
+      /** Label */
+      label: string
     }
     /** MeetingDetail */
     MeetingDetail: {
@@ -1652,6 +1779,13 @@ export interface components {
       /** Repo Path */
       repo_path: string
     }
+    /** RemoveBody */
+    RemoveBody: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+    }
     /**
      * RiskClass
      * @enum {string}
@@ -1739,6 +1873,15 @@ export interface components {
       /** Purpose */
       purpose: string
     }
+    /** SwitchBody */
+    SwitchBody: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /** Enabled */
+      enabled: boolean
+    }
     /** TaskCount */
     TaskCount: {
       /** Count */
@@ -1777,6 +1920,12 @@ export interface components {
       status: components['schemas']['AgentStatus']
       /** Title */
       title: string
+    }
+    /** Tested */
+    Tested: {
+      channel: components['schemas']['ChannelOut']
+      /** Error */
+      error: string | null
     }
     /** Today */
     Today: {
@@ -2631,6 +2780,196 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['RunCapacity']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelOut'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_add: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Tested']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_kinds: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['KindOut'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_remove: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        channel_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RemoveBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_switch: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        channel_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SwitchBody']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ChannelOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  channels_test: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        channel_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Tested']
         }
       }
       /** @description Error */
