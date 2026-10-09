@@ -21,8 +21,10 @@ class FederationNode(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(100), unique=True)
-    # Where the node lives, for the owner's reference: this instance never dials it.
+    # Where the node lives, for the owner's reference.
     url: Mapped[str] = mapped_column(Text)
+    # The node's A2A base URL. Set: orders go there. Unset: the node polls for them (#191).
+    a2a_url: Mapped[str | None] = mapped_column(Text)
     key_hash: Mapped[str] = mapped_column(String(64), unique=True)
     scopes: Mapped[list[str]] = mapped_column(JSON, default=list)
     manager_agent_id: Mapped[int | None] = mapped_column(
@@ -69,6 +71,9 @@ class FederationOrder(Base):
     )
     # The last report sequence number applied, so a repeated report changes nothing.
     report_seq: Mapped[int] = mapped_column(default=0)
+    # Over A2A: the node's task for this order and the last state it reported (#191).
+    remote_task_id: Mapped[str | None] = mapped_column(String(100))
+    remote_state: Mapped[str] = mapped_column(String(40), default="", server_default="")
     created_at: Mapped[datetime]
     delivered_at: Mapped[datetime | None]
     acknowledged_at: Mapped[datetime | None]
@@ -82,6 +87,10 @@ class FederationInbound(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     upstream_order_id: Mapped[int] = mapped_column(unique=True)
     upstream_name: Mapped[str] = mapped_column(String(100))
+    # The invite whose key sent the order over A2A; empty for an order taken by polling.
+    invite_id: Mapped[int | None] = mapped_column(
+        ForeignKey("federation_invites.id", ondelete="SET NULL")
+    )
     text: Mapped[str] = mapped_column(Text)
     spend_cap_micros: Mapped[int | None] = micros_column(nullable=True)
     # Root tasks the CEO delegated for this order; their subtrees count against the cap.
