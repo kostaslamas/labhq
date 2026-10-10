@@ -7,7 +7,13 @@ reads SQLite, so the page sees all of them.
 from sqlalchemy import func, select
 
 from labhq.db.enums import MeetingStatus
-from labhq.db.models import Meeting, MeetingActionItem, MeetingDecision, MeetingTranscriptEntry
+from labhq.db.models import (
+    CostEvent,
+    Meeting,
+    MeetingActionItem,
+    MeetingDecision,
+    MeetingTranscriptEntry,
+)
 from labhq.live.registry import aggregates, default_topics, status_counts
 
 default_topics.register(
@@ -23,5 +29,7 @@ default_topics.register(
         select(func.count(MeetingTranscriptEntry.id)).scalar_subquery(),
         select(func.count(MeetingDecision.id)).scalar_subquery(),
         select(func.count(MeetingActionItem.id)).scalar_subquery(),
+        # The running total of a room moves when a run's cost lands, before its entry does.
+        select(func.max(CostEvent.id)).scalar_subquery(),
     ),
 )

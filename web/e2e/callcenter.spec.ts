@@ -15,6 +15,13 @@ const ROOM = {
   pinned_kind: 'report',
   pinned_id: 77,
   estimate_micros: 2_600_000,
+  estimate_high_micros: 5_200_000,
+  estimate_source: 'history',
+  cost_cap_micros: 6_000_000,
+  cost_micros: 0,
+  equivalent_cost: true,
+  plan_used_percent: null,
+  over_estimate: false,
   approval_id: 3,
   approval_status: 'pending',
   turns_used: 0,
@@ -151,6 +158,8 @@ test('the CEO offers a decision room; the owner sees the cost and starts it', as
 
   await expect(page.getByTestId('room-offer')).toContainText('atlas')
   await expect(page.getByTestId('room-estimate')).toContainText('$2.60')
+  await expect(page.getByTestId('room-estimate')).toContainText('$5.20')
+  await expect(page.getByTestId('room-cap')).toContainText('$6.00')
   await page.getByTestId('room-start').click()
   await expect.poll(() => started).toBe(true)
 })

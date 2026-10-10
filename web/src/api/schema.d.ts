@@ -408,10 +408,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Room Decline
-     * @description Refuse the start; the room is cancelled and nobody is asked.
-     */
+    /** Room Decline */
     post: operations['room_decline']
     delete?: never
     options?: never
@@ -448,10 +445,7 @@ export interface paths {
     }
     get?: never
     put?: never
-    /**
-     * Room Start
-     * @description The owner's tap on the room's start approval, then the room opens in the background.
-     */
+    /** Room Start */
     post: operations['room_start']
     delete?: never
     options?: never
@@ -2071,6 +2065,10 @@ export interface components {
       /** Approval Id */
       approval_id: number | null
       approval_status: components['schemas']['ApprovalStatus'] | null
+      /** Cost Cap Micros */
+      cost_cap_micros: number | null
+      /** Cost Micros */
+      cost_micros: number
       /**
        * Created At
        * Format: date-time
@@ -2080,14 +2078,24 @@ export interface components {
       end_reason: string | null
       /** Ended At */
       ended_at: string | null
+      /** Equivalent Cost */
+      equivalent_cost: boolean
+      /** Estimate High Micros */
+      estimate_high_micros: number | null
       /** Estimate Micros */
       estimate_micros: number | null
+      /** Estimate Source */
+      estimate_source: string | null
       /** Id */
       id: number
+      /** Over Estimate */
+      over_estimate: boolean
       /** Pinned Id */
       pinned_id: number | null
       /** Pinned Kind */
       pinned_kind: string | null
+      /** Plan Used Percent */
+      plan_used_percent: number | null
       /** Project Id */
       project_id: number
       /** Project Name */

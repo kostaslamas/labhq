@@ -25,8 +25,18 @@ class RoomItem(BaseModel):
     agenda: str
     pinned_kind: str | None
     pinned_id: int | None
-    # Shown with the approval of the start; None once it is no longer a guess.
+    # The range and the hard cap shown with the approval of the start, and whether the range
+    # is measured from recorded runs ("history") or a constant from settings ("fallback").
     estimate_micros: int | None
+    estimate_high_micros: int | None
+    estimate_source: str | None
+    cost_cap_micros: int | None
+    # What the room has cost so far. Without an API key it is an equivalent cost, not a bill.
+    cost_micros: int
+    equivalent_cost: bool
+    # The busiest plan window the room's agents ran in; None when no reading is recorded.
+    plan_used_percent: float | None
+    over_estimate: bool
     approval_id: int | None
     approval_status: ApprovalStatus | None
     turns_used: int

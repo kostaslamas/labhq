@@ -2595,6 +2595,21 @@
               }
             ]
           },
+          "cost_cap_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Cap Micros"
+          },
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -2623,6 +2638,21 @@
             ],
             "title": "Ended At"
           },
+          "equivalent_cost": {
+            "title": "Equivalent Cost",
+            "type": "boolean"
+          },
+          "estimate_high_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate High Micros"
+          },
           "estimate_micros": {
             "anyOf": [
               {
@@ -2634,9 +2664,24 @@
             ],
             "title": "Estimate Micros"
           },
+          "estimate_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate Source"
+          },
           "id": {
             "title": "Id",
             "type": "integer"
+          },
+          "over_estimate": {
+            "title": "Over Estimate",
+            "type": "boolean"
           },
           "pinned_id": {
             "anyOf": [
@@ -2659,6 +2704,17 @@
               }
             ],
             "title": "Pinned Kind"
+          },
+          "plan_used_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Used Percent"
           },
           "project_id": {
             "title": "Project Id",
@@ -2699,6 +2755,13 @@
           "pinned_kind",
           "pinned_id",
           "estimate_micros",
+          "estimate_high_micros",
+          "estimate_source",
+          "cost_cap_micros",
+          "cost_micros",
+          "equivalent_cost",
+          "plan_used_percent",
+          "over_estimate",
           "approval_id",
           "approval_status",
           "turns_used",
@@ -4511,7 +4574,6 @@
     },
     "/api/callcenter/rooms/{room_id}/decline": {
       "post": {
-        "description": "Refuse the start; the room is cancelled and nobody is asked.",
         "operationId": "room_decline",
         "parameters": [
           {
@@ -4624,7 +4686,6 @@
     },
     "/api/callcenter/rooms/{room_id}/start": {
       "post": {
-        "description": "The owner's tap on the room's start approval, then the room opens in the background.",
         "operationId": "room_start",
         "parameters": [
           {

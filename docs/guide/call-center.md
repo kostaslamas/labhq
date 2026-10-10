@@ -61,6 +61,7 @@ talk in one thread. The room closes when you or the CEO close it, or after
 | `health` | read | Whether the machines that run the agents are up, and open incidents |
 | `reports` | read | What workers and managers last reported, per project: who, how long ago, what |
 | `meeting_minutes` | read | A meeting's participants, decisions, action items and cost; the latest one unless you name it |
+| `meeting_cost` | read | What the latest decision room will cost or has cost: the range, the hard cap, the running total and, on a subscription, the equivalent cost |
 | `ask_ceo` | write | Talk to the Call Center: a status question, or an order for the CEO; returns a ticket at once |
 | `get_reply` | read | The answer for an `ask_ceo` ticket, or "still working" |
 | `answer` | write | Your own words as the answer to an agent's question |

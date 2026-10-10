@@ -6,9 +6,11 @@ order. `advance` runs whoever has not yet answered the owner's latest message an
 everyone has, so a new owner entry (or the start) is what moves the room on.
 
 An agent that is a tmux session answers after it finishes its current step; the room records
-that it is waiting and why. The agent-turn cap bounds the cost: at the cap the room writes its
-minutes and ends. Minutes record decisions; each action item waits for the owner's approval
-(`labhq.meetings.actions`), so nothing executes on the room's own authority.
+that it is waiting and why. Two caps bound the cost: the agent-turn cap, and the hard USD cap
+the owner approved the room under (issue #202). At either the room writes its minutes and ends.
+Passing the high end of the estimate is announced once. Minutes record decisions; each action
+item waits for the owner's approval (`labhq.meetings.actions`), so nothing executes on the
+room's own authority.
 """
 
 import asyncio
@@ -17,7 +19,7 @@ import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.adoption.state import state_of
@@ -30,6 +32,8 @@ from labhq.db.models import Agent, Meeting, MeetingActionItem, MeetingParticipan
 from labhq.db.models import MeetingTranscriptEntry as Entry
 from labhq.hierarchy import CEO
 from labhq.meetings.actions import DECISION_ACTION
+from labhq.meetings.caps import CLOSING_NOTES, COST_CAP_REASON, TURN_CAP_REASON, Spent
+from labhq.meetings.cost import meeting_cost_micros
 from labhq.meetings.events import MeetingEventKind, MeetingListeners
 from labhq.meetings.events import default_listeners as builtin_listeners
 from labhq.meetings.kinds import MeetingKind
@@ -48,11 +52,11 @@ from labhq.meetings.runner import (
 )
 from labhq.meetings.settings import MeetingSettings
 from labhq.meetings.transcript import add_entry, lines
+from labhq.money import format_micros
 from labhq.runs import RunService
 
 logger = logging.getLogger(__name__)
 
-TURN_CAP_REASON = "turn_cap"
 FINISHING_STEP = "finishing its current step"
 
 # Reads why an agent cannot answer yet; None means it can. The default knows adopted managers.
@@ -118,8 +122,12 @@ class DecisionRoom(MeetingRunner):
                 if context is None:
                     return
                 pending = await self._pending(context)
+                spent = await self._spent(context.meeting_id)
+                if spent.cap is not None and spent.total >= spent.cap:
+                    await self._finish(context, COST_CAP_REASON, spent)
+                    return
                 if pending.turns >= self._settings.decision_turn_cap:
-                    await self._finish(context, TURN_CAP_REASON)
+                    await self._finish(context, TURN_CAP_REASON, spent)
                     return
                 if pending.seat is None:
                     return
@@ -127,6 +135,7 @@ class DecisionRoom(MeetingRunner):
                     await self._end(meeting_id, MeetingStatus.ENDED, BUDGET_REASON)
                     return
                 await self._room_turn(context, pending.seat)
+                await self._announce_overrun(context.meeting_id)
 
     async def close(self, meeting_id: int) -> Meeting:
         """Write the minutes and end the room, whoever asked: the owner or the CEO."""
@@ -134,7 +143,7 @@ class DecisionRoom(MeetingRunner):
             context = await self._context(meeting_id)
             if context is None:
                 raise RoomClosedError(f"meeting {meeting_id} is not an open room")
-            return await self._finish(context, None)
+            return await self._finish(context, None, await self._spent(meeting_id))
 
     def _lock(self, meeting_id: int) -> asyncio.Lock:
         # Shared by every room object over one database, so a kick and a close never overlap.
@@ -257,11 +266,46 @@ class DecisionRoom(MeetingRunner):
             await db.commit()
         await self._emit(MeetingEventKind.ENTRY_ADDED, meeting_id, entry.id)
 
-    async def _finish(self, context: Context, reason: str | None) -> Meeting:
+    async def _spent(self, meeting_id: int) -> Spent:
+        async with self._sessions() as db:
+            meeting = await db.get_one(Meeting, meeting_id)
+            return Spent(
+                await meeting_cost_micros(db, meeting_id),
+                meeting.cost_cap_micros,
+                meeting.estimate_high_micros,
+                meeting.over_estimate_at,
+            )
+
+    async def _announce_overrun(self, meeting_id: int) -> None:
+        """Say once, in the thread, that the room cost more than the high end of its estimate."""
+        spent = await self._spent(meeting_id)
+        if spent.high is None or spent.total <= spent.high or spent.announced_at is not None:
+            return
+        async with self._sessions() as db:
+            # Conditional, so two callers cannot both announce it.
+            claimed = await db.execute(
+                update(Meeting)
+                .where(Meeting.id == meeting_id, Meeting.over_estimate_at.is_(None))
+                .values(over_estimate_at=self._clock.now())
+            )
+            await db.commit()
+        if claimed.rowcount == 1:  # type: ignore[attr-defined]
+            await self._note(
+                meeting_id,
+                f"The room has cost {format_micros(spent.total)}, above the high end of its "
+                f"estimate ({format_micros(spent.high)}).",
+            )
+
+    async def _finish(self, context: Context, reason: str | None, spent: Spent) -> Meeting:
         """Minutes, then the end; `reason` is why the room closed itself, None if asked to."""
         meeting_id = context.meeting_id
         if reason is not None:
-            await self._note(meeting_id, "Turn cap reached: the room closes with its minutes.")
+            await self._note(
+                meeting_id,
+                CLOSING_NOTES[reason].format(
+                    spent=format_micros(spent.total), cap=format_micros(spent.cap or 0)
+                ),
+            )
         assignees = {seat.agent_id for seat in context.seats if seat.role != CEO}
         error: str | None = None
         for _attempt in range(self._settings.minutes_attempts):

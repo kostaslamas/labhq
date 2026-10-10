@@ -2,15 +2,15 @@
 
 The transcript itself is `/api/meetings/{id}`, so a room reads like any meeting. These routes
 add what only a live room has. Starting is the existing `start_meeting` approval, a tap; the
-cost estimate it shows was fixed when the CEO proposed the room. Nothing decided in a room runs
-without the owner approving its action items (`labhq.meetings.actions`).
+cost range and hard cap it shows were fixed when the CEO proposed the room. Nothing decided in
+a room runs without the owner approving its action items (`labhq.meetings.actions`).
 """
 
 import contextlib
 from typing import Annotated
 
 from fastapi import APIRouter, Header, Path
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from labhq.adapters.kinds import TMUX_ADAPTER
@@ -28,6 +28,7 @@ from labhq.api.meetings.schemas import Message
 from labhq.approvals import ApprovalService
 from labhq.ceoorg.background import spawn
 from labhq.ceoorg.meetings import meeting_service
+from labhq.clock import Clock
 from labhq.db.enums import ApprovalStatus, MeetingStatus
 from labhq.db.models import (
     Agent,
@@ -36,7 +37,6 @@ from labhq.db.models import (
     MeetingActionItem,
     MeetingDecision,
     MeetingParticipant,
-    MeetingTranscriptEntry,
     Project,
 )
 from labhq.meetings import (
@@ -46,6 +46,7 @@ from labhq.meetings import (
     default_kinds,
     get_meeting_settings,
 )
+from labhq.meetings.figures import room_figures
 
 router = APIRouter(prefix="/callcenter", tags=["callcenter"])
 
@@ -62,13 +63,9 @@ def _tmux(agent: Agent) -> bool:
     return agent.adapter == TMUX_ADAPTER or state_of(agent) is not None
 
 
-async def _item(db: AsyncSession, meeting: Meeting, project_name: str) -> RoomItem:
-    turns = await db.scalar(
-        select(func.count(MeetingTranscriptEntry.id)).where(
-            MeetingTranscriptEntry.meeting_id == meeting.id,
-            MeetingTranscriptEntry.run_id.is_not(None),
-        )
-    )
+async def _item(db: AsyncSession, clock: Clock, meeting: Meeting, project_name: str) -> RoomItem:
+    settings = get_meeting_settings()
+    figures = await room_figures(db, clock, meeting, settings)
     approval = await db.get(Approval, meeting.approval_id) if meeting.approval_id else None
     waiting = None
     if meeting.waiting_agent_id is not None and meeting.waiting_reason:
@@ -87,11 +84,18 @@ async def _item(db: AsyncSession, meeting: Meeting, project_name: str) -> RoomIt
         agenda=meeting.agenda,
         pinned_kind=meeting.pinned_kind,
         pinned_id=meeting.pinned_id,
-        estimate_micros=meeting.estimate_micros,
+        estimate_micros=figures.low_micros,
+        estimate_high_micros=figures.high_micros,
+        estimate_source=figures.source,
+        cost_cap_micros=figures.cap_micros,
+        cost_micros=figures.spent_micros,
+        equivalent_cost=figures.equivalent_cost,
+        plan_used_percent=figures.plan_used_percent,
+        over_estimate=meeting.over_estimate_at is not None,
         approval_id=meeting.approval_id,
         approval_status=approval.status if approval else None,
-        turns_used=turns or 0,
-        turn_cap=get_meeting_settings().decision_turn_cap,
+        turns_used=figures.turns,
+        turn_cap=figures.turn_cap,
         waiting=waiting,
         end_reason=meeting.end_reason,
         created_at=meeting.created_at,
@@ -111,7 +115,7 @@ async def _room(db: AsyncSession, room_id: int) -> Meeting:
 
 
 @router.get("/rooms")
-async def rooms_list(owner: OwnerDep, db: SessionDep) -> list[RoomItem]:
+async def rooms_list(owner: OwnerDep, db: SessionDep, clock: ClockDep) -> list[RoomItem]:
     """The newest rooms, newest first; the widget opens the first that is not over."""
     rows = (
         await db.execute(
@@ -122,13 +126,14 @@ async def rooms_list(owner: OwnerDep, db: SessionDep) -> list[RoomItem]:
             .limit(LIST_LIMIT)
         )
     ).all()
-    return [await _item(db, meeting, name) for meeting, name in rows]
+    return [await _item(db, clock, meeting, name) for meeting, name in rows]
 
 
 @router.post("/rooms/{room_id}/start", status_code=202)
 async def room_start(
     room_id: RoomId, owner: OwnerDep, context: ContextDep, db: SessionDep
 ) -> RoomItem:
+    clock = context.clock
     """The owner's tap on the room's start approval, then the room opens in the background."""
     meeting = await _room(db, room_id)
     if meeting.status is not MeetingStatus.REQUESTED or meeting.approval_id is None:
@@ -142,13 +147,14 @@ async def room_start(
     service = meeting_service(context.sessions, context.clock, approvals)
     spawn(service.start(room_id), name=f"room-{room_id}")
     db.expire_all()
-    return await _item(db, await _room(db, room_id), await _project_name(db, meeting))
+    return await _item(db, clock, await _room(db, room_id), await _project_name(db, meeting))
 
 
 @router.post("/rooms/{room_id}/decline")
 async def room_decline(
     room_id: RoomId, owner: OwnerDep, context: ContextDep, db: SessionDep
 ) -> RoomItem:
+    clock = context.clock
     """Refuse the start; the room is cancelled and nobody is asked."""
     meeting = await _room(db, room_id)
     if meeting.status is not MeetingStatus.REQUESTED or meeting.approval_id is None:
@@ -157,7 +163,7 @@ async def room_decline(
     await approvals.reject(meeting.approval_id, decider=f"web:{owner.subject}", confirmation=TAP)
     await meeting_service(context.sessions, context.clock, approvals).start(room_id)
     db.expire_all()
-    return await _item(db, await _room(db, room_id), await _project_name(db, meeting))
+    return await _item(db, clock, await _room(db, room_id), await _project_name(db, meeting))
 
 
 async def _project_name(db: AsyncSession, meeting: Meeting) -> str:

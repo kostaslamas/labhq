@@ -82,8 +82,8 @@ async def test_the_room_has_the_ceo_and_the_projects_manager(world: World) -> No
     assert meeting.facilitator_agent_id == world.ceo_id
     assert meeting.status is MeetingStatus.REQUESTED
     assert (meeting.pinned_kind, meeting.pinned_id) == ("report", 1)
-    # The owner sees the cost before approving: the cap's turns plus the minutes.
-    assert meeting.estimate_micros == 200_000 * 13
+    # The owner sees the range before approving: 13 runs of 200,000 growing 10% a turn.
+    assert meeting.estimate_micros == 4_160_000
     assert approval.payload["estimate_micros"] == meeting.estimate_micros
 
 

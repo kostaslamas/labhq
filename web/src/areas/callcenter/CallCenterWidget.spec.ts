@@ -34,6 +34,13 @@ function room(overrides: Record<string, unknown> = {}) {
     pinned_kind: 'report',
     pinned_id: 5,
     estimate_micros: 2_600_000,
+    estimate_high_micros: 5_200_000,
+    estimate_source: 'history',
+    cost_cap_micros: 6_000_000,
+    cost_micros: 0,
+    equivalent_cost: true,
+    plan_used_percent: null,
+    over_estimate: false,
     approval_id: 3,
     approval_status: 'pending',
     turns_used: 0,
@@ -156,7 +163,11 @@ describe('Call Center widget', () => {
     expect(root.querySelector('[data-testid="callcenter-badge"]')?.textContent).toBe('1')
     click(root, 'callcenter-launcher')
     await settle()
-    expect(root.querySelector('[data-testid="room-estimate"]')?.textContent).toContain('$2.60')
+    const estimate = root.querySelector('[data-testid="room-estimate"]')?.textContent
+    expect(estimate).toContain('equivalent cost')
+    expect(estimate).toContain('$2.60')
+    expect(estimate).toContain('$5.20')
+    expect(root.querySelector('[data-testid="room-cap"]')?.textContent).toContain('$6.00')
   })
 
   it('pins the proposal from a card and sends its id as context, not as text', async () => {
@@ -202,6 +213,46 @@ describe('Call Center widget', () => {
     )
     expect(speakers).toEqual(['CEO', 'Owner', 'Boss'])
     expect(root.querySelector('[data-testid="room-turns"]')?.textContent).toBe('2/12')
+  })
+
+  it('shows the running total against the cap, labelled equivalent, with the plan share', async () => {
+    serve({
+      rooms: [
+        room({
+          status: 'running',
+          turns_used: 4,
+          cost_micros: 1_250_000,
+          plan_used_percent: 41.4,
+          over_estimate: true,
+        }),
+      ],
+    })
+    const { root } = await renderApp('/today')
+    await settle()
+
+    click(root, 'callcenter-launcher')
+    await settle()
+    click(root, 'tab-room')
+    await settle()
+
+    const cost = root.querySelector('[data-testid="room-cost"]')
+    expect(cost?.textContent?.replace(/\s+/g, ' ').trim()).toBe('$1.25 / $6.00')
+    expect(cost?.className).toContain('text-status-failed')
+    const label = root.querySelector('[data-testid="room-equivalent"]')?.textContent
+    expect(label).toContain('Equivalent cost')
+    expect(label).toContain('41% of the plan window used')
+  })
+
+  it('offers no start for a room whose range or cap is missing', async () => {
+    serve({ rooms: [room({ cost_cap_micros: null })] })
+    const { root } = await renderApp('/today')
+    await settle()
+
+    click(root, 'callcenter-launcher')
+    await settle()
+
+    expect(root.querySelector('[data-testid="room-cap"]')).toBeNull()
+    expect(root.querySelector('[data-testid="room-start"]')?.hasAttribute('disabled')).toBe(true)
   })
 
   it('says whom the room waits for and lets the owner send Esc to a tmux manager', async () => {
