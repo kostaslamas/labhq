@@ -14,7 +14,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     env:
       # A scratch data directory, so migrations run against an empty database.
       LABHQ_DATA_DIR: ${{ github.workspace }}/.ci-data
@@ -46,7 +46,7 @@ jobs:
         run: uv run --frozen python -m tools.collection_floor
 
       - name: Tests
-        run: uv run --frozen pytest
+        run: uv run --frozen pytest -n auto
 
       # The job fails on any non-zero exit: a server that does not start, a list that misses
       # a tool, or a call whose answer is the spoken failure sentence.
