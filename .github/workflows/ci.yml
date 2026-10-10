@@ -46,7 +46,7 @@ jobs:
         run: uv run --frozen python -m tools.collection_floor
 
       - name: Tests
-        run: uv run --frozen pytest
+        run: uv run --frozen pytest -n auto
 
       # The job fails on any non-zero exit: a server that does not start, a list that misses
       # a tool, or a call whose answer is the spoken failure sentence.
