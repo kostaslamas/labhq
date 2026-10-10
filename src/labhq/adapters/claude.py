@@ -26,6 +26,7 @@ from pydantic import BaseModel, ConfigDict
 from labhq.adapters.base import AdapterError, AdapterEvent, AdapterResult, AgentTool, RunRequest
 from labhq.adapters.claude_env import child_environment
 from labhq.adapters.claude_messages import to_event, to_result
+from labhq.adapters.claude_model import model_options
 from labhq.guards.readonly import READ_ONLY_MODE, read_only_matcher, read_only_permissions
 
 
@@ -58,6 +59,9 @@ class ClaudeAgentConfig(BaseModel):
     # touch machines run read-only instead (plan §5, rule 2).
     permission_mode: PermissionMode | Literal["read_only"] = "bypassPermissions"
     model: str | None = None
+    # Legacy extended thinking and raw CLI flags; `model_options` strips what a model rejects.
+    max_thinking_tokens: int | None = None
+    extra_args: dict[str, str | None] = {}
     max_turns: int | None = None
     # `[]` runs with no tools at all, as the usage extractor does (ADR 0003).
     tools: list[str] | None = None
@@ -164,16 +168,24 @@ class ClaudeAdapter:
                 "hooks": cast(Any, dict(request.hooks)) if request.hooks else None,
                 **tool_options(request.tools, request.agent_tools),
             }
+        # A resolved model wins; an agent that was run without the policy keeps its own.
+        chosen, extra_env = model_options(
+            request.model or config.model,
+            effort=request.effort,
+            max_output_tokens=request.max_output_tokens,
+            max_thinking_tokens=config.max_thinking_tokens,
+            extra_args=config.extra_args,
+        )
         return ClaudeAgentOptions(
             cli_path=self._cli_path,
             # No user, project or local settings: their hooks and rules must not leak in.
             setting_sources=[],
             cwd=request.cwd,
-            model=config.model,
             max_turns=config.max_turns,
             resume=request.resume_session_id,
             system_prompt=system_prompt(request.system_prompt_append),
-            env=child_environment(self._environ),
+            env={**child_environment(self._environ), **extra_env},
+            **chosen,
             # A run's own tools replace the configured set; otherwise the config decides.
             **{"tools": config.tools, **mode_options},
         )

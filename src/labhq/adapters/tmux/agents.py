@@ -68,6 +68,9 @@ class LaunchContext:
     signal_path: Path
     statusline_path: Path
     guard_hook: str
+    # The policy's model and effort; only a kind whose launch reads them takes them.
+    model: str | None = None
+    effort: str | None = None
 
 
 Launch = Callable[[LaunchContext], list[str]]
@@ -162,7 +165,12 @@ def claude_settings(context: LaunchContext) -> list[str]:
             ],
         },
     }
-    return ["--settings", json.dumps(settings)]
+    words = ["--settings", json.dumps(settings)]
+    if context.model:
+        words += ["--model", context.model]
+    if context.effort:
+        words += ["--effort", context.effort]
+    return words
 
 
 def _codex_hook(command: str, matcher: str | None = None) -> list[dict[str, object]]:

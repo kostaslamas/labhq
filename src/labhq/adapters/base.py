@@ -50,6 +50,11 @@ class RunRequest:
     persistent_tmux_session: str | None = None
     # The unwrapped turn for an already running CEO pane. Fresh panes receive `prompt`.
     persistent_turn_prompt: str | None = None
+    # What `labhq.modelpolicy` resolved for this run. Only the Claude-family adapters read
+    # them; the cap leaves room for adaptive thinking on short routes.
+    model: str | None = None
+    effort: str | None = None
+    max_output_tokens: int | None = None
 
 
 @dataclass(frozen=True)

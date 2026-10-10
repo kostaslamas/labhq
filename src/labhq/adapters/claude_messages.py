@@ -14,6 +14,8 @@ from claude_agent_sdk.types import RateLimitEvent, StreamEvent
 
 from labhq.adapters.base import AdapterEvent, AdapterResult
 
+REFUSAL = "refusal"
+
 # A message type the table does not know is still stored, under its class name.
 EVENT_KINDS: dict[type, str] = {
     AssistantMessage: "assistant",
@@ -43,15 +45,21 @@ def to_result(message: ResultMessage, model: str | None) -> AdapterResult:
     # `model_usage` names every model the turn used; the last assistant message is the
     # fallback for older CLIs that omit it.
     models = list(message.model_usage or {})
+    # A refusal ends the turn with no answer; reporting it as a success would hand the
+    # caller an empty result (Haiku 5.5 has no server-side refusal fallback).
+    refused = message.stop_reason == REFUSAL
+    errors = list(message.errors or [])
+    if refused:
+        errors.append(f"the model refused the request (stop_reason {REFUSAL})")
     return AdapterResult(
-        subtype=message.subtype,
-        is_error=message.is_error,
+        subtype="error_refusal" if refused else message.subtype,
+        is_error=message.is_error or refused,
         session_id=message.session_id or None,
         terminal_reason=message.terminal_reason,
         cost_usd=message.total_cost_usd,
         usage=json_safe(message.usage or {}),
         model=models[0] if models else model,
         num_turns=message.num_turns,
-        errors=list(message.errors or []),
+        errors=errors,
         text=message.result,
     )

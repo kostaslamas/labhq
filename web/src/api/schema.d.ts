@@ -672,6 +672,47 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/models': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Models Get */
+    get: operations['models_get']
+    /**
+     * Models Put
+     * @description Save rows over the stored table. An unknown model or effort changes nothing.
+     */
+    put: operations['models_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/models/usage': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Models Usage
+     * @description Cost by model over the last `days`, in micro-USD, with what the policy saved.
+     */
+    get: operations['models_usage']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/org/ceo': {
     parameters: {
       query?: never
@@ -1420,6 +1461,23 @@ export interface components {
        */
       verb: 'approve' | 'reject' | 'show'
     }
+    /** CostOut */
+    CostOut: {
+      /** Cost Micros */
+      cost_micros: number
+      /** Input Tokens */
+      input_tokens: number
+      /** Model */
+      model: string
+      /** Output Tokens */
+      output_tokens: number
+      /** Reference Micros */
+      reference_micros: number | null
+      /** Runs */
+      runs: number
+      /** Saved Micros */
+      saved_micros: number | null
+    }
     /**
      * Credential
      * @description What the UI may know about a passkey. The public key stays on the server.
@@ -1755,6 +1813,17 @@ export interface components {
       /** Text */
       text: string
     }
+    /** ModelOut */
+    ModelOut: {
+      /** Display Name */
+      display_name: string
+      /** Id */
+      id: string
+      /** Input Micros Per Mtok */
+      input_micros_per_mtok: number
+      /** Output Micros Per Mtok */
+      output_micros_per_mtok: number
+    }
     /** NeedsYou */
     NeedsYou: {
       /** Approvals */
@@ -1907,6 +1976,26 @@ export interface components {
       /** Options */
       options?: ('approve' | 'reject' | 'show')[]
     }
+    /** PolicyIn */
+    PolicyIn: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /** Rows */
+      rows: {
+        [key: string]: components['schemas']['RowIn']
+      }
+    }
+    /** PolicyOut */
+    PolicyOut: {
+      /** Efforts */
+      efforts: string[]
+      /** Models */
+      models: components['schemas']['ModelOut'][]
+      /** Rows */
+      rows: components['schemas']['RowOut'][]
+    }
     /** ProjectCard */
     ProjectCard: {
       budget: components['schemas']['Budget']
@@ -2014,6 +2103,28 @@ export interface components {
     RoomMessage: {
       /** Text */
       text: string
+    }
+    /** RowIn */
+    RowIn: {
+      /** Effort */
+      effort: string
+      /** Max Output Tokens */
+      max_output_tokens?: number | null
+      /** Model */
+      model: string
+    }
+    /** RowOut */
+    RowOut: {
+      /** Effort */
+      effort: string
+      /** Key */
+      key: string
+      /** Kind */
+      kind: string
+      /** Max Output Tokens */
+      max_output_tokens: number | null
+      /** Model */
+      model: string
     }
     /** RunCapacity */
     RunCapacity: {
@@ -3588,6 +3699,99 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Message']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  models_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolicyOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  models_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PolicyIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PolicyOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  models_usage: {
+    parameters: {
+      query?: {
+        days?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CostOut'][]
         }
       }
       /** @description Error */

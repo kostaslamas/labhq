@@ -12,6 +12,7 @@ from labhq.approvals.merge import MERGE_ACTION, MergePayload, merge_branch
 from labhq.approvals.push import PUSH_ACTION, PushPayload, push_branch
 from labhq.approvals.registry import Registry
 from labhq.health.intervention import INTERVENTION_ACTION, HostIntervention, InterventionPayload
+from labhq.modelpolicy.apply import CHANGE_ACTION, apply_change, validate_change
 
 Payload = Mapping[str, Any]
 
@@ -34,3 +35,4 @@ default_executors.register(
 default_executors.register(
     MERGE_ACTION, Executor(run=merge_branch, validate=MergePayload.model_validate)
 )
+default_executors.register(CHANGE_ACTION, Executor(run=apply_change, validate=validate_change))

@@ -50,6 +50,8 @@ PHASE_1_ACTIONS: tuple[ActionType, ...] = (
     ActionType("create_team", RiskClass.HEAVY),
     ActionType("exceed_budget", RiskClass.HEAVY),
     ActionType("host_intervention", RiskClass.HEAVY),
+    # Models decide what the agents cost, so a change to the table needs a passkey.
+    ActionType("change_models", RiskClass.HEAVY),
 )
 
 # Outward-facing actions of departments (issue #171): they reach people or services outside
