@@ -19,13 +19,13 @@ from labhq.api.capacity.router import router as capacity_router
 from labhq.api.channels import router as channels_router
 from labhq.api.federation import router as federation_router
 from labhq.api.federation.a2a import a2a_router as federation_a2a_router
+from labhq.api.inventory import router as inventory_router
 from labhq.api.keys import router as keys_router
 from labhq.api.meetings import router as meetings_router
 from labhq.api.models import router as models_router
 from labhq.api.org import router as org_router
 from labhq.api.projects import router as projects_router
 from labhq.api.rules.routes import router as rules_router
-from labhq.api.sessions import router as sessions_router
 from labhq.api.today.router import router as today_router
 from labhq.api.vocabulary import vocabulary_router
 from labhq.auth.routes import public_router as auth_public_router
@@ -87,7 +87,7 @@ default_routers.register(autonomy_router)
 default_routers.register(keys_router)
 default_routers.register(channels_router)
 default_routers.register(models_router)
-default_routers.register(sessions_router)
+default_routers.register(inventory_router)
 # Authenticates its own calls with a federation key; a downstream instance has no owner session.
 default_routers.register(federation_router, public=True)
 default_routers.register(federation_a2a_router, public=True)  # Same, for the A2A transport.

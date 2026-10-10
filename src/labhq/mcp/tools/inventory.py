@@ -26,7 +26,8 @@ async def sessions_tool() -> str:
         return result.text
 
 
-SCOPE_PATH = "/session-scan"
+# The Projects page opens with the "Where labhq looks for sessions" panel in view.
+SCOPE_PATH = "/projects?panel=scan"
 
 
 async def scan_scope_tool(folder: str | None = None) -> str:
@@ -83,8 +84,9 @@ default_registry.register(
     ToolSpec(
         "session_scope",
         "Say which folders the session scan looks in and how many sessions it left out, and "
-        "give the link to the Session scan page where the owner changes the list with a "
-        "confirmation. Use it when the owner asks to search another folder, for example "
+        "give the link to the Projects page, whose scan panel is where the owner changes the "
+        "list with a confirmation. Use it when the owner asks to search another folder, for "
+        "example "
         "'ψάξε και στο ~/Developer': pass that folder as `folder`. It changes nothing by "
         "itself. Read the answer aloud as it is.",
         ToolAnnotations(readOnlyHint=True),

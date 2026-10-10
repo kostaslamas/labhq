@@ -4,12 +4,16 @@ The automated tests use fixture stores in each tool's documented layout and the 
 Run this once on a developer machine that has real sessions, and record the result below.
 
 1. Set the scan scope, then confirm it holds. `labhq sessions roots add ~/Developer` (use the folder
-   that holds your projects; `labhq onboard` offers the same question, and the web page
-   `/session-scan` does it with your passkey). `labhq sessions roots` lists it. Then
+   that holds your projects; `labhq onboard` offers the same question, and the "Where labhq looks for
+   sessions" panel on `/projects` does it with your passkey). `labhq sessions roots` lists it. Then
    `labhq sessions scan --no-report` ends with `scope: looked in <roots>; N sessions left out`:
    check that a session you know lives elsewhere is counted there and not listed. Ask the Call
    Center "ψάξε και στο ~/Developer": it must change nothing and answer with the page link. With
    no root set the scan says `machine-wide: no scope set`.
+   On `/projects`, open the panel: a repository under the folder that no agent ever worked in must
+   appear under "Found in your folders"; "Add project" opens the add form with its folder filled
+   in, and "Not interested" removes it for good (the exclusion shows in the panel, where it can
+   be removed).
 2. `labhq sessions scan --no-report`. Every project you expect appears; running agents show
    `waiting for input` or `idle`; Cursor IDE chats show `idle` and are not resumable.
 3. Compare one OpenCode, one Cursor CLI and one Cursor IDE session with the tool's own list.

@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { api, type components } from '@/api'
+import SessionScan from '@/areas/sessions/SessionScan.vue'
+import type { FoundProject } from '@/areas/sessions/scan'
 import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
@@ -19,6 +21,7 @@ const router = useRouter()
 const cards = ref<Card[]>([])
 const state = ref<'loading' | 'ready' | 'failed'>('loading')
 const adding = ref(false)
+const prefill = ref<FoundProject | null>(null)
 
 // Follows the cursors to the end: a person's projects are a handful, and a grid with a
 // hidden tail would hide a project that is over its budget.
@@ -48,6 +51,12 @@ async function openTaskProject(): Promise<void> {
   if (data) await router.replace({ name: 'project', params: { id: data.project_id } })
 }
 
+// "Add project" on a found project opens the same form with the folder already chosen.
+function addFound(project: FoundProject): void {
+  prefill.value = project
+  adding.value = true
+}
+
 // The new project's own page is where its first agent is added.
 async function opened(id: number): Promise<void> {
   adding.value = false
@@ -65,12 +74,22 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
   <section class="mx-auto flex max-w-7xl flex-col gap-6 p-4 sm:p-8">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold tracking-wide">{{ t('projects.nav') }}</h1>
-      <Button v-if="!adding" data-testid="add-project" @click="adding = true">
+      <Button v-if="!adding" data-testid="add-project" @click="((prefill = null), (adding = true))">
         {{ t('projects.add.button') }}
       </Button>
     </div>
 
-    <AddProjectForm v-if="adding" class="max-w-xl" @added="opened" @cancel="adding = false" />
+    <AddProjectForm
+      v-if="adding"
+      :key="prefill?.path ?? 'blank'"
+      class="max-w-xl"
+      :initial-name="prefill?.name"
+      :initial-path="prefill?.path"
+      @added="opened"
+      @cancel="adding = false"
+    />
+
+    <SessionScan @add="addFound" />
 
     <CeoAssignmentForm />
 

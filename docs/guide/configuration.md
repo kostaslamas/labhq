@@ -252,6 +252,10 @@ Session inventory settings, from `LABHQ_INVENTORY_*`. Thresholds and prices are 
 | `LABHQ_INVENTORY_BUSY_CPU_SECONDS` | `float` | `0.05` | CPU seconds per sample above which a process counts as working. |
 | `LABHQ_INVENTORY_ROOTS` | `list[str]` | `[]` | The folders the scan may look in; `~` is expanded. A session counts only if its working directory is inside one (symlinks and `..` resolved). Empty means machine-wide. Roots the owner adds with `labhq sessions roots add` or in the web UI are kept in the database and join these. |
 | `LABHQ_INVENTORY_EXCLUDE` | `list[str]` | `[]` | Folders or glob patterns inside the roots that the scan skips, for example `~/Developer/old`. |
+| `LABHQ_INVENTORY_DISCOVERY_DEPTH` | `int` | `3` | How many folders below a root project discovery descends (the root is depth 0). |
+| `LABHQ_INVENTORY_DISCOVERY_MAX_FOLDERS` | `int` | `20000` | The most folders one discovery walk lists; a walk the cap stops is reported as capped. |
+| `LABHQ_INVENTORY_PROJECT_MARKERS` | `dict[str, str]` | *computed* | File names that make a folder a project, with the label shown for each. A `.git` entry (folder or file) always does. |
+| `LABHQ_INVENTORY_DISCOVERY_SKIP_DIRS` | `list[str]` | *computed* | Folders discovery never enters, besides every hidden folder. |
 | `LABHQ_INVENTORY_SUGGESTED_ROOTS` | `list[str]` | *computed* | Where onboarding looks for the folder that holds the owner's projects; the first that exists is offered as a suggestion, never applied by itself. |
 | `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. Kept inside the scope. |
 | `LABHQ_INVENTORY_FOLDER_MANAGER_MIN_PROJECTS` | `int` | `2` | A parent folder with at least this many projects gets a folder-manager proposal. |

@@ -12,6 +12,7 @@ from pathlib import Path
 from labhq.adapters.tmux import AgentKinds, default_kinds
 from labhq.adoption.discovery import Processes, RunningAgent, all_processes, discover
 from labhq.clock import Clock, SystemClock
+from labhq.inventory.discovery import discover_projects
 from labhq.inventory.git import Command, git_facts, run_command
 from labhq.inventory.model import (
     GitFacts,
@@ -25,7 +26,7 @@ from labhq.inventory.probe import Probe, ProcessProbe
 from labhq.inventory.projects import RootOf, group_by_project, propose_folder_managers
 from labhq.inventory.propose import propose
 from labhq.inventory.roots import scope_of
-from labhq.inventory.scope import Scope, ScopeFilter
+from labhq.inventory.scope import Scope, ScopeFilter, real
 from labhq.inventory.settings import InventorySettings, get_inventory_settings
 from labhq.inventory.stores import AIDER, Bases, Context, aider_entries, read_all
 
@@ -69,10 +70,15 @@ class SessionScanner:
             project.proposals = [
                 propose(session, project.git, now, self._settings) for session in project.sessions
             ]
+        discovery = discover_projects(self._scope, self._settings)
+        known = {real(p.root) for p in projects}
+        found = [f for f in discovery.projects if real(f.root) not in known]
+        # A folder holding projects is worth a manager whether or not an agent worked in them.
+        counted = [*projects, *(ProjectInventory(f.root, f.root.name, True) for f in found)]
         folders = [
             f
             for f in propose_folder_managers(
-                projects, minimum=self._settings.folder_manager_min_projects, home=self._bases.home
+                counted, minimum=self._settings.folder_manager_min_projects, home=self._bases.home
             )
             if self._scope.contains(f.folder)
         ]
@@ -82,6 +88,9 @@ class SessionScanner:
             folders=folders,
             roots=self._scope.roots,
             left_out=turned_away.left_out,
+            found=found,
+            folders_visited=discovery.folders_visited,
+            discovery_capped=discovery.capped,
         )
 
     def _git(self, project: ProjectInventory) -> GitFacts:

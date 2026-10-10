@@ -24,6 +24,36 @@ class InventorySettings(BaseSettings):
     roots: list[str] = Field(default_factory=list)
     # Folders or glob patterns inside the roots that the scan skips, for example `~/Developer/old`.
     exclude: list[str] = Field(default_factory=list)
+    # How many folders below a root project discovery descends (the root is depth 0).
+    discovery_depth: int = Field(default=3, ge=0)
+    # The most folders one discovery walk lists; a walk the cap stops is reported as capped.
+    discovery_max_folders: int = Field(default=20_000, gt=0)
+    # File names that make a folder a project, with the label shown for each. A `.git` entry
+    # (folder or file) always does.
+    project_markers: dict[str, str] = Field(
+        default_factory=lambda: {
+            "pyproject.toml": "Python",
+            "package.json": "Node",
+            "Cargo.toml": "Rust",
+            "go.mod": "Go",
+            "pom.xml": "Java",
+            "Gemfile": "Ruby",
+            "composer.json": "PHP",
+        }
+    )
+    # Folders discovery never enters, besides every hidden folder.
+    discovery_skip_dirs: list[str] = Field(
+        default_factory=lambda: [
+            "node_modules",
+            ".venv",
+            "venv",
+            "__pycache__",
+            "dist",
+            "build",
+            "target",
+            ".cache",
+        ]
+    )
     # Where onboarding looks for the folder that holds the owner's projects; the first that
     # exists is offered as a suggestion, never applied by itself.
     suggested_roots: list[str] = Field(

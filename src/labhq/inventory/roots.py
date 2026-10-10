@@ -16,6 +16,7 @@ from labhq.inventory.scope import Scope, build_scope, real
 from labhq.inventory.settings import InventorySettings
 
 KEY = "inventory_roots"
+EXCLUDE_KEY = "inventory_exclude"
 
 
 class RootError(ValueError):
@@ -49,8 +50,8 @@ def check_root(raw: str, *, home: Path | None = None) -> CheckedRoot:
     return CheckedRoot(path, warning)
 
 
-async def stored_roots(db: AsyncSession) -> list[str]:
-    row = await db.get(ProgramState, KEY, populate_existing=True)
+async def _load(db: AsyncSession, key: str) -> list[str]:
+    row = await db.get(ProgramState, key, populate_existing=True)
     if row is None:
         return []
     try:
@@ -60,15 +61,31 @@ async def stored_roots(db: AsyncSession) -> list[str]:
     return [item for item in value if isinstance(item, str)] if isinstance(value, list) else []
 
 
-async def _save(db: AsyncSession, clock: Clock, roots: list[str]) -> None:
-    value = json.dumps(roots)
-    state = await db.get(ProgramState, KEY)
+async def stored_roots(db: AsyncSession) -> list[str]:
+    return await _load(db, KEY)
+
+
+async def stored_exclusions(db: AsyncSession) -> list[str]:
+    return await _load(db, EXCLUDE_KEY)
+
+
+async def _save(db: AsyncSession, clock: Clock, items: list[str], key: str = KEY) -> None:
+    value = json.dumps(items)
+    state = await db.get(ProgramState, key)
     if state is None:
-        db.add(ProgramState(key=KEY, value=value, updated_at=clock.now()))
+        db.add(ProgramState(key=key, value=value, updated_at=clock.now()))
     else:
         state.value = value
         state.updated_at = clock.now()
     await db.flush()
+
+
+async def set_roots(db: AsyncSession, clock: Clock, roots: list[str]) -> None:
+    await _save(db, clock, roots, KEY)
+
+
+async def set_exclusions(db: AsyncSession, clock: Clock, folders: list[str]) -> None:
+    await _save(db, clock, folders, EXCLUDE_KEY)
 
 
 async def add_root(
@@ -96,12 +113,36 @@ async def remove_root(db: AsyncSession, clock: Clock, raw: str) -> bool:
     return True
 
 
-def scope_of(settings: InventorySettings, stored: list[str]) -> Scope:
-    return build_scope([*settings.roots, *stored], settings.exclude)
+async def add_exclusion(db: AsyncSession, clock: Clock, raw: str) -> Path:
+    """Keep a folder the scan should skip (a found project the owner is not interested in)."""
+    text = raw.strip()
+    path = real(Path(text).expanduser())
+    if not text or not path.is_absolute() or not path.is_dir():
+        raise RootError(f"{text!r} is not an existing folder")
+    kept = await stored_exclusions(db)
+    if str(path) not in kept:
+        await _save(db, clock, [*kept, str(path)], EXCLUDE_KEY)
+    return path
+
+
+async def remove_exclusion(db: AsyncSession, clock: Clock, raw: str) -> bool:
+    kept = await stored_exclusions(db)
+    wanted = {raw.strip(), str(real(Path(raw.strip()).expanduser()))}
+    left = [item for item in kept if item not in wanted]
+    if len(left) == len(kept):
+        return False
+    await _save(db, clock, left, EXCLUDE_KEY)
+    return True
+
+
+def scope_of(
+    settings: InventorySettings, stored: list[str], excluded: list[str] | None = None
+) -> Scope:
+    return build_scope([*settings.roots, *stored], [*settings.exclude, *(excluded or [])])
 
 
 async def effective_scope(db: AsyncSession, settings: InventorySettings) -> Scope:
-    return scope_of(settings, await stored_roots(db))
+    return scope_of(settings, await stored_roots(db), await stored_exclusions(db))
 
 
 def suggestion(settings: InventorySettings, *, home: Path | None = None) -> str | None:
