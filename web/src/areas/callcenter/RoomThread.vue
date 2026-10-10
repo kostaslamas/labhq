@@ -3,6 +3,7 @@ import { nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api, isErrorEnvelope } from '@/api'
+import { formatMicros } from '@/format'
 import { Button, Mono } from '@/ui'
 
 import type { Room, RoomDetail, useRooms } from './useRooms'
@@ -71,7 +72,25 @@ watch(
   <div class="flex min-h-0 flex-1 flex-col" data-testid="room-thread">
     <div class="flex items-center justify-between gap-2 border-b border-line px-4 py-2 text-xs">
       <span class="truncate text-muted">{{ room.project_name }} · {{ room.agenda }}</span>
-      <Mono data-testid="room-turns">{{ room.turns_used }}/{{ room.turn_cap }}</Mono>
+      <span class="flex items-center gap-3">
+        <Mono data-testid="room-turns">{{ room.turns_used }}/{{ room.turn_cap }}</Mono>
+        <Mono
+          :class="room.over_estimate ? 'text-status-failed' : ''"
+          data-testid="room-cost"
+          :title="t(`callcenter.room.cost.${room.equivalent_cost ? 'equivalent' : 'billed'}`)"
+        >
+          {{ formatMicros(room.cost_micros) }}
+          <template v-if="room.cost_cap_micros !== null">
+            / {{ formatMicros(room.cost_cap_micros) }}
+          </template>
+        </Mono>
+        <span v-if="room.equivalent_cost" class="text-muted" data-testid="room-equivalent">
+          {{ t('callcenter.room.cost.equivalent') }}
+          <template v-if="room.plan_used_percent !== null">
+            · {{ t('callcenter.room.cost.plan', { percent: Math.round(room.plan_used_percent) }) }}
+          </template>
+        </span>
+      </span>
     </div>
 
     <div ref="scroller" class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">

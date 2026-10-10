@@ -32,9 +32,17 @@
   },
   "offer": {
     "title": "The CEO suggests a decision room with {project}'s manager.",
-    "estimate": "Estimated cost up to {cost}.",
+    "estimate": {
+      "equivalent": "Estimated equivalent cost {low} to {high}.",
+      "billed": "Estimated cost {low} to {high}."
+    },
     "start": "Approve and start",
-    "decline": "No thanks"
+    "decline": "No thanks",
+    "source": {
+      "history": "From what earlier runs cost.",
+      "fallback": "A rough guess: there are too few recorded runs."
+    },
+    "cap": "Hard cap {cap}: the room stops there and writes its minutes."
   },
   "room": {
     "tab": "Room",
@@ -52,6 +60,11 @@
     "over": {
       "ended": "The room is over.",
       "failed": "The room ended without minutes."
+    },
+    "cost": {
+      "equivalent": "Equivalent cost",
+      "billed": "Cost",
+      "plan": "{percent}% of the plan window used"
     }
   },
   "voice": {
