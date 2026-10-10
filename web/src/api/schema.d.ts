@@ -1837,12 +1837,18 @@ export interface components {
     }
     /** FolderOut */
     FolderOut: {
+      /** Found */
+      found?: number | null
+      /** In Labhq */
+      in_labhq?: number | null
       /** Path */
       path: string
       /** Removable */
       removable: boolean
       /** Source */
       source: string
+      /** With Sessions */
+      with_sessions?: number | null
     }
     /** FolderProposalOut */
     FolderProposalOut: {

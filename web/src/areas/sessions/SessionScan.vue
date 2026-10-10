@@ -184,7 +184,18 @@ onMounted(async () => {
             :data-testid="`root-${root.path}`"
             class="flex flex-wrap items-center justify-between gap-3"
           >
-            <Mono class="min-w-0 break-all">{{ root.path }}</Mono>
+            <div class="flex min-w-0 flex-col">
+              <Mono class="min-w-0 break-all">{{ root.path }}</Mono>
+              <span v-if="root.found != null" class="text-xs text-muted" data-testid="root-summary">
+                {{
+                  t('sessions.root_summary', {
+                    found: root.found,
+                    sessions: root.with_sessions ?? 0,
+                    added: root.in_labhq ?? 0,
+                  })
+                }}
+              </span>
+            </div>
             <Button
               v-if="root.removable"
               size="sm"

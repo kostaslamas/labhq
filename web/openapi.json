@@ -1491,6 +1491,28 @@
       },
       "FolderOut": {
         "properties": {
+          "found": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Found"
+          },
+          "in_labhq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Labhq"
+          },
           "path": {
             "title": "Path",
             "type": "string"
@@ -1502,6 +1524,17 @@
           "source": {
             "title": "Source",
             "type": "string"
+          },
+          "with_sessions": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "With Sessions"
           }
         },
         "required": ["path", "source", "removable"],

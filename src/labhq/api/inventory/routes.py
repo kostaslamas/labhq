@@ -12,12 +12,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
+from sqlalchemy import select
 
 from labhq.api.channels.routes import prove
 from labhq.api.deps import ClockDep, SessionDep
 from labhq.api.errors import ApiError
 from labhq.api.inventory.state import LAST
 from labhq.auth.routes import SignedIn
+from labhq.db.models import Project
 from labhq.inventory.found import not_yet_added, view
 from labhq.inventory.login import run_status
 from labhq.inventory.roots import (
@@ -47,6 +49,12 @@ class FolderOut(BaseModel):
     # "environment" ones come from LABHQ_INVENTORY_ROOTS / _EXCLUDE and are not edited here.
     source: str
     removable: bool
+    # What the last scan saw inside this folder (the folder itself counts); None before a scan,
+    # and for exclusions. Without it a folder whose projects all have sessions or are already
+    # in labhq looks as if nothing was found.
+    found: int | None = None
+    with_sessions: int | None = None
+    in_labhq: int | None = None
 
 
 class FoundOut(BaseModel):
@@ -118,15 +126,27 @@ def scan_out() -> ScanOut:
     )
 
 
+def summarised(path: str, source: str, removable: bool, added: list[Path]) -> FolderOut:
+    folder = FolderOut(path=path, source=source, removable=removable)
+    if LAST.scanned_at is None or LAST.inventory is None:
+        return folder
+    root = real(Path(path))
+    folder.found = sum(1 for f in LAST.found if real(Path(f.path)).is_relative_to(root))
+    folder.with_sessions = sum(
+        1 for p in LAST.inventory.projects if real(p.root).is_relative_to(root)
+    )
+    folder.in_labhq = sum(1 for p in added if p.is_relative_to(root))
+    return folder
+
+
 async def scope_out(db: SessionDep) -> ScopeOut:
     settings = get_inventory_settings()
     stored, excluded = await stored_roots(db), await stored_exclusions(db)
     env_roots = [str(real(Path(p))) for p in settings.roots]
     env_exclude = [str(Path(p).expanduser()) for p in settings.exclude]
-    roots = [FolderOut(path=p, source="environment", removable=False) for p in env_roots]
-    roots += [
-        FolderOut(path=p, source="stored", removable=True) for p in stored if p not in env_roots
-    ]
+    added = [real(Path(p)) for p in await db.scalars(select(Project.repo_path))]
+    roots = [summarised(p, "environment", False, added) for p in env_roots]
+    roots += [summarised(p, "stored", True, added) for p in stored if p not in env_roots]
     exclude = [FolderOut(path=p, source="environment", removable=False) for p in env_exclude]
     exclude += [
         FolderOut(path=p, source="stored", removable=True) for p in excluded if p not in env_exclude

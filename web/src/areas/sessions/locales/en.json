@@ -71,5 +71,6 @@
     "create": "Propose a manager"
   },
   "start_with": "Program to start with",
-  "add_and_start": "Add and start"
+  "add_and_start": "Add and start",
+  "root_summary": "{found} to add, {sessions} with sessions, {added} already in labhq"
 }

@@ -71,5 +71,6 @@
     "create": "Πρότεινε διαχειριστή"
   },
   "start_with": "Πρόγραμμα εκκίνησης",
-  "add_and_start": "Προσθήκη και εκκίνηση"
+  "add_and_start": "Προσθήκη και εκκίνηση",
+  "root_summary": "{found} για προσθήκη, {sessions} με sessions, {added} ήδη στο labhq"
 }
