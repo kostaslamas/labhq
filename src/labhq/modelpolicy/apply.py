@@ -13,6 +13,7 @@ from labhq.clock import Clock, SystemClock
 from labhq.db import create_engine, session_factory
 from labhq.modelpolicy.policy import PolicyRow, build
 from labhq.modelpolicy.store import save_policy
+from labhq.settings import Settings
 
 CHANGE_ACTION = "change_models"
 
@@ -33,7 +34,8 @@ def validate_change(payload: Mapping[str, Any]) -> object:
 
 
 async def _apply(rows: dict[str, object], clock: Clock) -> None:
-    engine = create_engine()
+    # Read per call, not from the cached settings: the executor runs in its own thread.
+    engine = create_engine(Settings().resolved_database_url)
     try:
         async with session_factory(engine)() as db:
             await save_policy(db, clock, rows)

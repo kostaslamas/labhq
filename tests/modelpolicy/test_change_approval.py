@@ -41,8 +41,6 @@ async def test_a_voice_request_only_creates_a_heavy_approval_and_changes_nothing
     assert (await load_policy(session)).rows["worker"].model == "claude-sonnet-5-5"
 
     await service.approve(pending.id, decider="owner", confirmation="passkey")
-    # The executor committed on its own connection; end this session's read snapshot first.
-    await session.rollback()
     assert (await load_policy(session)).rows["worker"].model == "claude-opus-5-5"
 
 
