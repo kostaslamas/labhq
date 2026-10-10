@@ -22,12 +22,7 @@ const { capacity } = useCapacity()
     <CapacityCard v-if="capacity" :capacity="capacity" />
     <template v-if="today">
       <section v-if="today.ceo_report" class="flex flex-col gap-3" data-testid="today-ceo-report">
-        <header class="flex flex-wrap items-baseline justify-between gap-2">
-          <h2 class="text-lg font-semibold">{{ t('ceo.latest') }}</h2>
-          <RouterLink :to="{ name: 'ceo-chat' }" class="text-sm text-accent underline">
-            {{ t('ceo.openChat') }}
-          </RouterLink>
-        </header>
+        <h2 class="text-lg font-semibold">{{ t('ceo.latest') }}</h2>
         <ReportCard :report="today.ceo_report" @decided="reload" />
       </section>
       <NeedsYou :needs="today.needs_you" />

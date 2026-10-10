@@ -14,8 +14,15 @@ from labhq.work import add_task
 
 
 async def record_minutes(
-    db: AsyncSession, clock: Clock, meeting: Meeting, minutes: MinutesReply
+    db: AsyncSession,
+    clock: Clock,
+    meeting: Meeting,
+    minutes: MinutesReply,
+    *,
+    assign: bool = True,
 ) -> list[MeetingActionItem]:
+    """Record the minutes. With `assign=False` each task is created unassigned, so nobody is
+    woken: a decision room's items wait for the owner (`labhq.meetings.actions`)."""
     project = await db.get_one(Project, meeting.project_id)
     decisions: list[MeetingDecision] = []
     for position, text in enumerate(minutes.decisions, start=1):
@@ -34,7 +41,7 @@ async def record_minutes(
             project=str(project.id),
             title=reply.title,
             description=f"Action item from {meeting.kind} meeting #{meeting.id}.",
-            assignee=reply.assignee,
+            assignee=reply.assignee if assign else None,
             reason=f"action item from {meeting.kind} meeting #{meeting.id}",
         )
         item = MeetingActionItem(

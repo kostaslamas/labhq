@@ -3,6 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { StatusBadge } from '@/status'
 import { uiState } from '@/api'
+import DecidedLine from '@/areas/callcenter/DecidedLine.vue'
+import DiscussButton from '@/areas/callcenter/DiscussButton.vue'
 import { Mono } from '@/ui'
 
 import ApprovalActions from './ApprovalActions.vue'
@@ -75,6 +77,16 @@ function when(instant: string): string {
         data-testid="approval-payload"
         >{{ JSON.stringify(approval.payload, null, 2) }}</pre>
     </section>
+
+    <DecidedLine :id="approval.id" kind="approval" />
+    <div v-if="approval.status === 'pending'" class="flex">
+      <DiscussButton
+        :id="approval.id"
+        kind="approval"
+        :project-id="approval.project?.id ?? null"
+        :options="['approve', 'reject', 'show']"
+      />
+    </div>
 
     <ApprovalActions
       :approval="approval"

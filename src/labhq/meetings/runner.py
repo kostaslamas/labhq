@@ -9,6 +9,7 @@ transcript entry with its run id, which is how the meeting's cost is found.
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -93,7 +94,7 @@ class MeetingRunner:
             meeting = await db.get_one(Meeting, meeting_id)
             kind = self._kinds.get(meeting.kind)
             project = await db.get_one(Project, meeting.project_id)
-            seats = await _seats(db, meeting_id)
+            seats = await seats_of(db, meeting_id)
             if not seats:
                 raise MeetingNotStartableError(f"meeting {meeting_id} has no agent participants")
             # Conditional, so two starters racing on one meeting cannot both run it.
@@ -164,9 +165,13 @@ class MeetingRunner:
             return await self._close(context.meeting_id, minutes)
         return await self._end(context.meeting_id, MeetingStatus.FAILED, INVALID_MINUTES_REASON)
 
-    async def _ask(self, agent_id: int, prompt: str) -> tuple[str | None, int]:
+    async def _ask(
+        self, agent_id: int, prompt: str, config: dict[str, Any] | None = None
+    ) -> tuple[str | None, int]:
         try:
-            active = await self._runs.start(agent_id=agent_id, task_id=None, prompt=prompt)
+            active = await self._runs.start(
+                agent_id=agent_id, task_id=None, prompt=prompt, config=config
+            )
         except RunStartError as error:
             return None, error.run_id
         run = await active.wait()
@@ -244,7 +249,7 @@ class MeetingRunner:
         await self._listeners.emit(MeetingEvent(kind, meeting_id, entry_id))
 
 
-async def _seats(db: AsyncSession, meeting_id: int) -> list[Seat]:
+async def seats_of(db: AsyncSession, meeting_id: int) -> list[Seat]:
     rows = await db.execute(
         select(MeetingParticipant.display_name, Agent.id, Agent.role)
         .join(Agent, MeetingParticipant.agent_id == Agent.id)

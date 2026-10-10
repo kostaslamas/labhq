@@ -7,8 +7,8 @@ from labhq.meetings import MeetingError, MeetingKind, default_kinds, read_minute
 from tests.meetings.conftest import World
 
 
-def test_the_three_phase_3_kinds_are_registered() -> None:
-    assert list(default_kinds) == ["planning", "review", "standup"]
+def test_the_built_in_kinds_are_registered() -> None:
+    assert list(default_kinds) == ["decision", "planning", "review", "standup"]
 
 
 def test_a_kind_needs_a_round() -> None:

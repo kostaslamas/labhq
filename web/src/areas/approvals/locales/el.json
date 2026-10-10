@@ -18,6 +18,7 @@
     "merge": "Συγχώνευση κλάδου",
     "delete_branch": "Διαγραφή κλάδου",
     "delete_project": "Διαγραφή έργου",
+    "decision_action": "Εκτέλεση απόφασης από αίθουσα",
     "create_team": "Δημιουργία ομάδας",
     "exceed_budget": "Υπέρβαση προϋπολογισμού",
     "host_intervention": "Παρέμβαση σε μηχάνημα",

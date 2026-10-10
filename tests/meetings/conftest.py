@@ -13,6 +13,7 @@ from labhq.db import create_engine, session_factory
 from labhq.db.enums import AgentStatus
 from labhq.db.models import Agent, Meeting, Project
 from labhq.meetings import (
+    DecisionRoom,
     MeetingKind,
     MeetingListeners,
     MeetingRunner,
@@ -42,6 +43,8 @@ class Stage:
     minutes: list[str] = field(default_factory=list)
     on_start: list[Callable[[RunRequest], Awaitable[None]]] = field(default_factory=list)
     prompts: list[str] = field(default_factory=list)
+    # Agents that are mid-step: id -> why a room must wait for them.
+    busy: dict[int, str] = field(default_factory=dict)
 
     def turn_prompts(self) -> list[str]:
         return [prompt for prompt in self.prompts if MINUTES_MARKER not in prompt]
@@ -81,6 +84,8 @@ class World:
     listeners: MeetingListeners
     runner: MeetingRunner
     service: MeetingService
+    room: DecisionRoom
+    ceo_id: int
     project_id: int
     manager_id: int
     lead_id: int
@@ -148,6 +153,18 @@ async def world(
         worker_id = await _agent(db, now, project, "worker", "Worker")
         lead_id = await _agent(db, now, project, "lead", "Backend lead")
         manager_id = await _agent(db, now, project, "manager", "Manager")
+        ceo = Agent(
+            project_id=None,
+            role="ceo",
+            title="CEO",
+            adapter="fake",
+            status=AgentStatus.ACTIVE,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(ceo)
+        await db.flush()
+        ceo_id = ceo.id
         await db.commit()
     kinds = default_kinds.copy()
     listeners = MeetingListeners()
@@ -167,6 +184,20 @@ async def world(
         listeners=listeners,
         settings=settings,
     )
+
+    async def busy(agent: Agent) -> str | None:
+        return stage.busy.get(agent.id)
+
+    room = DecisionRoom(
+        sessions,
+        clock=ticking,
+        runs=runner._runs,
+        approvals=approvals,
+        kinds=kinds,
+        listeners=listeners,
+        settings=settings,
+        busy=busy,
+    )
     service = MeetingService(
         sessions,
         clock=ticking,
@@ -174,6 +205,7 @@ async def world(
         runner=runner,
         kinds=kinds,
         settings=settings,
+        room=room,
     )
     return World(
         sessions=sessions,
@@ -184,6 +216,8 @@ async def world(
         listeners=listeners,
         runner=runner,
         service=service,
+        room=room,
+        ceo_id=ceo_id,
         project_id=project.id,
         manager_id=manager_id,
         lead_id=lead_id,

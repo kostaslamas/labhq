@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { uiState } from '@/api'
+import DiscussButton from '@/areas/callcenter/DiscussButton.vue'
 import { formatMicros } from '@/format'
 import { StatusBadge } from '@/status'
 import { Mono } from '@/ui'
@@ -52,7 +53,15 @@ const empty = computed(() => props.needs.count === 0)
             </template>
           </span>
         </div>
-        <StatusBadge :state="uiState('approval_status', approval.status)" />
+        <div class="flex items-center gap-3">
+          <DiscussButton
+            :id="approval.id"
+            kind="approval"
+            :project-id="approval.project_id"
+            :options="['approve', 'reject', 'show']"
+          />
+          <StatusBadge :state="uiState('approval_status', approval.status)" />
+        </div>
       </li>
 
       <li

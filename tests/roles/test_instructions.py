@@ -30,6 +30,7 @@ CEO_ORG_TOOLS = (
     "create_agent",
     "request_merge",
     "start_meeting",
+    "propose_decision_room",
     "set_priority",
     "set_budget",
 )

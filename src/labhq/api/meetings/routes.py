@@ -18,7 +18,13 @@ from labhq.api.meetings.schemas import (
 )
 from labhq.api.pagination import Page, PageParamsDep, decode_cursor, encode_cursor
 from labhq.db.models import Meeting, Project
-from labhq.meetings import MeetingClosedError, MeetingNotFoundError, add_owner_entry, read_minutes
+from labhq.meetings import (
+    MeetingClosedError,
+    MeetingNotFoundError,
+    add_owner_entry,
+    default_kinds,
+    read_minutes,
+)
 from labhq.meetings.minutes import MinutesView
 
 router = APIRouter(prefix="/meetings", tags=["meetings"])
@@ -127,8 +133,15 @@ async def meetings_join(
     clock: ClockDep,
 ) -> Message:
     """Say something as the owner; the next turns of the meeting see it."""
-    if await session.get(Meeting, meeting_id) is None:
+    meeting = await session.get(Meeting, meeting_id)
+    if meeting is None:
         raise _not_found(meeting_id)
+    if meeting.kind in default_kinds and default_kinds.get(meeting.kind).live:
+        # A live room has the CEO in it, and the Call Center widget is the one place the
+        # owner writes to the CEO (issue #199).
+        raise ApiError(
+            409, "room_in_call_center", "Speak in this room from the Call Center widget."
+        )
     try:
         entry = await add_owner_entry(
             context.sessions, clock, meeting_id=meeting_id, text=body.text

@@ -13,6 +13,8 @@ from labhq.db.enums import RiskClass
 class ActionType:
     key: str
     risk_class: RiskClass
+    # Only a person may approve it; a confirmation given by an agent is refused.
+    owner_only: bool = False
 
 
 @dataclass(frozen=True)
@@ -25,6 +27,8 @@ class ConfirmationKind:
 
     key: str
     approves: frozenset[RiskClass]
+    # An agent gives this confirmation on its own authority, not a person.
+    by_agent: bool = False
 
     def can_approve(self, risk_class: RiskClass) -> bool:
         return risk_class in self.approves
@@ -72,7 +76,7 @@ PHASE_1_CONFIRMATIONS: tuple[ConfirmationKind, ...] = (
     ConfirmationKind("passkey", ANY_RISK),
     # The CEO decides light actions itself (owner decision, issue #168). Light only, so the
     # CEO can request a merge or a push but never approve one.
-    ConfirmationKind("ceo", LIGHT),
+    ConfirmationKind("ceo", LIGHT, by_agent=True),
     # An external approval gate proved a passkey; the gate adapter refuses weaker proofs
     # before it ever asks for this kind (approvals.gates).
     ConfirmationKind("external_gate", ANY_RISK),

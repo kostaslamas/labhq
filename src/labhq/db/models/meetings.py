@@ -8,7 +8,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from labhq.db.base import Base, enum_column
+from labhq.db.base import Base, enum_column, micros_column
 from labhq.db.enums import MeetingStatus, TranscriptSource
 
 
@@ -36,6 +36,17 @@ class Meeting(Base):
         ForeignKey("agents.id", ondelete="SET NULL")
     )
     approval_id: Mapped[int | None] = mapped_column(ForeignKey("approvals.id", ondelete="SET NULL"))
+    # The CEO proposal a decision room discusses, as a `kind` ("report", "approval") and its id.
+    # Plain columns, not a foreign key: the two kinds live in different tables.
+    pinned_kind: Mapped[str | None] = mapped_column(String(32))
+    pinned_id: Mapped[int | None]
+    # The cost shown to the owner when the room's start was requested.
+    estimate_micros: Mapped[int | None] = micros_column(nullable=True)
+    # A live room is waiting for this agent's turn to finish, and why (cleared when it answers).
+    waiting_agent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("agents.id", ondelete="SET NULL")
+    )
+    waiting_reason: Mapped[str | None] = mapped_column(String(255))
     created_at: Mapped[datetime]
     started_at: Mapped[datetime | None]
     ended_at: Mapped[datetime | None]
@@ -101,3 +112,5 @@ class MeetingActionItem(Base):
     )
     # Plan §6: an action item creates a task and keeps the reference, so never NULL.
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id", ondelete="CASCADE"), unique=True)
+    # A decision room's item waits for the owner's approval before its task is assigned.
+    approval_id: Mapped[int | None] = mapped_column(ForeignKey("approvals.id", ondelete="SET NULL"))

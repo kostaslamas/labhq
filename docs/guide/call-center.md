@@ -39,6 +39,19 @@ form empty.
 Menu names in both apps change from time to time; look for "custom connector". Which plans
 can add one is up to each vendor. Consumer Gemini does not accept custom MCP connectors.
 
+## In the web UI
+
+The web UI has one chat: the Call Center widget at the bottom right of every page. Everything
+else is boards, cards and forms. **Discuss** on a CEO report or a pending approval opens the
+widget with that proposal pinned, so you never retype it. A CEO message can end with buttons;
+they only point, and approving still asks for a tap or a passkey.
+
+If a proposal does not suit you, the CEO can suggest a **decision room** with the project's
+manager. You see the estimated cost and approve its start; then you, the CEO and the manager
+talk in one thread. The room closes when you or the CEO close it, or after
+`LABHQ_MEETINGS_DECISION_TURN_CAP` agent turns (12). What it decided is posted on the card as
+"Decided: ..."; each step it agreed waits for your approval before anyone is asked to do it.
+
 ## The tools
 
 | Tool | Kind | What it does |

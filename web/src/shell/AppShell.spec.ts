@@ -19,7 +19,6 @@ describe('app shell', () => {
     const items = [...root.querySelectorAll('[data-testid="nav-item"]')]
     expect(items.map((item) => item.textContent?.trim())).toEqual([
       'Today',
-      'CEO',
       'Projects',
       'Meetings',
       'Approvals',
@@ -35,7 +34,7 @@ describe('app shell', () => {
 
     expect(document.documentElement.lang).toBe('el')
     expect(greek).toHaveLength(english.length)
-    expect(english.filter((text) => greek.includes(text))).toEqual(['CEO'])
+    expect(english.filter((text) => greek.includes(text))).toEqual(['Call Center'])
     expect(greek).toContain('Σήμερα')
 
     root.querySelector<HTMLButtonElement>('[data-testid="switch-language"]')?.click()

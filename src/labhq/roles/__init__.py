@@ -11,6 +11,7 @@ from labhq.controlkeys import control_key_tools
 from labhq.federation.tools import federation_tools
 from labhq.prompts import RoleRegistry, default_roles
 from labhq.roles.ceo_org import ceo_org_tools
+from labhq.roles.ceo_room import ceo_room_tools
 from labhq.roles.common import RoleServices, agent_reference
 from labhq.roles.departments import department_tools
 from labhq.roles.instructions import INSTRUCTIONS, register_instructions
@@ -24,6 +25,7 @@ def role_tools(services: RoleServices) -> list[AgentToolSpec]:
     return [
         *ceo_tools(services),
         *ceo_org_tools(services),
+        *ceo_room_tools(services),
         *department_tools(services),
         *report_tools(),
         *manager_tools(services),

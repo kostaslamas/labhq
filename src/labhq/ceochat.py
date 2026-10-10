@@ -22,6 +22,8 @@ class ConversationTurn:
     reply: str | None
     status: str
     created_at: datetime
+    # What the widget knew when the owner wrote: the page and the pinned proposal.
+    context: dict[str, Any] | None = None
 
 
 def message_text(reason: str) -> str:
@@ -35,8 +37,21 @@ def message_text(reason: str) -> str:
     return reason
 
 
-def message_reason(text: str, earlier: list[ConversationTurn]) -> str:
-    """Store a bounded history for UI and retries; the agent receives only `text`."""
+def message_context(reason: str) -> dict[str, Any] | None:
+    """The structured context stored beside the owner's words, if the widget sent any."""
+    try:
+        value = json.loads(reason)
+    except ValueError:
+        return None
+    context = value.get("context") if isinstance(value, dict) else None
+    return context if isinstance(context, dict) else None
+
+
+def message_reason(
+    text: str, earlier: list[ConversationTurn], context: dict[str, Any] | None = None
+) -> str:
+    """Store a bounded history for UI and retries; the agent receives `text` and, when the
+    owner pinned something, one line saying what (`message_prompt`)."""
     history = [
         {"owner": turn.text, "ceo": turn.reply}
         for turn in earlier[-HISTORY_TURNS:]
@@ -44,12 +59,27 @@ def message_reason(text: str, earlier: list[ConversationTurn]) -> str:
     ]
     while history and len(json.dumps(history, ensure_ascii=False)) > HISTORY_CHARS:
         history.pop(0)
-    return json.dumps({"text": text, "history": history}, ensure_ascii=False)
+    stored: dict[str, Any] = {"text": text, "history": history}
+    if context:
+        stored["context"] = context
+    return json.dumps(stored, ensure_ascii=False)
 
 
 def message_prompt(reason: str) -> str:
-    """Give the CEO the owner's words; the CLI session already has its rules and history."""
-    return message_text(reason)
+    """Give the CEO the owner's words; the CLI session already has its rules and history.
+
+    Context follows the words on its own line, so the owner's text stays first and unchanged.
+    """
+    text = message_text(reason)
+    pinned = (message_context(reason) or {}).get("pinned")
+    if not isinstance(pinned, dict):
+        return text
+    summary = pinned.get("summary")
+    line = f"[Pinned by the owner: {pinned.get('kind')} #{pinned.get('id')}"
+    if isinstance(pinned.get("project_id"), int):
+        line += f", project {pinned['project_id']}"
+    line += f" - {summary}]" if isinstance(summary, str) and summary else "]"
+    return f"{text}\n\n{line}"
 
 
 async def owner_message_of_run(db: AsyncSession, run_id: int) -> str | None:
@@ -137,6 +167,7 @@ async def conversation(db: AsyncSession, ceo_id: int, *, limit: int = 50) -> lis
                 reply=reply if status == "answered" else None,
                 status=status,
                 created_at=request.created_at,
+                context=message_context(request.reason),
             )
         )
     return turns

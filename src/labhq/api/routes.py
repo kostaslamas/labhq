@@ -14,6 +14,7 @@ import labhq
 from labhq.api.approvals import router as approvals_router
 from labhq.api.authoring import router as authoring_router
 from labhq.api.autonomy import router as autonomy_router
+from labhq.api.callcenter import router as callcenter_router
 from labhq.api.capacity.router import router as capacity_router
 from labhq.api.channels import router as channels_router
 from labhq.api.federation import router as federation_router
@@ -75,6 +76,7 @@ default_routers.register(auth_router)
 default_routers.register(approvals_router)
 default_routers.register(projects_router)
 default_routers.register(meetings_router)
+default_routers.register(callcenter_router)
 default_routers.register(rules_router)
 default_routers.register(authoring_router)
 default_routers.register(org_router)

@@ -741,6 +741,23 @@
       },
       "CeoChatTurn": {
         "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/ChatAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CeoContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -773,6 +790,46 @@
         },
         "required": ["id", "text", "reply", "status", "created_at"],
         "title": "CeoChatTurn",
+        "type": "object"
+      },
+      "CeoContext": {
+        "description": "Where the owner was and what they pinned, sent as data and never typed (issue #199).",
+        "properties": {
+          "pinned": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PinnedProposal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          }
+        },
+        "title": "CeoContext",
         "type": "object"
       },
       "CeoReport": {
@@ -962,6 +1019,26 @@
         "title": "ChannelOut",
         "type": "object"
       },
+      "ChatAction": {
+        "properties": {
+          "target_id": {
+            "title": "Target Id",
+            "type": "integer"
+          },
+          "target_kind": {
+            "title": "Target Kind",
+            "type": "string"
+          },
+          "verb": {
+            "enum": ["approve", "reject", "show"],
+            "title": "Verb",
+            "type": "string"
+          }
+        },
+        "required": ["verb", "target_kind", "target_id"],
+        "title": "ChatAction",
+        "type": "object"
+      },
       "CostOut": {
         "properties": {
           "cost_micros": {
@@ -1065,6 +1142,76 @@
         },
         "required": ["id", "name", "rp_id", "transports", "created_at", "last_used_at", "revoked"],
         "title": "Credential",
+        "type": "object"
+      },
+      "Decided": {
+        "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/DecidedAction"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
+          "decisions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Decisions",
+            "type": "array"
+          },
+          "ended_at": {
+            "format": "date-time",
+            "title": "Ended At",
+            "type": "string"
+          },
+          "meeting_id": {
+            "title": "Meeting Id",
+            "type": "integer"
+          },
+          "pinned_id": {
+            "title": "Pinned Id",
+            "type": "integer"
+          },
+          "pinned_kind": {
+            "title": "Pinned Kind",
+            "type": "string"
+          }
+        },
+        "required": ["meeting_id", "pinned_kind", "pinned_id", "decisions", "actions", "ended_at"],
+        "title": "Decided",
+        "type": "object"
+      },
+      "DecidedAction": {
+        "properties": {
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "approval_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text", "approval_id", "approval_status"],
+        "title": "DecidedAction",
         "type": "object"
       },
       "DecisionBody": {
@@ -2176,6 +2323,32 @@
         "title": "PendingQuestion",
         "type": "object"
       },
+      "PinnedProposal": {
+        "properties": {
+          "id": {
+            "minimum": 1.0,
+            "title": "Id",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": ["report", "approval"],
+            "title": "Kind",
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "enum": ["approve", "reject", "show"],
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Options",
+            "type": "array"
+          }
+        },
+        "required": ["kind", "id"],
+        "title": "PinnedProposal",
+        "type": "object"
+      },
       "PolicyIn": {
         "properties": {
           "credential": {
@@ -2395,6 +2568,162 @@
         "title": "RiskClass",
         "type": "string"
       },
+      "RoomItem": {
+        "properties": {
+          "agenda": {
+            "title": "Agenda",
+            "type": "string"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "approval_status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ApprovalStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "end_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End Reason"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "estimate_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimate Micros"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "pinned_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Id"
+          },
+          "pinned_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pinned Kind"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "integer"
+          },
+          "project_name": {
+            "title": "Project Name",
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MeetingStatus"
+          },
+          "turn_cap": {
+            "title": "Turn Cap",
+            "type": "integer"
+          },
+          "turns_used": {
+            "title": "Turns Used",
+            "type": "integer"
+          },
+          "waiting": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Waiting"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "project_id",
+          "project_name",
+          "agenda",
+          "pinned_kind",
+          "pinned_id",
+          "estimate_micros",
+          "approval_id",
+          "approval_status",
+          "turns_used",
+          "turn_cap",
+          "waiting",
+          "end_reason",
+          "created_at",
+          "ended_at"
+        ],
+        "title": "RoomItem",
+        "type": "object"
+      },
+      "RoomMessage": {
+        "properties": {
+          "text": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": ["text"],
+        "title": "RoomMessage",
+        "type": "object"
+      },
       "RowIn": {
         "properties": {
           "effort": {
@@ -2542,6 +2871,16 @@
       },
       "SendCeoMessage": {
         "properties": {
+          "context": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CeoContext"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "text": {
             "maxLength": 4000,
             "minLength": 1,
@@ -3146,6 +3485,29 @@
           "wakeup_status"
         ],
         "title": "Vocabulary",
+        "type": "object"
+      },
+      "Waiting": {
+        "properties": {
+          "agent_id": {
+            "title": "Agent Id",
+            "type": "integer"
+          },
+          "agent_name": {
+            "title": "Agent Name",
+            "type": "string"
+          },
+          "can_interrupt": {
+            "title": "Can Interrupt",
+            "type": "boolean"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": ["agent_id", "agent_name", "reason", "can_interrupt"],
+        "title": "Waiting",
         "type": "object"
       },
       "WakeupStatus": {
@@ -4037,6 +4399,269 @@
         },
         "summary": "Autonomy Put",
         "tags": ["autonomy"]
+      }
+    },
+    "/api/callcenter/decisions": {
+      "get": {
+        "description": "What each ended room decided about the proposal it was pinned to, for the cards.",
+        "operationId": "decisions_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Decided"
+                  },
+                  "title": "Response Decisions List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Decisions List",
+        "tags": ["callcenter"]
+      }
+    },
+    "/api/callcenter/rooms": {
+      "get": {
+        "description": "The newest rooms, newest first; the widget opens the first that is not over.",
+        "operationId": "rooms_list",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoomItem"
+                  },
+                  "title": "Response Rooms List",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Rooms List",
+        "tags": ["callcenter"]
+      }
+    },
+    "/api/callcenter/rooms/{room_id}/close": {
+      "post": {
+        "description": "Write the minutes and end the room, in the background.",
+        "operationId": "room_close",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Room Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Room Close",
+        "tags": ["callcenter"]
+      }
+    },
+    "/api/callcenter/rooms/{room_id}/decline": {
+      "post": {
+        "description": "Refuse the start; the room is cancelled and nobody is asked.",
+        "operationId": "room_decline",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Room Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Room Decline",
+        "tags": ["callcenter"]
+      }
+    },
+    "/api/callcenter/rooms/{room_id}/messages": {
+      "post": {
+        "description": "Say something as the owner. It is recorded at once; the agents answer in the background.",
+        "operationId": "room_say",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Room Id",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "One per user intent; a retry reuses it.",
+            "in": "header",
+            "name": "idempotency-key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 128,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "One per user intent; a retry reuses it.",
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RoomMessage"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Message"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Room Say",
+        "tags": ["callcenter"]
+      }
+    },
+    "/api/callcenter/rooms/{room_id}/start": {
+      "post": {
+        "description": "The owner's tap on the room's start approval, then the room opens in the background.",
+        "operationId": "room_start",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "room_id",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "title": "Room Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoomItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Room Start",
+        "tags": ["callcenter"]
       }
     },
     "/api/capacity": {

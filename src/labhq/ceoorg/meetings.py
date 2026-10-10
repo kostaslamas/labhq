@@ -7,9 +7,10 @@ from labhq.ceoorg.background import spawn
 from labhq.ceoorg.record import actor
 from labhq.clock import Clock
 from labhq.db.models import Meeting
-from labhq.meetings import MeetingListeners, MeetingRunner, MeetingService
+from labhq.meetings import MeetingError, MeetingListeners, MeetingService
+from labhq.meetings.build import build_meeting_service
 from labhq.meetings.channels.meeting_posts import MeetingMirror
-from labhq.runs import RunService
+from labhq.meetings.proposal import default_proposals
 from labhq.work import find_project
 
 CEO_CONFIRMATION = "ceo"
@@ -21,10 +22,7 @@ def meeting_service(
     # Mirrored to chat like every meeting; turns run each agent through its own adapter.
     listeners = MeetingListeners()
     MeetingMirror(sessions, clock).install(listeners)
-    runner = MeetingRunner(
-        sessions, clock=clock, runs=RunService(sessions, clock=clock), listeners=listeners
-    )
-    return MeetingService(sessions, clock=clock, approvals=approvals, runner=runner)
+    return build_meeting_service(sessions, clock, approvals, listeners)
 
 
 async def start_meeting(
@@ -38,6 +36,10 @@ async def start_meeting(
 ) -> Meeting:
     async with sessions() as db:
         project_id = (await find_project(db, project)).id
+    if service.kind(kind).owner_starts:
+        raise MeetingError(
+            f"A {kind} meeting starts only when the owner approves it: use propose_decision_room."
+        )
     meeting = await service.request(project_id=project_id, kind=kind, requested_by=caller)
     assert meeting.approval_id is not None
     await approvals.approve(
@@ -45,3 +47,24 @@ async def start_meeting(
     )
     spawn(service.start(meeting.id), name=f"meeting-{meeting.id}")
     return meeting
+
+
+async def propose_room(
+    service: MeetingService,
+    sessions: async_sessionmaker[AsyncSession],
+    *,
+    caller: int,
+    project: str,
+    topic: str | None,
+    proposal: tuple[str, int] | None,
+) -> Meeting:
+    """Request a decision room. The CEO cannot approve it: the owner sees the cost and decides."""
+    async with sessions() as db:
+        project_id = (await find_project(db, project)).id
+        if proposal is not None:
+            described = await default_proposals.get(proposal[0])(db, proposal[1])
+            if described is None:
+                raise MeetingError(f"there is no {proposal[0]} {proposal[1]} to discuss")
+    return await service.request(
+        project_id=project_id, kind="decision", agenda=topic, requested_by=caller, pinned=proposal
+    )

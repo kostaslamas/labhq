@@ -46,7 +46,7 @@ test('the page speaks Greek and the sidebar still has all areas', async ({
   signedInPage: page,
 }) => {
   await page.goto('/projects/infra/rules')
-  await expect(page.getByTestId('nav-item')).toHaveCount(5)
+  await expect(page.getByTestId('nav-item')).toHaveCount(4)
   await page.getByTestId('switch-language').click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Κανόνες υγείας')
 })

@@ -17,5 +17,6 @@
   "no_decisions": "No decisions recorded.",
   "action_items": "Action items",
   "no_actions": "No action items.",
-  "task": "Task"
+  "task": "Task",
+  "in_call_center": "This is a decision room: speak in it from the Call Center at the bottom right."
 }

@@ -15,14 +15,13 @@ from labhq.meetings import (
     MeetingError,
     MeetingListeners,
     MeetingNotFoundError,
-    MeetingRunner,
     MeetingService,
     MinutesView,
     read_minutes,
 )
+from labhq.meetings.build import build_meeting_service
 from labhq.meetings.channels.meeting_posts import MeetingMirror
 from labhq.money import format_micros
-from labhq.runs import RunService
 from labhq.work import find_project
 
 meetings_app = typer.Typer(help="Meetings: request, list, show.", no_args_is_help=True)
@@ -35,14 +34,7 @@ def meeting_service(context: Context) -> MeetingService:
     # The meeting is mirrored to chat through the outbox, which `labhq serve` sends.
     listeners = MeetingListeners()
     MeetingMirror(context.sessions, context.clock).install(listeners)
-    # Turns run each agent through its own adapter, outside any task checkout.
-    runner = MeetingRunner(
-        context.sessions,
-        clock=context.clock,
-        runs=RunService(context.sessions, clock=context.clock),
-        listeners=listeners,
-    )
-    return MeetingService(context.sessions, clock=context.clock, approvals=approvals, runner=runner)
+    return build_meeting_service(context.sessions, context.clock, approvals, listeners)
 
 
 async def _guarded(meeting: Awaitable[Meeting]) -> Meeting:
