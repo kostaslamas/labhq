@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from labhq.api.deps import ClockDep, SessionDep
 from labhq.api.errors import ApiError
+from labhq.api.inventory.state import LAST, counts_of
 from labhq.api.pagination import Page, PageParamsDep, paginate
 from labhq.api.projects.queries import (
     DELIVERABLE_LIMIT,
@@ -14,7 +15,13 @@ from labhq.api.projects.queries import (
     task_counts,
     team_tree,
 )
-from labhq.api.projects.schemas import BudgetPolicy, ProjectCard, ProjectRef, ProjectView
+from labhq.api.projects.schemas import (
+    BudgetPolicy,
+    ProjectCard,
+    ProjectRef,
+    ProjectView,
+    SessionCounts,
+)
 from labhq.budgets import get_budget_settings, period_start
 from labhq.db.enums import TaskStatus
 from labhq.db.models import CostEvent, Project, Task
@@ -36,6 +43,7 @@ async def projects_list(
     cards = []
     for project in rows:
         latest, _ = await deliverables(session, project.id, 1)
+        scanned = LAST.project_at(project.repo_path)
         cards.append(
             ProjectCard(
                 id=project.id,
@@ -50,6 +58,7 @@ async def projects_list(
                 ),
                 open_tasks=counts[project.id],
                 latest_deliverable=latest[0] if latest else None,
+                sessions=SessionCounts(**vars(counts_of(scanned))) if scanned else None,
             )
         )
     return Page(items=cards, next_cursor=cursor)

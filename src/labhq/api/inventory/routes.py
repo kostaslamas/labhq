@@ -7,7 +7,6 @@ environment changes them. The last scan is kept in memory: it is cheap to repeat
 """
 
 import asyncio
-from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -17,8 +16,10 @@ from pydantic import BaseModel
 from labhq.api.channels.routes import prove
 from labhq.api.deps import ClockDep, SessionDep
 from labhq.api.errors import ApiError
+from labhq.api.inventory.state import LAST
 from labhq.auth.routes import SignedIn
-from labhq.inventory.found import FoundView, not_yet_added, view
+from labhq.inventory.found import not_yet_added, view
+from labhq.inventory.login import run_status
 from labhq.inventory.roots import (
     RootError,
     add_exclusion,
@@ -31,11 +32,14 @@ from labhq.inventory.roots import (
 )
 from labhq.inventory.scope import real
 from labhq.inventory.scoped import scanner_for
+from labhq.inventory.service import scan_and_report
 from labhq.inventory.settings import get_inventory_settings
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
 
 PURPOSE = "session_scan:roots"
+# Runs a tool's own status command; the tests swap it so no real CLI is started.
+status_runner = run_status
 
 
 class FolderOut(BaseModel):
@@ -93,28 +97,14 @@ class ExclusionIn(BaseModel):
     credential: dict[str, object] | None = None
 
 
-@dataclass
-class Last:
-    scanned_at: datetime | None = None
-    left_out: int = 0
-    session_count: int = 0
-    project_count: int = 0
-    folders_visited: int = 0
-    capped: bool = False
-    found: tuple[FoundView, ...] = ()
-
-
-_last = Last()
-
-
 def scan_out() -> ScanOut:
     return ScanOut(
-        scanned_at=_last.scanned_at,
-        left_out=_last.left_out,
-        session_count=_last.session_count,
-        project_count=_last.project_count,
-        folders_visited=_last.folders_visited,
-        capped=_last.capped,
+        scanned_at=LAST.scanned_at,
+        left_out=LAST.left_out,
+        session_count=LAST.session_count,
+        project_count=LAST.project_count,
+        folders_visited=LAST.folders_visited,
+        capped=LAST.capped,
         found=[
             FoundOut(
                 path=f.path,
@@ -123,7 +113,7 @@ def scan_out() -> ScanOut:
                 markers=list(f.markers),
                 last_commit_at=f.last_commit_at,
             )
-            for f in _last.found
+            for f in LAST.found
         ],
     )
 
@@ -196,7 +186,7 @@ async def exclusions_add(
         await db.rollback()
         raise ApiError(422, "root_invalid", str(error)) from None
     await db.commit()
-    _last.found = tuple(f for f in _last.found if not real(Path(f.path)).is_relative_to(path))
+    LAST.found = tuple(f for f in LAST.found if not real(Path(f.path)).is_relative_to(path))
     return await scope_out(db)
 
 
@@ -210,16 +200,12 @@ async def scan_now(owner: SignedIn, db: SessionDep, clock: ClockDep) -> ScanOut:
     """Scan now: sessions and projects in the roots. No model is called, no transcript read."""
     settings = get_inventory_settings()
     scanner = await scanner_for(db, clock, settings=settings)
-    inventory = await asyncio.to_thread(scanner.scan)
-    found = await not_yet_added(db, inventory.found)
+    result = await scan_and_report(
+        db, clock, scanner=scanner, settings=settings, report=False, run=status_runner
+    )
+    found = await not_yet_added(db, result.inventory.found)
     views = await asyncio.to_thread(
         lambda: tuple(view(f, timeout=settings.command_timeout_seconds) for f in found)
     )
-    _last.scanned_at = inventory.scanned_at
-    _last.left_out = inventory.left_out
-    _last.session_count = sum(len(p.sessions) for p in inventory.projects)
-    _last.project_count = len(inventory.projects)
-    _last.folders_visited = inventory.folders_visited
-    _last.capped = inventory.discovery_capped
-    _last.found = views
+    LAST.keep(result.inventory, result.tools, views)
     return scan_out()
