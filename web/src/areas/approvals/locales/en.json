@@ -18,6 +18,7 @@
     "merge": "Merge a branch",
     "delete_branch": "Delete a branch",
     "delete_project": "Delete a project",
+    "decision_action": "Carry out a decision from a room",
     "create_team": "Create a team",
     "exceed_budget": "Exceed a budget",
     "host_intervention": "Intervene on a host",

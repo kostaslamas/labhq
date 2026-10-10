@@ -27,19 +27,22 @@ function cancel(...ids: number[]): void {
 }
 test.afterAll(() => cancel(...mine))
 
-test('the owner accepts and returns reported root tasks from the CEO chat', async ({
+test('the owner accepts and returns reported root tasks from the report card on Today', async ({
   signedInPage: page,
 }) => {
-  const tasks = script('Ship the landing page', 'Ship the search page')
-  mine = Object.values(tasks)
-  await page.goto('/ceo')
-
+  // Today shows the latest report, so each task is reported and decided in turn.
+  const landing = script('Ship the landing page')
+  mine = Object.values(landing)
+  await page.goto('/today')
   const accepted = page.getByTestId('ceo-report').filter({ hasText: 'Ship the landing page' })
   await expect(accepted).toBeVisible()
   await accepted.getByTestId('report-accept').click()
   await expect(accepted.getByTestId('report-accept')).toHaveCount(0)
-  cancel(tasks['Ship the landing page']!)
+  cancel(landing['Ship the landing page']!)
 
+  const search = script('Ship the search page')
+  mine = Object.values(search)
+  await page.reload()
   const returned = page.getByTestId('ceo-report').filter({ hasText: 'Ship the search page' })
   await returned.getByTestId('report-return').click()
   await returned.getByTestId('report-feedback').fill('Add filters first.')
@@ -47,6 +50,5 @@ test('the owner accepts and returns reported root tasks from the CEO chat', asyn
   await expect(returned.getByTestId('report-return')).toHaveCount(0)
 
   await page.reload()
-  await expect(page.getByTestId('ceo-report').filter({ hasText: 'Ship the' })).toHaveCount(2)
   await expect(page.getByTestId('report-return')).toHaveCount(0)
 })

@@ -1,0 +1,75 @@
+{
+  "title": "Call Center",
+  "open": "Open the Call Center",
+  "close": "Close the Call Center",
+  "discuss": "Discuss",
+  "decided": "Decided:",
+  "awaitsYou": "waits for your approval",
+  "setup": "Assign the CEO's main agent on the Projects page before sending a message.",
+  "setupLink": "Configure CEO",
+  "empty": "Ask the CEO a question, or pick Discuss on a proposal.",
+  "you": "You",
+  "ceo": "CEO",
+  "message": "Message to the CEO",
+  "placeholder": "What would you like the CEO to do?",
+  "send": "Send",
+  "sending": "Sending…",
+  "status": {
+    "queued": "Waiting for the CEO",
+    "running": "The CEO is working on this",
+    "answered": "",
+    "failed": "The CEO could not answer this message. You can try again."
+  },
+  "pin": {
+    "report": "About CEO report #{id}",
+    "approval": "About approval #{id}",
+    "clear": "Stop discussing this"
+  },
+  "action": {
+    "approve": "Approve A{id}",
+    "reject": "Reject A{id}",
+    "show": "Show me"
+  },
+  "offer": {
+    "title": "The CEO suggests a decision room with {project}'s manager.",
+    "estimate": "Estimated cost up to {cost}.",
+    "start": "Approve and start",
+    "decline": "No thanks"
+  },
+  "room": {
+    "tab": "Room",
+    "loading": "Opening the room…",
+    "notStarted": "The room starts once you approve it.",
+    "system": "labhq",
+    "waiting": "Waiting for {name}",
+    "interrupt": "Interrupt {name} (Esc)",
+    "interruptFailed": "The key could not be sent.",
+    "message": "Message to the room",
+    "placeholder": "Say something to the CEO and the manager",
+    "close": "Close the room",
+    "confirmHint": "Nothing runs until you confirm each action.",
+    "openApprovals": "Open approvals",
+    "over": {
+      "ended": "The room is over.",
+      "failed": "The room ended without minutes."
+    }
+  },
+  "voice": {
+    "button": "Talk by voice",
+    "title": "Voice",
+    "body": "Voice runs in your AI app through the labhq connector. Open a voice conversation there and speak: what you say reaches the CEO the same way as here."
+  },
+  "errors": {
+    "loadFailed": "The conversation could not be loaded.",
+    "sendFailed": "The message could not be sent. Try again.",
+    "budgetStop": "The CEO's budget is exhausted.",
+    "inactive": "The CEO is not active.",
+    "busy": "Wait for the CEO's current answer before sending again.",
+    "proposalGone": "That proposal no longer exists.",
+    "roomFailed": "That did not work. Try again.",
+    "approvalGone": "That approval could not be loaded."
+  },
+  "keys": {
+    "button": "Keys for the CEO's terminal"
+  }
+}

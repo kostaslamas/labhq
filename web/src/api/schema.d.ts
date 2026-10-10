@@ -339,6 +339,126 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/callcenter/decisions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Decisions List
+     * @description What each ended room decided about the proposal it was pinned to, for the cards.
+     */
+    get: operations['decisions_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/callcenter/rooms': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Rooms List
+     * @description The newest rooms, newest first; the widget opens the first that is not over.
+     */
+    get: operations['rooms_list']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/callcenter/rooms/{room_id}/close': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Room Close
+     * @description Write the minutes and end the room, in the background.
+     */
+    post: operations['room_close']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/callcenter/rooms/{room_id}/decline': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Room Decline
+     * @description Refuse the start; the room is cancelled and nobody is asked.
+     */
+    post: operations['room_decline']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/callcenter/rooms/{room_id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Room Say
+     * @description Say something as the owner. It is recorded at once; the agents answer in the background.
+     */
+    post: operations['room_say']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/callcenter/rooms/{room_id}/start': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Room Start
+     * @description The owner's tap on the room's start approval, then the room opens in the background.
+     */
+    post: operations['room_start']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/capacity': {
     parameters: {
       query?: never
@@ -1200,6 +1320,9 @@ export interface components {
     }
     /** CeoChatTurn */
     CeoChatTurn: {
+      /** Actions */
+      actions?: components['schemas']['ChatAction'][]
+      context?: components['schemas']['CeoContext'] | null
       /**
        * Created At
        * Format: date-time
@@ -1216,6 +1339,17 @@ export interface components {
       status: 'queued' | 'running' | 'answered' | 'failed'
       /** Text */
       text: string
+    }
+    /**
+     * CeoContext
+     * @description Where the owner was and what they pinned, sent as data and never typed (issue #199).
+     */
+    CeoContext: {
+      pinned?: components['schemas']['PinnedProposal'] | null
+      /** Project Id */
+      project_id?: number | null
+      /** Route */
+      route?: string | null
     }
     /** CeoReport */
     CeoReport: {
@@ -1274,6 +1408,18 @@ export interface components {
       /** Name */
       name: string
     }
+    /** ChatAction */
+    ChatAction: {
+      /** Target Id */
+      target_id: number
+      /** Target Kind */
+      target_kind: string
+      /**
+       * Verb
+       * @enum {string}
+       */
+      verb: 'approve' | 'reject' | 'show'
+    }
     /**
      * Credential
      * @description What the UI may know about a passkey. The public key stays on the server.
@@ -1296,6 +1442,32 @@ export interface components {
       rp_id: string
       /** Transports */
       transports: string[]
+    }
+    /** Decided */
+    Decided: {
+      /** Actions */
+      actions: components['schemas']['DecidedAction'][]
+      /** Decisions */
+      decisions: string[]
+      /**
+       * Ended At
+       * Format: date-time
+       */
+      ended_at: string
+      /** Meeting Id */
+      meeting_id: number
+      /** Pinned Id */
+      pinned_id: number
+      /** Pinned Kind */
+      pinned_kind: string
+    }
+    /** DecidedAction */
+    DecidedAction: {
+      /** Approval Id */
+      approval_id: number | null
+      approval_status: components['schemas']['ApprovalStatus'] | null
+      /** Text */
+      text: string
     }
     /** DecisionBody */
     DecisionBody: {
@@ -1723,6 +1895,18 @@ export interface components {
       /** Task Id */
       task_id: number | null
     }
+    /** PinnedProposal */
+    PinnedProposal: {
+      /** Id */
+      id: number
+      /**
+       * Kind
+       * @enum {string}
+       */
+      kind: 'report' | 'approval'
+      /** Options */
+      options?: ('approve' | 'reject' | 'show')[]
+    }
     /** ProjectCard */
     ProjectCard: {
       budget: components['schemas']['Budget']
@@ -1791,6 +1975,46 @@ export interface components {
      * @enum {string}
      */
     RiskClass: 'light' | 'heavy'
+    /** RoomItem */
+    RoomItem: {
+      /** Agenda */
+      agenda: string
+      /** Approval Id */
+      approval_id: number | null
+      approval_status: components['schemas']['ApprovalStatus'] | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /** End Reason */
+      end_reason: string | null
+      /** Ended At */
+      ended_at: string | null
+      /** Estimate Micros */
+      estimate_micros: number | null
+      /** Id */
+      id: number
+      /** Pinned Id */
+      pinned_id: number | null
+      /** Pinned Kind */
+      pinned_kind: string | null
+      /** Project Id */
+      project_id: number
+      /** Project Name */
+      project_name: string
+      status: components['schemas']['MeetingStatus']
+      /** Turn Cap */
+      turn_cap: number
+      /** Turns Used */
+      turns_used: number
+      waiting: components['schemas']['Waiting'] | null
+    }
+    /** RoomMessage */
+    RoomMessage: {
+      /** Text */
+      text: string
+    }
     /** RunCapacity */
     RunCapacity: {
       /** Free Memory Percent */
@@ -1833,6 +2057,7 @@ export interface components {
     }
     /** SendCeoMessage */
     SendCeoMessage: {
+      context?: components['schemas']['CeoContext'] | null
       /** Text */
       text: string
     }
@@ -2079,6 +2304,17 @@ export interface components {
        * @description Every value of `WakeupStatus`.
        */
       wakeup_status: components['schemas']['WakeupStatus'][]
+    }
+    /** Waiting */
+    Waiting: {
+      /** Agent Id */
+      agent_id: number
+      /** Agent Name */
+      agent_name: string
+      /** Can Interrupt */
+      can_interrupt: boolean
+      /** Reason */
+      reason: string
     }
     /**
      * WakeupStatus
@@ -2751,6 +2987,195 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['AutonomyState']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  decisions_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Decided'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  rooms_list: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoomItem'][]
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  room_close: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        room_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  room_decline: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        room_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoomItem']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  room_say: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description One per user intent; a retry reuses it. */
+        'idempotency-key'?: string | null
+      }
+      path: {
+        room_id: number
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RoomMessage']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Message']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  room_start: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        room_id: number
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      202: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RoomItem']
         }
       }
       /** @description Error */

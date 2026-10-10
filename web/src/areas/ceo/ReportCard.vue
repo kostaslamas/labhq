@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { api, type components } from '@/api'
+import DecidedLine from '@/areas/callcenter/DecidedLine.vue'
+import DiscussButton from '@/areas/callcenter/DiscussButton.vue'
 import { Button } from '@/ui'
 
 type Report = components['schemas']['CeoReportOut']
@@ -59,6 +61,10 @@ async function decide(decision: 'accept' | 'return'): Promise<void> {
     <p class="text-xs text-muted">{{ t('ceo.report') }} · {{ time(report.created_at) }}</p>
     <p class="whitespace-pre-wrap [overflow-wrap:anywhere]">{{ report.text }}</p>
     <p v-if="report.refs.length" class="text-xs text-muted">{{ report.refs.join(', ') }}</p>
+    <DecidedLine :id="report.id" kind="report" />
+    <div v-if="!report.awaiting_decision" class="flex">
+      <DiscussButton :id="report.id" kind="report" :options="['show']" />
+    </div>
     <template v-if="report.awaiting_decision">
       <div v-if="!returning" class="flex flex-wrap gap-2">
         <Button :disabled="busy" data-testid="report-accept" @click="decide('accept')">
@@ -72,6 +78,7 @@ async function decide(decision: 'accept' | 'return'): Promise<void> {
         >
           {{ t('ceo.return') }}
         </Button>
+        <DiscussButton :id="report.id" kind="report" :options="['show']" />
       </div>
       <form v-else class="flex flex-col gap-2" @submit.prevent="decide('return')">
         <label :for="`return-${report.id}`" class="text-sm font-medium">

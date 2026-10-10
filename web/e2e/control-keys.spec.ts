@@ -18,7 +18,7 @@ test.beforeEach(async ({ signedInPage: page }) => {
   await page.route('**/api/org/ceo/reports', (route) => json(route, []))
 })
 
-test('the CEO chat offers Esc and Shift+Tab for a tmux agent and sends the named key', async ({
+test('the Call Center offers Esc and Shift+Tab for a tmux agent and sends the named key', async ({
   signedInPage: page,
 }) => {
   const sent: unknown[] = []
@@ -32,7 +32,9 @@ test('the CEO chat offers Esc and Shift+Tab for a tmux agent and sends the named
   await page.route(`**/api/agents/${CEO_ID}/screen`, (route) =>
     json(route, { screen: 'mode: plan' }),
   )
-  await page.goto('/ceo')
+  await page.goto('/today')
+  await page.getByTestId('callcenter-launcher').click()
+  await page.getByTestId('callcenter-keys').click()
 
   await expect(page.getByTestId('control-key-escape')).toHaveText('Esc (stop)')
   await page.getByTestId('control-key-shift_tab').click()
@@ -41,14 +43,16 @@ test('the CEO chat offers Esc and Shift+Tab for a tmux agent and sends the named
   expect(sent).toEqual([{ key: 'shift_tab' }])
 })
 
-test('the CEO chat shows no key buttons for an agent without a tmux pane', async ({
+test('the Call Center shows no key buttons for an agent without a tmux pane', async ({
   signedInPage: page,
 }) => {
   await page.route(`**/api/agents/${CEO_ID}/keys`, (route) =>
     json(route, { keys: [], live: false }),
   )
-  await page.goto('/ceo')
+  await page.goto('/today')
+  await page.getByTestId('callcenter-launcher').click()
+  await page.getByTestId('callcenter-keys').click()
 
-  await expect(page.getByTestId('ceo-chat')).toBeVisible()
+  await expect(page.getByTestId('chat-thread')).toBeVisible()
   await expect(page.getByTestId('control-keys')).toHaveCount(0)
 })

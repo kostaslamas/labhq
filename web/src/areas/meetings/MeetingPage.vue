@@ -25,6 +25,9 @@ const sending = ref(false)
 const joinFailed = ref(false)
 
 const open = computed(() => meeting.value !== null && OPEN.has(meeting.value.status))
+// A decision room has the CEO in it; the owner speaks there from the Call Center widget, the
+// one place that writes to the CEO (issue #199).
+const inCallCenter = computed(() => meeting.value?.kind === 'decision')
 
 async function load(): Promise<void> {
   const { data, response } = await api.GET('/api/meetings/{meeting_id}', {
@@ -149,7 +152,12 @@ useLiveTopic('meetings', load)
           </li>
         </ol>
 
-        <form v-if="open" class="flex flex-col gap-2" data-testid="join" @submit.prevent="join">
+        <form
+          v-if="open && !inCallCenter"
+          class="flex flex-col gap-2"
+          data-testid="join"
+          @submit.prevent="join"
+        >
           <label for="join-text" class="text-sm text-muted">{{ t('meetings.join_label') }}</label>
           <textarea
             id="join-text"
@@ -166,6 +174,9 @@ useLiveTopic('meetings', load)
             {{ t('meetings.join_send') }}
           </Button>
         </form>
+        <p v-else-if="open" class="text-sm text-muted" data-testid="in-call-center">
+          {{ t('meetings.in_call_center') }}
+        </p>
         <p v-else class="text-sm text-muted">{{ t('meetings.closed') }}</p>
       </section>
 
