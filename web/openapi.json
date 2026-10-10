@@ -1385,6 +1385,29 @@
         "title": "ErrorEnvelope",
         "type": "object"
       },
+      "ExclusionIn": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": ["path"],
+        "title": "ExclusionIn",
+        "type": "object"
+      },
       "ExecutedApproval": {
         "properties": {
           "branch": {
@@ -1453,6 +1476,63 @@
         },
         "required": ["name", "label", "secret", "default"],
         "title": "FieldOut",
+        "type": "object"
+      },
+      "FolderOut": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "removable": {
+            "title": "Removable",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": ["path", "source", "removable"],
+        "title": "FolderOut",
+        "type": "object"
+      },
+      "FoundOut": {
+        "properties": {
+          "last_commit_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Commit At"
+          },
+          "markers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Markers",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "relative": {
+            "title": "Relative",
+            "type": "string"
+          }
+        },
+        "required": ["path", "name", "relative", "markers", "last_commit_at"],
+        "title": "FoundOut",
         "type": "object"
       },
       "Health": {
@@ -2787,69 +2867,6 @@
         "title": "RoomMessage",
         "type": "object"
       },
-      "RootAdded": {
-        "properties": {
-          "scope": {
-            "$ref": "#/components/schemas/ScanScopeOut"
-          },
-          "warning": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Warning"
-          }
-        },
-        "required": ["scope", "warning"],
-        "title": "RootAdded",
-        "type": "object"
-      },
-      "RootIn": {
-        "properties": {
-          "credential": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Credential"
-          },
-          "path": {
-            "title": "Path",
-            "type": "string"
-          }
-        },
-        "required": ["path"],
-        "title": "RootIn",
-        "type": "object"
-      },
-      "RootOut": {
-        "properties": {
-          "path": {
-            "title": "Path",
-            "type": "string"
-          },
-          "removable": {
-            "title": "Removable",
-            "type": "boolean"
-          },
-          "source": {
-            "title": "Source",
-            "type": "string"
-          }
-        },
-        "required": ["path", "source", "removable"],
-        "title": "RootOut",
-        "type": "object"
-      },
       "RowIn": {
         "properties": {
           "effort": {
@@ -2995,11 +3012,100 @@
         "title": "SavedSessionChoice",
         "type": "object"
       },
-      "ScanScopeOut": {
+      "ScanOut": {
+        "properties": {
+          "capped": {
+            "title": "Capped",
+            "type": "boolean"
+          },
+          "folders_visited": {
+            "title": "Folders Visited",
+            "type": "integer"
+          },
+          "found": {
+            "items": {
+              "$ref": "#/components/schemas/FoundOut"
+            },
+            "title": "Found",
+            "type": "array"
+          },
+          "left_out": {
+            "title": "Left Out",
+            "type": "integer"
+          },
+          "project_count": {
+            "title": "Project Count",
+            "type": "integer"
+          },
+          "scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned At"
+          },
+          "session_count": {
+            "title": "Session Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scanned_at",
+          "left_out",
+          "session_count",
+          "project_count",
+          "folders_visited",
+          "capped",
+          "found"
+        ],
+        "title": "ScanOut",
+        "type": "object"
+      },
+      "ScopeIn": {
+        "description": "The stored lists, whole: what the page shows minus the environment's entries.",
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "exclude": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclude",
+            "type": "array"
+          },
+          "roots": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Roots",
+            "type": "array"
+          }
+        },
+        "required": ["roots"],
+        "title": "ScopeIn",
+        "type": "object"
+      },
+      "ScopeOut": {
         "properties": {
           "exclude": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/FolderOut"
             },
             "title": "Exclude",
             "type": "array"
@@ -3010,10 +3116,13 @@
           },
           "roots": {
             "items": {
-              "$ref": "#/components/schemas/RootOut"
+              "$ref": "#/components/schemas/FolderOut"
             },
             "title": "Roots",
             "type": "array"
+          },
+          "scan": {
+            "$ref": "#/components/schemas/ScanOut"
           },
           "suggestion": {
             "anyOf": [
@@ -3027,8 +3136,25 @@
             "title": "Suggestion"
           }
         },
-        "required": ["roots", "exclude", "machine_wide", "suggestion"],
-        "title": "ScanScopeOut",
+        "required": ["roots", "exclude", "machine_wide", "suggestion", "scan"],
+        "title": "ScopeOut",
+        "type": "object"
+      },
+      "ScopeSaved": {
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/ScopeOut"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": ["scope", "warnings"],
+        "title": "ScopeSaved",
         "type": "object"
       },
       "SendCeoMessage": {
@@ -5204,6 +5330,170 @@
         "tags": ["rules"]
       }
     },
+    "/api/inventory/exclusions": {
+      "post": {
+        "description": "\"Not interested\" in a found project: the scan skips that folder from now on.",
+        "operationId": "exclusions_add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExclusionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Exclusions Add",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/roots": {
+      "get": {
+        "operationId": "roots_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Roots Get",
+        "tags": ["inventory"]
+      },
+      "put": {
+        "description": "Replace the stored roots and exclusions. One that cannot be used changes nothing.",
+        "operationId": "roots_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScopeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScopeSaved"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Roots Put",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/scan": {
+      "get": {
+        "operationId": "scan_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan Get",
+        "tags": ["inventory"]
+      },
+      "post": {
+        "description": "Scan now: sessions and projects in the roots. No model is called, no transcript read.",
+        "operationId": "scan_now",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan Now",
+        "tags": ["inventory"]
+      }
+    },
     "/api/meetings": {
       "get": {
         "description": "Newest first. The cursor is the last id served, so a new meeting never shifts a page.",
@@ -6352,112 +6642,6 @@
         },
         "summary": "Repository Browser Suggest",
         "tags": ["authoring", "authoring"]
-      }
-    },
-    "/api/session-scan": {
-      "get": {
-        "operationId": "scan_scope_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScanScopeOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "summary": "Scan Scope Get",
-        "tags": ["sessions"]
-      }
-    },
-    "/api/session-scan/roots": {
-      "delete": {
-        "operationId": "scan_scope_remove",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RootIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ScanScopeOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "summary": "Scan Scope Remove",
-        "tags": ["sessions"]
-      },
-      "post": {
-        "description": "Add a folder. A missing folder or a filesystem root changes nothing.",
-        "operationId": "scan_scope_add",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RootIn"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/RootAdded"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "default": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            },
-            "description": "Error"
-          }
-        },
-        "summary": "Scan Scope Add",
-        "tags": ["sessions"]
       }
     },
     "/api/today": {

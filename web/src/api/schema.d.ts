@@ -606,6 +606,68 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/inventory/exclusions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Exclusions Add
+     * @description "Not interested" in a found project: the scan skips that folder from now on.
+     */
+    post: operations['exclusions_add']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/roots': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Roots Get */
+    get: operations['roots_get']
+    /**
+     * Roots Put
+     * @description Replace the stored roots and exclusions. One that cannot be used changes nothing.
+     */
+    put: operations['roots_put']
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/scan': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /** Scan Get */
+    get: operations['scan_get']
+    put?: never
+    /**
+     * Scan Now
+     * @description Scan now: sessions and projects in the roots. No model is called, no transcript read.
+     */
+    post: operations['scan_now']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/meetings': {
     parameters: {
       query?: never
@@ -1031,44 +1093,6 @@ export interface paths {
     put?: never
     post?: never
     delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/api/session-scan': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    /** Scan Scope Get */
-    get: operations['scan_scope_get']
-    put?: never
-    post?: never
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/api/session-scan/roots': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Scan Scope Add
-     * @description Add a folder. A missing folder or a filesystem root changes nothing.
-     */
-    post: operations['scan_scope_add']
-    /** Scan Scope Remove */
-    delete: operations['scan_scope_remove']
     options?: never
     head?: never
     patch?: never
@@ -1650,6 +1674,15 @@ export interface components {
     ErrorEnvelope: {
       error: components['schemas']['ErrorBody']
     }
+    /** ExclusionIn */
+    ExclusionIn: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /** Path */
+      path: string
+    }
     /** ExecutedApproval */
     ExecutedApproval: {
       /** Branch */
@@ -1672,6 +1705,28 @@ export interface components {
       name: string
       /** Secret */
       secret: boolean
+    }
+    /** FolderOut */
+    FolderOut: {
+      /** Path */
+      path: string
+      /** Removable */
+      removable: boolean
+      /** Source */
+      source: string
+    }
+    /** FoundOut */
+    FoundOut: {
+      /** Last Commit At */
+      last_commit_at: string | null
+      /** Markers */
+      markers: string[]
+      /** Name */
+      name: string
+      /** Path */
+      path: string
+      /** Relative */
+      relative: string
     }
     /** Health */
     Health: {
@@ -2150,30 +2205,6 @@ export interface components {
       /** Text */
       text: string
     }
-    /** RootAdded */
-    RootAdded: {
-      scope: components['schemas']['ScanScopeOut']
-      /** Warning */
-      warning: string | null
-    }
-    /** RootIn */
-    RootIn: {
-      /** Credential */
-      credential?: {
-        [key: string]: unknown
-      } | null
-      /** Path */
-      path: string
-    }
-    /** RootOut */
-    RootOut: {
-      /** Path */
-      path: string
-      /** Removable */
-      removable: boolean
-      /** Source */
-      source: string
-    }
     /** RowIn */
     RowIn: {
       /** Effort */
@@ -2236,16 +2267,57 @@ export interface components {
       /** Updated At */
       updated_at: string
     }
-    /** ScanScopeOut */
-    ScanScopeOut: {
-      /** Exclude */
+    /** ScanOut */
+    ScanOut: {
+      /** Capped */
+      capped: boolean
+      /** Folders Visited */
+      folders_visited: number
+      /** Found */
+      found: components['schemas']['FoundOut'][]
+      /** Left Out */
+      left_out: number
+      /** Project Count */
+      project_count: number
+      /** Scanned At */
+      scanned_at: string | null
+      /** Session Count */
+      session_count: number
+    }
+    /**
+     * ScopeIn
+     * @description The stored lists, whole: what the page shows minus the environment's entries.
+     */
+    ScopeIn: {
+      /** Credential */
+      credential?: {
+        [key: string]: unknown
+      } | null
+      /**
+       * Exclude
+       * @default []
+       */
       exclude: string[]
+      /** Roots */
+      roots: string[]
+    }
+    /** ScopeOut */
+    ScopeOut: {
+      /** Exclude */
+      exclude: components['schemas']['FolderOut'][]
       /** Machine Wide */
       machine_wide: boolean
       /** Roots */
-      roots: components['schemas']['RootOut'][]
+      roots: components['schemas']['FolderOut'][]
+      scan: components['schemas']['ScanOut']
       /** Suggestion */
       suggestion: string | null
+    }
+    /** ScopeSaved */
+    ScopeSaved: {
+      scope: components['schemas']['ScopeOut']
+      /** Warnings */
+      warnings: string[]
     }
     /** SendCeoMessage */
     SendCeoMessage: {
@@ -3693,6 +3765,159 @@ export interface operations {
       }
     }
   }
+  exclusions_add: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ExclusionIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ScopeOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  roots_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ScopeOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  roots_put: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ScopeIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ScopeSaved']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  scan_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ScanOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  scan_now: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ScanOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   meetings_list: {
     parameters: {
       query?: {
@@ -4492,101 +4717,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BrowserFolder'][]
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorEnvelope']
-        }
-      }
-    }
-  }
-  scan_scope_get: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody?: never
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ScanScopeOut']
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorEnvelope']
-        }
-      }
-    }
-  }
-  scan_scope_add: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RootIn']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['RootAdded']
-        }
-      }
-      /** @description Error */
-      default: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ErrorEnvelope']
-        }
-      }
-    }
-  }
-  scan_scope_remove: {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['RootIn']
-      }
-    }
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ScanScopeOut']
         }
       }
       /** @description Error */

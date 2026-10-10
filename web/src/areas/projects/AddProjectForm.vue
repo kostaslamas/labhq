@@ -10,15 +10,17 @@ import { FIELD, LABEL } from './fieldClasses'
 import { usdToMicros } from './usd'
 import RepositoryBrowser from './RepositoryBrowser.vue'
 
+// A project found in the scan folders opens the form with its name and folder filled in.
+const props = defineProps<{ initialName?: string; initialPath?: string }>()
 const emit = defineEmits<{ added: [projectId: number]; cancel: [] }>()
 const { t } = useI18n()
 
-const name = ref('')
-const repoPath = ref('')
+const name = ref(props.initialName ?? '')
+const repoPath = ref(props.initialPath ?? '')
 const budget = ref('')
 const busy = ref(false)
 const failure = ref<string | null>(null)
-const pathEdited = ref(false)
+const pathEdited = ref(Boolean(props.initialPath))
 const browserQuery = computed(() => repoPath.value || (pathEdited.value ? '' : name.value))
 
 watch(name, () => {

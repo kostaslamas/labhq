@@ -1,0 +1,31 @@
+{
+  "title": "Where labhq looks for sessions",
+  "lead": "Only these folders are searched. A session whose working folder is outside them is not listed, summarised or analysed, and its conversation is never opened. Projects inside them are found by looking at folder names only: no file is read.",
+  "load_failed": "The scan folders could not be loaded.",
+  "machine_wide": "No folder is set, so the scan covers the whole machine. Add the folder that holds your projects to narrow it.",
+  "machine_wide_short": "Looking machine-wide",
+  "looking_in": "Looking in {count} folder | Looking in {count} folders",
+  "from_environment": "set in LABHQ_INVENTORY_ROOTS",
+  "excluded": "Skipped inside them",
+  "remove": "Remove",
+  "add": "Add a folder",
+  "add_button": "Add with passkey",
+  "passkey_note": "Adding or removing a folder changes what labhq reads on this machine, so it asks for your passkey.",
+  "scan_now": "Scan now",
+  "scanning": "Scanning…",
+  "last_scan": "Last scan {date}",
+  "not_scanned": "Not scanned yet",
+  "left_out": "no sessions left out | 1 session left out | {count} sessions left out",
+  "capped": "The search stopped after {count} folders, so some projects may be missing. Narrow the folders to see them all.",
+  "found_title": "Found in your folders",
+  "found_lead": "Projects inside the folders above that have no session and are not in labhq yet.",
+  "add_project": "Add project",
+  "not_interested": "Not interested",
+  "last_commit": "last commit {date}",
+  "errors": {
+    "refused": "Your passkey was not accepted. Nothing changed.",
+    "invalid": "That folder cannot be used. Nothing changed.",
+    "failed": "That did not work. Try again.",
+    "network": "labhq could not be reached. Try again."
+  }
+}
