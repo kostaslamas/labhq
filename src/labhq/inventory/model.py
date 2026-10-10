@@ -98,6 +98,9 @@ class FoundProject:
     root: Path
     under: Path
     markers: tuple[str, ...]
+    # Sessions that already worked in it: a project with sessions is found too, so it can be
+    # added to labhq like one without.
+    sessions: int = 0
 
 
 @dataclass

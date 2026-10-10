@@ -12,7 +12,8 @@ from labhq.inventory.autoscan import pending_projects, run_autoscan
 from labhq.inventory.roots import add_exclusion, add_root
 from labhq.inventory.scan import SessionScanner
 from labhq.inventory.settings import InventorySettings
-from tests.inventory.conftest import Scan
+from tests.inventory import stores_fixture as fx
+from tests.inventory.conftest import Scan, make_repo
 
 
 def project(root: Path, name: str) -> Path:
@@ -161,3 +162,24 @@ async def test_found_projects_are_only_announced_when_the_setting_is_off(
         count = len(list(await db.scalars(select(Project.id))))
 
     assert (result.announced, result.added, count) == (1, 0, 0)
+
+
+async def test_a_project_with_sessions_is_found_too(
+    sessions: async_sessionmaker[AsyncSession],
+    clock: FakeClock,
+    scanner: Scan,
+    home: Path,
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "dev"
+    repo = make_repo(root / "labhq")
+    fx.claude(home, repo)
+    settings = InventorySettings(auto_scan_minutes=30, auto_add_projects=True, roots=[str(root)])
+
+    async with sessions() as db:
+        result = await run_autoscan(db, clock, settings, scanner=scanner(roots=[str(root)]))
+        await db.commit()
+    async with sessions() as db:
+        names = list(await db.scalars(select(Project.name)))
+
+    assert (result.added, names) == (1, ["labhq"])

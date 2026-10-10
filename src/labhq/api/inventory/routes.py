@@ -20,7 +20,7 @@ from labhq.api.errors import ApiError
 from labhq.api.inventory.state import LAST
 from labhq.auth.routes import SignedIn
 from labhq.db.models import Project
-from labhq.inventory.found import not_yet_added, view
+from labhq.inventory.found import addable, view
 from labhq.inventory.login import run_status
 from labhq.inventory.roots import (
     RootError,
@@ -63,6 +63,7 @@ class FoundOut(BaseModel):
     relative: str
     markers: list[str]
     last_commit_at: datetime | None
+    sessions: int = 0
 
 
 class ScanOut(BaseModel):
@@ -120,6 +121,7 @@ def scan_out() -> ScanOut:
                 relative=f.relative,
                 markers=list(f.markers),
                 last_commit_at=f.last_commit_at,
+                sessions=f.sessions,
             )
             for f in LAST.found
         ],
@@ -223,7 +225,7 @@ async def scan_now(owner: SignedIn, db: SessionDep, clock: ClockDep) -> ScanOut:
     result = await scan_and_report(
         db, clock, scanner=scanner, settings=settings, report=False, run=status_runner
     )
-    found = await not_yet_added(db, result.inventory.found)
+    found = await addable(db, result.inventory)
     views = await asyncio.to_thread(
         lambda: tuple(view(f, timeout=settings.command_timeout_seconds) for f in found)
     )

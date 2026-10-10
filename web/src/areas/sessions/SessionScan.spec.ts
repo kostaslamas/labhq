@@ -40,6 +40,7 @@ const found = {
   relative: 'site',
   markers: ['git', 'Node'],
   last_commit_at: '2026-10-01T10:00:00Z',
+  sessions: 0,
 }
 const narrow: Scope = {
   roots: [{ path: '/home/o/code', source: 'stored', removable: true }],

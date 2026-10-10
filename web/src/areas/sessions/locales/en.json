@@ -18,7 +18,7 @@
   "left_out": "no sessions left out | 1 session left out | {count} sessions left out",
   "capped": "The search stopped after {count} folders, so some projects may be missing. Narrow the folders to see them all.",
   "found_title": "Found in your folders",
-  "found_lead": "Projects inside the folders above that have no session and are not in labhq yet.",
+  "found_lead": "Projects inside the folders above that are not in labhq yet, with or without a session.",
   "add_project": "Add project",
   "not_interested": "Not interested",
   "last_commit": "last commit {date}",
@@ -72,5 +72,6 @@
   },
   "start_with": "Program to start with",
   "add_and_start": "Add and start",
-  "root_summary": "{found} to add, {sessions} with sessions, {added} already in labhq"
+  "root_summary": "{found} to add, {sessions} with sessions, {added} already in labhq",
+  "found_sessions": "{count} sessions"
 }

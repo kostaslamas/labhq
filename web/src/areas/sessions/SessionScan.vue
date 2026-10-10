@@ -27,7 +27,14 @@ const emit = defineEmits<{
   add: [project: FoundProject]
   start: [project: FoundProject, kind: string]
 }>()
-defineProps<{ kinds?: { name: string; display_name: string; available: boolean }[] }>()
+const props = withDefaults(
+  defineProps<{
+    kinds?: { name: string; display_name: string; available: boolean }[]
+    // `found` shows only the projects the scan found; the folders are edited in the CEO tab.
+    show?: 'all' | 'found'
+  }>(),
+  { kinds: () => [], show: 'all' },
+)
 const { t, locale } = useI18n()
 const route = useRoute()
 const stepUp = useStepUp()
@@ -143,7 +150,10 @@ onMounted(async () => {
 
 <template>
   <section ref="panel" class="flex flex-col gap-4" data-testid="session-scan">
-    <div class="glass flex flex-col gap-4 rounded-xl border border-line p-4">
+    <div
+      v-if="props.show === 'all'"
+      class="glass flex flex-col gap-4 rounded-xl border border-line p-4"
+    >
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('sessions.title') }}</h2>
         <button
@@ -302,6 +312,9 @@ onMounted(async () => {
             <Mono class="break-all text-xs text-muted">{{ project.relative }}</Mono>
             <span class="text-xs text-muted">
               {{ project.markers.join(', ') }}
+              <template v-if="project.sessions > 0">
+                · {{ t('sessions.found_sessions', { count: project.sessions }) }}
+              </template>
               <template v-if="project.last_commit_at">
                 · {{ t('sessions.last_commit', { date: when(project.last_commit_at) }) }}
               </template>

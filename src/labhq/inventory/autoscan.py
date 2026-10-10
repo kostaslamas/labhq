@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from labhq import work
 from labhq.clock import Clock
 from labhq.db.models import ProgramState, Project
-from labhq.inventory.found import not_yet_added
+from labhq.inventory.found import addable
 from labhq.inventory.roots import stored_exclusions
 from labhq.inventory.scan import SessionScanner
 from labhq.inventory.scope import real
@@ -166,7 +166,7 @@ async def run_autoscan(
         return AutoScanResult(ran=False)
     found_scanner = scanner or await scanner_for(db, clock, settings=settings)
     inventory = await asyncio.to_thread(found_scanner.scan)
-    found = [str(f.root) for f in await not_yet_added(db, inventory.found)]
+    found = [str(f.root) for f in await addable(db, inventory)]
     state.last_run = now
     added = await add_found(db, clock, found) if settings.auto_add_projects else []
     found = [p for p in found if p not in added]

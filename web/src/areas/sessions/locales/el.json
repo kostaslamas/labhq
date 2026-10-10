@@ -18,7 +18,7 @@
   "left_out": "κανένα session εκτός | 1 session εκτός | {count} sessions εκτός",
   "capped": "Η αναζήτηση σταμάτησε μετά από {count} φακέλους, οπότε μπορεί να λείπουν projects. Στένεψε τους φακέλους για να τα δεις όλα.",
   "found_title": "Βρέθηκαν στους φακέλους σου",
-  "found_lead": "Projects μέσα στους παραπάνω φακέλους που δεν έχουν session και δεν είναι ακόμη στο labhq.",
+  "found_lead": "Projects μέσα στα παραπάνω folders που δεν είναι ακόμα στο labhq, με ή χωρίς session.",
   "add_project": "Προσθήκη project",
   "not_interested": "Δεν με ενδιαφέρει",
   "last_commit": "τελευταίο commit {date}",
@@ -72,5 +72,6 @@
   },
   "start_with": "Πρόγραμμα εκκίνησης",
   "add_and_start": "Προσθήκη και εκκίνηση",
-  "root_summary": "{found} για προσθήκη, {sessions} με sessions, {added} ήδη στο labhq"
+  "root_summary": "{found} για προσθήκη, {sessions} με sessions, {added} ήδη στο labhq",
+  "found_sessions": "{count} sessions"
 }

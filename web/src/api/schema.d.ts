@@ -1869,6 +1869,11 @@ export interface components {
       path: string
       /** Relative */
       relative: string
+      /**
+       * Sessions
+       * @default 0
+       */
+      sessions: number
     }
     /** GitOut */
     GitOut: {
