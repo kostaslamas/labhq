@@ -8,7 +8,7 @@ decided on the approvals page like any other.
 import asyncio
 from pathlib import Path
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 
@@ -35,7 +35,7 @@ from labhq.api.errors import ApiError
 from labhq.approvals import ApprovalService
 from labhq.auth.routes import SignedIn
 from labhq.db.enums import AgentStatus, RunStatus
-from labhq.db.models import Agent, Run
+from labhq.db.models import Agent, Project, Run
 from labhq.hierarchy import CEO, CREATE_AGENT, MANAGER, Hierarchy, HierarchyError, check_reports_to
 from labhq.hierarchy.roles import role
 from labhq.usage.plan import agent_kind
@@ -350,3 +350,25 @@ async def project_agent_update(
         reports_to=agent.reports_to,
         budget_micros=agent.budget_micros,
     )
+
+
+@router.delete("/projects/{project_id}", status_code=204)
+async def project_delete(project_id: int, owner: SignedIn, db: SessionDep) -> Response:
+    """Remove a project with its agents, tasks, meetings and costs; the folder is not touched."""
+    project = await db.get(Project, project_id)
+    if project is None:
+        raise ApiError(404, "project_not_found", f"There is no project {project_id}.")
+    busy = await db.scalar(
+        select(Run.id)
+        .join(Agent, Agent.id == Run.agent_id)
+        .where(
+            Agent.project_id == project_id,
+            Run.status.in_((RunStatus.QUEUED, RunStatus.RUNNING)),
+        )
+        .limit(1)
+    )
+    if busy is not None:
+        raise ApiError(409, "project_busy", "Wait for the project's current runs to finish.")
+    await db.delete(project)
+    await db.commit()
+    return Response(status_code=204)

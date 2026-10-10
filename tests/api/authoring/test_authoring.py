@@ -1,5 +1,6 @@
 """Adding projects and agents over HTTP: same services as the CLI, approval before any run."""
 
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -9,8 +10,8 @@ from sqlalchemy import select
 
 from labhq.adapters.kinds import agent_choices
 from labhq.cli.context import Context
-from labhq.db.enums import AgentStatus, ApprovalStatus
-from labhq.db.models import Agent, Approval, Project
+from labhq.db.enums import AgentStatus, ApprovalStatus, RunStatus
+from labhq.db.models import Agent, Approval, Project, Run
 from labhq.worktrees.git import run_git
 from tests.auth.conftest import WRITE
 
@@ -248,3 +249,49 @@ async def test_adopted_agent_keeps_its_session_kind(
     async with context.sessions() as db:
         agent = await db.get(Agent, agent_id)
         assert agent is not None and agent.config["agent"] == "codex"
+
+
+async def test_a_project_is_deleted_with_its_agents(
+    signed_in: TestClient, repo: Path, context: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda binary: "/bin/true")
+    project_id = add_project(signed_in, repo).json()["id"]
+    agent_id = add_agent(signed_in, project_id).json()["id"]
+
+    response = signed_in.delete(f"/api/projects/{project_id}", headers=WRITE)
+
+    assert response.status_code == 204, response.text
+    async with context.sessions() as db:
+        assert await db.get(Project, project_id) is None
+        assert await db.get(Agent, agent_id) is None
+    assert repo.is_dir()
+    again = signed_in.delete(f"/api/projects/{project_id}", headers=WRITE)
+    assert again.status_code == 404
+    assert again.json()["error"]["code"] == "project_not_found"
+
+
+async def test_a_project_with_a_live_run_is_not_deleted(
+    signed_in: TestClient, repo: Path, context: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("shutil.which", lambda binary: "/bin/true")
+    project_id = add_project(signed_in, repo).json()["id"]
+    agent_id = add_agent(signed_in, project_id).json()["id"]
+    async with context.sessions() as db:
+        db.add(
+            Run(
+                agent_id=agent_id,
+                adapter="fake",
+                status=RunStatus.RUNNING,
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            )
+        )
+        await db.commit()
+
+    response = signed_in.delete(f"/api/projects/{project_id}", headers=WRITE)
+
+    assert response.status_code == 409
+    assert response.json()["error"]["code"] == "project_busy"
+
+
+def test_deleting_a_project_needs_a_session(app_client: TestClient) -> None:
+    assert app_client.delete("/api/projects/1").status_code == 401

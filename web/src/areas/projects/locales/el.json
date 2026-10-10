@@ -153,7 +153,14 @@
     "kind_unavailable": "Το πρόγραμμα αυτού του agent δεν είναι εγκατεστημένο στον server.",
     "agent_not_found": "Αυτός ο agent δεν είναι πλέον ενεργός σε αυτό το έργο.",
     "project_not_found": "Το έργο δεν υπάρχει πια.",
-    "validation_error": "Έλεγξε τα πεδία και δοκίμασε ξανά."
+    "validation_error": "Έλεγξε τα πεδία και δοκίμασε ξανά.",
+    "project_busy": "Περίμενε να τελειώσουν οι τρέχουσες εκτελέσεις του project πριν το διαγράψεις."
   },
-  "sessionsTitle": "Sessions των agents"
+  "sessionsTitle": "Sessions των agents",
+  "deleteProject": {
+    "delete": "Διαγραφή project",
+    "deleteConfirm": "Να διαγραφεί αυτό το project, με τους agents, τα tasks, τις συσκέψεις και τα κόστη του; Ο φάκελος στον δίσκο δεν αγγίζεται.",
+    "deleteYes": "Ναι, διαγραφή",
+    "deleteNo": "Κράτα το"
+  }
 }
