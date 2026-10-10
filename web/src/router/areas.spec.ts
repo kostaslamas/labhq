@@ -26,6 +26,7 @@ describe('area discovery', () => {
     expect(items.map((item) => item.path)).toEqual([
       '/today',
       '/projects',
+      '/sessions',
       '/meetings',
       '/approvals',
     ])

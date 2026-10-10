@@ -5,6 +5,7 @@ import { expect, test } from './support/auth.ts'
 const areas = [
   { path: '/today', en: 'Today', el: 'Σήμερα' },
   { path: '/projects', en: 'Projects', el: 'Έργα' },
+  { path: '/sessions', en: 'Sessions', el: 'Συνεδρίες' },
   { path: '/meetings', en: 'Meetings', el: 'Συσκέψεις' },
   { path: '/approvals', en: 'Approvals', el: 'Εγκρίσεις' },
 ]

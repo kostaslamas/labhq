@@ -1,7 +1,7 @@
 {
   "title": "Where labhq looks for sessions",
   "lead": "Only these folders are searched. A session whose working folder is outside them is not listed, summarised or analysed, and its conversation is never opened. Projects inside them are found by looking at folder names only: no file is read.",
-  "load_failed": "The scan folders could not be loaded.",
+  "load_failed": "The sessions could not be loaded.",
   "machine_wide": "No folder is set, so the scan covers the whole machine. Add the folder that holds your projects to narrow it.",
   "machine_wide_short": "Looking machine-wide",
   "looking_in": "Looking in {count} folder | Looking in {count} folders",
@@ -27,5 +27,47 @@
     "invalid": "That folder cannot be used. Nothing changed.",
     "failed": "That did not work. Try again.",
     "network": "labhq could not be reached. Try again."
+  },
+  "nav": "Sessions",
+  "loading": "Loading sessions…",
+  "scan_hint": "Nothing scanned yet. Press Scan now to look for agent sessions in your folders.",
+  "none": "No agent sessions were found in your folders.",
+  "analyse": "Analyse",
+  "continue": "Continue",
+  "handoff": "Hand off to a CLI agent",
+  "close": "Close",
+  "review": "Review approval {id}",
+  "idle": {
+    "unknown": "idle time unknown",
+    "now": "active now",
+    "minutes": "idle {count} min",
+    "hours": "idle {count} h",
+    "days": "idle {count} days"
+  },
+  "state": {
+    "running": "running",
+    "waiting for input": "waiting for input",
+    "idle": "idle"
+  },
+  "action": {
+    "continue": "continue",
+    "close": "close",
+    "keep as history": "keep as history"
+  },
+  "git": {
+    "none": "no repository",
+    "noCommits": "no commits yet",
+    "dirty": "no dirty files | 1 dirty file | {count} dirty files"
+  },
+  "login": {
+    "in": "logged in",
+    "out": "logged out",
+    "unknown": "login unknown"
+  },
+  "folders": {
+    "title": "Folder managers",
+    "lead": "These folders hold several projects. One manager could look after them; nothing is created until you approve it.",
+    "count": "{count} projects",
+    "create": "Propose a manager"
   }
 }

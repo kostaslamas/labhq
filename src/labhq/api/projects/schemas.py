@@ -37,6 +37,15 @@ class Deliverable(BaseModel):
     done_at: datetime
 
 
+class SessionCounts(BaseModel):
+    """Agent sessions in the project's folder, from the last scan."""
+
+    total: int
+    running: int
+    waiting: int
+    idle: int
+
+
 class ProjectCard(BaseModel):
     id: int
     name: str
@@ -45,6 +54,8 @@ class ProjectCard(BaseModel):
     # Every open status, so a card lines up with its neighbours; closed tasks are not counted.
     open_tasks: list[TaskCount]
     latest_deliverable: Deliverable | None
+    # None until a scan has run, or when it found no session in this folder.
+    sessions: SessionCounts | None = None
 
 
 class TeamMember(BaseModel):

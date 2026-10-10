@@ -9,7 +9,9 @@
   "card": {
     "openTasks": "Open tasks",
     "latest": "Latest deliverable",
-    "noDeliverable": "Nothing delivered yet."
+    "noDeliverable": "Nothing delivered yet.",
+    "sessions": "Sessions: {total} · {running} running · {idle} idle",
+    "sessionsWaiting": " · {waiting} waiting"
   },
   "budget": {
     "label": "Budget used",
@@ -152,5 +154,6 @@
     "agent_not_found": "This agent is no longer active on this project.",
     "project_not_found": "This project no longer exists.",
     "validation_error": "Check the fields and try again."
-  }
+  },
+  "sessionsTitle": "Agent sessions"
 }

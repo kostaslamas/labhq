@@ -20,6 +20,7 @@ describe('app shell', () => {
     expect(items.map((item) => item.textContent?.trim())).toEqual([
       'Today',
       'Projects',
+      'Sessions',
       'Meetings',
       'Approvals',
     ])
