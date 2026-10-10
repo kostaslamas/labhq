@@ -18,7 +18,6 @@ import logging
 import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from datetime import datetime
 
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -33,6 +32,7 @@ from labhq.db.models import Agent, Meeting, MeetingActionItem, MeetingParticipan
 from labhq.db.models import MeetingTranscriptEntry as Entry
 from labhq.hierarchy import CEO
 from labhq.meetings.actions import DECISION_ACTION
+from labhq.meetings.caps import CLOSING_NOTES, COST_CAP_REASON, TURN_CAP_REASON, Spent
 from labhq.meetings.cost import meeting_cost_micros
 from labhq.meetings.events import MeetingEventKind, MeetingListeners
 from labhq.meetings.events import default_listeners as builtin_listeners
@@ -57,15 +57,6 @@ from labhq.runs import RunService
 
 logger = logging.getLogger(__name__)
 
-TURN_CAP_REASON = "turn_cap"
-COST_CAP_REASON = "cost_cap"
-# What the thread says when the room closes itself, by reason. `{spent}` and `{cap}` are USD.
-_CLOSING_NOTES = {
-    TURN_CAP_REASON: "Turn cap reached: the room closes with its minutes.",
-    COST_CAP_REASON: (
-        "Cost cap reached ({spent} of {cap}): the room stops and closes with its minutes."
-    ),
-}
 FINISHING_STEP = "finishing its current step"
 
 # Reads why an agent cannot answer yet; None means it can. The default knows adopted managers.
@@ -82,16 +73,6 @@ async def adopted_busy(agent: Agent) -> str | None:
 
 class RoomClosedError(RuntimeError):
     pass
-
-
-@dataclass(frozen=True)
-class Spent:
-    """What the room has cost so far, against the figures the owner approved it under."""
-
-    total: int
-    cap: int | None
-    high: int | None
-    announced_at: datetime | None
 
 
 @dataclass(frozen=True)
@@ -321,7 +302,7 @@ class DecisionRoom(MeetingRunner):
         if reason is not None:
             await self._note(
                 meeting_id,
-                _CLOSING_NOTES[reason].format(
+                CLOSING_NOTES[reason].format(
                     spent=format_micros(spent.total), cap=format_micros(spent.cap or 0)
                 ),
             )

@@ -20,7 +20,7 @@ from labhq.db.enums import MeetingStatus, TaskStatus
 from labhq.db.models import Agent, Meeting, Project
 from labhq.meetings import MeetingKind, MinutesView, read_minutes
 from labhq.meetings import default_kinds as builtin_kinds
-from labhq.meetings.room import COST_CAP_REASON, TURN_CAP_REASON
+from labhq.meetings.caps import COST_CAP_REASON, TURN_CAP_REASON
 from labhq.meetings.runner import BUDGET_REASON, INVALID_MINUTES_REASON, UNRECORDED_MINUTES_REASON
 from labhq.speech import join_sentences, say_ago, say_count, say_micros, speakable
 

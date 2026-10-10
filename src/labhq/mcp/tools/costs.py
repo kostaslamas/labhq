@@ -1,4 +1,4 @@
-"""`meeting_cost`: what the decision room costs or will cost, read from the database with no agent."""
+"""`meeting_cost`: what the decision room costs or will cost, read with no agent."""
 
 from mcp.types import ToolAnnotations
 
