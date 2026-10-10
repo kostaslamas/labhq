@@ -30,6 +30,9 @@ class ProgramSettings(BaseSettings):
     heartbeat_interval_seconds: float = Field(default=30.0, gt=0)
     # How often due meetings are requested and decided ones started.
     meetings_interval_seconds: float = Field(default=60.0, gt=0)
+    # How often the automatic inventory scan is considered; its own period is
+    # `LABHQ_INVENTORY_AUTO_SCAN_MINUTES`, and 0 there keeps the scan off.
+    inventory_interval_seconds: float = Field(default=60.0, gt=0)
     # Time the server gets to stop before it is cancelled on shutdown.
     shutdown_grace_seconds: float = Field(default=10.0, gt=0)
 
