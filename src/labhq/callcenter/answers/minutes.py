@@ -20,6 +20,7 @@ from labhq.db.enums import MeetingStatus, TaskStatus
 from labhq.db.models import Agent, Meeting, Project
 from labhq.meetings import MeetingKind, MinutesView, read_minutes
 from labhq.meetings import default_kinds as builtin_kinds
+from labhq.meetings.room import COST_CAP_REASON, TURN_CAP_REASON
 from labhq.meetings.runner import BUDGET_REASON, INVALID_MINUTES_REASON, UNRECORDED_MINUTES_REASON
 from labhq.speech import join_sentences, say_ago, say_count, say_micros, speakable
 
@@ -66,6 +67,8 @@ _END_REASONS: dict[str, str] = {
     BUDGET_REASON: "It stopped early at the budget limit",
     INVALID_MINUTES_REASON: "Its minutes could not be read",
     UNRECORDED_MINUTES_REASON: "Its minutes could not be recorded",
+    COST_CAP_REASON: "It stopped at its cost cap",
+    TURN_CAP_REASON: "It closed at its turn cap",
 }
 _TASK_STATUSES: dict[TaskStatus, str] = {
     TaskStatus.BACKLOG: "in the backlog",

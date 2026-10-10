@@ -40,8 +40,15 @@ class Meeting(Base):
     # Plain columns, not a foreign key: the two kinds live in different tables.
     pinned_kind: Mapped[str | None] = mapped_column(String(32))
     pinned_id: Mapped[int | None]
-    # The cost shown to the owner when the room's start was requested.
+    # What the owner was shown when the room's start was requested: the low and high end of the
+    # forecast, whether it came from history or from constants, and the hard cap. A room
+    # starts only with all four, and the cap is the one it was approved under.
     estimate_micros: Mapped[int | None] = micros_column(nullable=True)
+    estimate_high_micros: Mapped[int | None] = micros_column(nullable=True)
+    estimate_source: Mapped[str | None] = mapped_column(String(16))
+    cost_cap_micros: Mapped[int | None] = micros_column(nullable=True)
+    # When the thread said the room passed the high end of its estimate; set once.
+    over_estimate_at: Mapped[datetime | None]
     # A live room is waiting for this agent's turn to finish, and why (cleared when it answers).
     waiting_agent_id: Mapped[int | None] = mapped_column(
         ForeignKey("agents.id", ondelete="SET NULL")

@@ -24,7 +24,9 @@ async def test_a_requested_room_is_listed_with_its_cost_and_its_pending_approval
     assert item["id"] == room.id
     assert (item["status"], item["approval_status"]) == ("requested", "pending")
     assert (item["pinned_kind"], item["pinned_id"]) == ("report", room.report_id)
-    assert item["estimate_micros"] == 200_000 * 13
+    assert (item["estimate_micros"], item["estimate_high_micros"]) == (4_160_000, 8_320_000)
+    assert (item["estimate_source"], item["cost_cap_micros"]) == ("fallback", 5_000_000)
+    assert item["equivalent_cost"] is True
     assert (item["turns_used"], item["turn_cap"], item["waiting"]) == (0, 12, None)
 
 

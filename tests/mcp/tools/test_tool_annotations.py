@@ -15,6 +15,7 @@ EXPECTED: dict[str, tuple[bool, bool | None]] = {
     "ask_ceo": (False, False),
     "get_reply": (True, None),
     "meeting_minutes": (True, None),
+    "meeting_cost": (True, None),
     # `sessions` files the scan as CEO reports; `analyse` only records an approval.
     "sessions": (False, False),
     "analyse": (False, False),

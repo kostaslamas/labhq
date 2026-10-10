@@ -19,8 +19,19 @@ class MeetingSettings(BaseSettings):
     # Agent turns a decision room may take before it closes itself: a live thread has no
     # rounds, so this is what bounds its cost (issue #199).
     decision_turn_cap: int = Field(default=12, gt=0)
-    # Shown to the owner when no past turn of the room's agents gives a better figure.
+    # What one turn is priced at when a role has too few recorded turns; the UI labels it.
     decision_turn_estimate_micros: int = Field(default=200_000, gt=0)
+    # Per role, overriding the constant above.
+    role_turn_estimate_micros: dict[str, int] = Field(default_factory=dict)
+    # The high end of a fallback turn, as a percentage of its low end.
+    fallback_high_percent: int = Field(default=200, ge=100)
+    # Recorded turns a role (or growth slopes) need before history replaces the constants.
+    forecast_min_samples: int = Field(default=5, gt=0)
+    # Extra cost of each turn over the one before, in thousandths of turn 1, assumed linear
+    # until enough history measures it.
+    growth_per_turn_permille: int = Field(default=100, ge=0)
+    # The hard cap: a room stops once what it has cost reaches this (micro-USD, ADR 0002).
+    decision_cost_cap_micros: int = Field(default=5_000_000, gt=0)
     # Run settings laid over the facilitator's own for the minutes. This is the seam for a
     # lighter model for the minutes (issue #198 decides the keys); empty changes nothing.
     minutes_config: dict[str, Any] = Field(default_factory=dict)

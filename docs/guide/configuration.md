@@ -322,7 +322,12 @@ Meeting settings, read from `LABHQ_MEETINGS_*` environment variables.
 | `LABHQ_MEETINGS_MINUTES_ATTEMPTS` | `int` | `2` | One retry of the facilitator's minutes, then the meeting fails (issue #73). |
 | `LABHQ_MEETINGS_OWNER_NAME` | `str` | `Owner` |  |
 | `LABHQ_MEETINGS_DECISION_TURN_CAP` | `int` | `12` | Agent turns a decision room may take before it closes itself: a live thread has no rounds, so this is what bounds its cost (issue #199). |
-| `LABHQ_MEETINGS_DECISION_TURN_ESTIMATE_MICROS` | `int` | `200000` | Shown to the owner when no past turn of the room's agents gives a better figure. |
+| `LABHQ_MEETINGS_DECISION_TURN_ESTIMATE_MICROS` | `int` | `200000` | What one turn is priced at when a role has too few recorded turns; the UI labels it. |
+| `LABHQ_MEETINGS_ROLE_TURN_ESTIMATE_MICROS` | `dict[str, int]` | `{}` | Per role, overriding the constant above. |
+| `LABHQ_MEETINGS_FALLBACK_HIGH_PERCENT` | `int` | `200` | The high end of a fallback turn, as a percentage of its low end. |
+| `LABHQ_MEETINGS_FORECAST_MIN_SAMPLES` | `int` | `5` | Recorded turns a role (or growth slopes) need before history replaces the constants. |
+| `LABHQ_MEETINGS_GROWTH_PER_TURN_PERMILLE` | `int` | `100` | Extra cost of each turn over the one before, in thousandths of turn 1, assumed linear until enough history measures it. |
+| `LABHQ_MEETINGS_DECISION_COST_CAP_MICROS` | `int` | `5000000` | The hard cap: a room stops once what it has cost reaches this (micro-USD, ADR 0002). |
 | `LABHQ_MEETINGS_MINUTES_CONFIG` | `dict[str, Any]` | `{}` | Run settings laid over the facilitator's own for the minutes. This is the seam for a lighter model for the minutes (issue #198 decides the keys); empty changes nothing. |
 
 ## `labhq.memory.settings.MemorySettings`

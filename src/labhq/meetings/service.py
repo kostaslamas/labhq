@@ -17,7 +17,7 @@ from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, ApprovalStatus, MeetingStatus
 from labhq.db.models import Agent, Approval, Meeting, MeetingParticipant, Project
 from labhq.hierarchy import find_ceo
-from labhq.meetings.estimate import room_estimate_micros
+from labhq.meetings.forecast import Forecast, room_forecast
 from labhq.meetings.kinds import MeetingKind
 from labhq.meetings.kinds import default_kinds as builtin_kinds
 from labhq.meetings.room import DecisionRoom
@@ -87,8 +87,10 @@ class MeetingService:
             if project is None:
                 raise MeetingError(f"no project {project_id}")
             agents = await _attendees(db, project, meeting_kind, participants)
-            estimate = (
-                await room_estimate_micros(db, [agent.id for agent in agents], self._settings)
+            forecast = (
+                await room_forecast(
+                    db, [agent.id for agent in agents], agents[0].id, self._settings
+                )
                 if meeting_kind.live
                 else None
             )
@@ -100,7 +102,10 @@ class MeetingService:
                 facilitator_agent_id=agents[0].id,
                 pinned_kind=pinned[0] if pinned else None,
                 pinned_id=pinned[1] if pinned else None,
-                estimate_micros=estimate,
+                estimate_micros=forecast.low_micros if forecast else None,
+                estimate_high_micros=forecast.high_micros if forecast else None,
+                estimate_source=forecast.source.value if forecast else None,
+                cost_cap_micros=self._settings.decision_cost_cap_micros if forecast else None,
                 created_at=self._clock.now(),
             )
             db.add(meeting)
@@ -118,7 +123,7 @@ class MeetingService:
                 "meeting_id": meeting.id,
                 "project_id": project_id,
                 "kind": meeting_kind.key,
-                **({"estimate_micros": estimate} if estimate is not None else {}),
+                **(_forecast_payload(forecast, self._settings) if forecast else {}),
             },
             agent_id=requested_by,
         )
@@ -138,6 +143,7 @@ class MeetingService:
         status = approval.status if approval is not None else None
         if status in _STARTABLE:
             self._require_person(meeting.kind, approval)
+            self._require_forecast(meeting)
             if not self._kinds.get(meeting.kind).live:
                 return await self._runner.run(meeting_id)
             if self._room is None:
@@ -146,6 +152,14 @@ class MeetingService:
         if status in _REFUSED:
             return await self._cancel(meeting_id)
         raise MeetingNotApprovedError(f"meeting {meeting_id} has no approved start")
+
+    def _require_forecast(self, meeting: Meeting) -> None:
+        """A live room never starts unless the owner could see its range and its cap."""
+        if not self._kinds.get(meeting.kind).live:
+            return
+        shown = (meeting.estimate_micros, meeting.estimate_high_micros, meeting.cost_cap_micros)
+        if None in shown or meeting.estimate_source is None:
+            raise MeetingError(f"room {meeting.id} has no cost range and hard cap to approve")
 
     def _require_person(self, kind: str, approval: Approval | None) -> None:
         """A room the owner must start is never started on an agent's own approval."""
@@ -197,6 +211,15 @@ class MeetingService:
             )
             await db.commit()
             return await db.get_one(Meeting, meeting_id)
+
+
+def _forecast_payload(forecast: Forecast, settings: MeetingSettings) -> dict[str, object]:
+    return {
+        "estimate_micros": forecast.low_micros,
+        "estimate_high_micros": forecast.high_micros,
+        "estimate_source": forecast.source.value,
+        "cost_cap_micros": settings.decision_cost_cap_micros,
+    }
 
 
 async def _attendees(
