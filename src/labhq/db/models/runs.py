@@ -43,6 +43,8 @@ class Run(Base):
     agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id", ondelete="CASCADE"))
     task_id: Mapped[int | None] = mapped_column(ForeignKey("tasks.id", ondelete="SET NULL"))
     adapter: Mapped[str] = mapped_column(String(64))
+    # The model the policy resolved for this run; the adapter's own report fills it otherwise.
+    model: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[RunStatus] = mapped_column(
         enum_column(RunStatus, "run_status"), default=RunStatus.QUEUED
     )

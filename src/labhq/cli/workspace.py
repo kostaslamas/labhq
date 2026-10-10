@@ -80,6 +80,8 @@ class WorkspaceRunService(RunService):
         config: dict[str, Any] | None = None,
         adapter: str | None = None,
         tools_server: Sequence[str] = (),
+        model: str | None = None,
+        task_kind: str | None = None,
     ) -> ActiveRun:
         if cwd is None and task_id is not None:
             async with self._workspace_sessions() as db:
@@ -105,6 +107,8 @@ class WorkspaceRunService(RunService):
             config=config,
             adapter=adapter,
             tools_server=tools_server,
+            model=model,
+            task_kind=task_kind,
         )
         # A log line scrolls away; the run's own events are where a lost saving stays visible.
         for warning in self._rtk.warnings:

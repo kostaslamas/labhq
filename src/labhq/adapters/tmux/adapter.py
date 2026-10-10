@@ -302,6 +302,8 @@ class TmuxAdapter:
             signal_path=run_dir / SIGNAL_FILE,
             statusline_path=run_dir / STATUSLINE_FILE,
             guard_hook=guard_hook_command(self._python),
+            model=request.model,
+            effort=request.effort,
         )
         values = {
             "prompt": self._prompt(request),

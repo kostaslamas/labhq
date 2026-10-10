@@ -68,7 +68,9 @@ class ModelExtractor:
         prompt = PROMPT.format(
             agent_kind=agent_kind, captured=captured, captured_at=self._captured_at()
         )
-        run = await self._runs.execute(agent_id=self._agent_id, task_id=None, prompt=prompt)
+        run = await self._runs.execute(
+            agent_id=self._agent_id, task_id=None, prompt=prompt, task_kind="check"
+        )
         if run.status is not RunStatus.SUCCEEDED:
             raise ExtractorUnavailableError(f"extraction run {run.id} ended {run.status}")
         async with self._sessions() as db:

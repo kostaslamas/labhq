@@ -155,3 +155,13 @@ def test_codex_replies_are_reported_once_and_its_status_line_never() -> None:
     assert replies(codex, first, seen) == ["• Running sleep 30"]
     assert replies(codex, ["• Running sleep 30", "• Working (1s • esc to interrupt)"], seen) == []
     assert replies(default_kinds.get("aider"), ["• anything"], set()) == []
+
+
+def test_claude_settings_pass_the_policy_model_and_effort_only_when_set() -> None:
+    assert claude_settings(CONTEXT)[2:] == []
+    from dataclasses import replace
+
+    chosen = replace(CONTEXT, model="claude-haiku-5-5", effort="low")
+    assert claude_settings(chosen)[2:] == ["--model", "claude-haiku-5-5", "--effort", "low"]
+    # Codex has no such flags in its launch words, so a row never reaches it.
+    assert "claude-haiku-5-5" not in " ".join(codex_config(chosen))
