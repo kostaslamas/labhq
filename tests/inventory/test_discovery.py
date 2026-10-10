@@ -59,6 +59,14 @@ def test_it_finds_exactly_the_projects_and_nothing_else(tree: Path) -> None:
     }
 
 
+def test_a_folder_with_only_requirements_txt_is_a_python_project(tmp_path: Path) -> None:
+    root = tmp_path / "dev"
+    touch(root / "silogos", "requirements.txt")
+    touch(root / "ai" / "architect", "requirements.txt")
+
+    assert names(root) == {"silogos", "ai/architect"}
+
+
 def test_markers_are_reported_per_project(tree: Path) -> None:
     scope = build_scope([tree], [])
 

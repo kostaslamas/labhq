@@ -33,6 +33,7 @@ class InventorySettings(BaseSettings):
     project_markers: dict[str, str] = Field(
         default_factory=lambda: {
             "pyproject.toml": "Python",
+            "requirements.txt": "Python",
             "package.json": "Node",
             "Cargo.toml": "Rust",
             "go.mod": "Go",
