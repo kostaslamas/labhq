@@ -8,5 +8,6 @@
   "sendBack": "Send back",
   "cancel": "Cancel",
   "decideFailed": "The decision could not be saved. Try again.",
-  "latest": "Latest from the CEO"
+  "latest": "Latest from the CEO",
+  "startFailed": "The project could not be started. Try adding it by hand."
 }

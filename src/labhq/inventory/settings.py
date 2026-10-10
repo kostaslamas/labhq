@@ -33,6 +33,7 @@ class InventorySettings(BaseSettings):
     project_markers: dict[str, str] = Field(
         default_factory=lambda: {
             "pyproject.toml": "Python",
+            "requirements.txt": "Python",
             "package.json": "Node",
             "Cargo.toml": "Rust",
             "go.mod": "Go",
@@ -57,6 +58,9 @@ class InventorySettings(BaseSettings):
     # Minutes between automatic scans while labhq serves; 0 keeps them off. A scan that finds
     # projects labhq does not have raises one notification per new set, at most one a day.
     auto_scan_minutes: int = Field(default=0, ge=0)
+    # An automatic scan adds the projects it finds to labhq itself (a project row only: no agent
+    # is created and nothing runs), instead of asking. Off unless the owner sets it.
+    auto_add_projects: bool = False
     # Where onboarding looks for the folder that holds the owner's projects; the first that
     # exists is offered as a suggestion, never applied by itself.
     suggested_roots: list[str] = Field(

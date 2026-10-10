@@ -1,6 +1,8 @@
-"""Find project folders inside the scan roots without opening a single file.
+"""Find project folders inside the scan roots without opening a project file.
 
-The walk reads directory entries only: names, and whether an entry is a folder. A folder
+The walk reads directory entries only: names, and whether an entry is a folder. The one
+exception is a `.git` file, whose first line says whether the folder is a linked worktree of
+another checkout (then it is that checkout's, not a project). A folder
 is a project when it holds a `.git` entry or a file named in `project_markers`; the walk then
 stops there, so a project's subfolders are never separate projects (git submodules included).
 Symlinks are never followed, hidden and heavy folders are skipped, exclusions are respected,
@@ -14,6 +16,7 @@ from pathlib import Path
 from labhq.inventory.model import FoundProject
 from labhq.inventory.scope import Scope
 from labhq.inventory.settings import InventorySettings
+from labhq.inventory.worktree import main_checkout
 
 GIT_ENTRY = ".git"
 GIT_LABEL = "git"
@@ -53,6 +56,9 @@ class _Walk:
             pending.extend((child, depth + 1) for child in sorted(subfolders, reverse=True))
 
     def _children(self, folder: Path, depth: int) -> tuple[list[str], list[Path]] | None:
+        # A linked worktree is its main checkout's, never a project of its own.
+        if main_checkout(folder) is not None:
+            return None
         markers: list[str] = []
         subfolders: list[Path] = []
         try:

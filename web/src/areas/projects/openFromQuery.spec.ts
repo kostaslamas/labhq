@@ -20,7 +20,11 @@ vi.mock('@/live', () => ({ useLiveTopic: () => undefined }))
 import ProjectsPage from './ProjectsPage.vue'
 
 const plugins = [createAppI18n({ locale: 'en' })]
-const stubs = { RouterLink: { template: '<a><slot /></a>' }, AddProjectForm: true }
+const stubs = {
+  RouterLink: { template: '<a><slot /></a>' },
+  AddProjectForm: true,
+  SessionScan: true,
+}
 
 async function open() {
   const wrapper = mount(ProjectsPage, { global: { plugins, stubs } })
@@ -51,9 +55,9 @@ describe('projects page links', () => {
     expect(form.props('initialName')).toBe('site')
   })
 
-  it('does not hold the CEO settings any more', async () => {
+  it('lists the projects the scan found, but leaves the folders and the CEO to the CEO tab', async () => {
     const wrapper = await open()
-    expect(wrapper.find('[data-testid="session-scan"]').exists()).toBe(false)
+    expect(wrapper.findComponent({ name: 'SessionScan' }).props('show')).toBe('found')
     expect(wrapper.find('[data-testid="ceo-assignment"]').exists()).toBe(false)
   })
 })

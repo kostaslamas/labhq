@@ -32,12 +32,14 @@ from labhq.api.authoring.schemas import (
 )
 from labhq.api.deps import ClockDep, ContextDep, SessionDep
 from labhq.api.errors import ApiError
+from labhq.api.inventory.state import LAST
 from labhq.approvals import ApprovalService
 from labhq.auth.routes import SignedIn
 from labhq.db.enums import AgentStatus, RunStatus
 from labhq.db.models import Agent, Project, Run
 from labhq.hierarchy import CEO, CREATE_AGENT, MANAGER, Hierarchy, HierarchyError, check_reports_to
 from labhq.hierarchy.roles import role
+from labhq.inventory.scope import real
 from labhq.usage.plan import agent_kind
 
 router = APIRouter(tags=["authoring"])
@@ -206,6 +208,8 @@ async def projects_create(
     except work.WorkError as error:
         raise ApiError(409, "project_exists", str(error)) from None
     await db.commit()
+    # The folder is no longer left to add; the Sessions tab keeps the scan it has.
+    LAST.found = tuple(f for f in LAST.found if real(Path(f.path)) != real(repo))
     return RegisteredProject(
         id=project.id,
         name=project.name,

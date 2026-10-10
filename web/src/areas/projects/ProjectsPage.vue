@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { api, type components } from '@/api'
+import SessionScan from '@/areas/sessions/SessionScan.vue'
 import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
@@ -99,6 +100,8 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
       @added="opened"
       @cancel="adding = false"
     />
+
+    <SessionScan show="found" @add="addFound" />
 
     <div v-if="state === 'failed'" role="alert" class="flex flex-wrap items-center gap-3">
       <p class="text-status-failed">{{ t('projects.loadFailed') }}</p>

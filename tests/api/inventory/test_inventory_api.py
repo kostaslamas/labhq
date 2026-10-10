@@ -50,7 +50,14 @@ def test_a_passkey_saves_the_roots_and_they_persist(
 
     assert saved.status_code == 200, saved.text
     (root,) = saved.json()["scope"]["roots"]
-    assert root == {"path": str(folder.resolve()), "source": "stored", "removable": True}
+    assert root == {
+        "path": str(folder.resolve()),
+        "source": "stored",
+        "removable": True,
+        "found": None,
+        "with_sessions": None,
+        "in_labhq": None,
+    }
     assert signed_in.get("/api/inventory/roots").json()["machine_wide"] is False
     assert put_roots(signed_in, enrolled, roots=[]).json()["scope"]["machine_wide"] is True
 
@@ -107,6 +114,21 @@ def test_scan_now_lists_found_projects_without_sessions_and_hides_added_ones(
     assert scanned["found"][0]["relative"] == "new"
     assert scanned["scanned_at"] is not None and scanned["capped"] is False
     assert signed_in.get("/api/inventory/scan").json()["found"][0]["path"] == str(new.resolve())
+    # A folder whose projects are all added or have sessions still says what it holds.
+    (summary,) = signed_in.get("/api/inventory/roots").json()["roots"]
+    assert (summary["found"], summary["with_sessions"], summary["in_labhq"]) == (1, 0, 1)
+
+
+def test_a_root_that_is_itself_a_project_is_listed_and_counted(
+    signed_in: TestClient, enrolled: SoftwareAuthenticator, tmp_path: Path
+) -> None:
+    repo = make_project(tmp_path / "labhq")
+    put_roots(signed_in, enrolled, roots=[str(repo)])
+
+    scanned = signed_in.post("/api/inventory/scan", headers=WRITE).json()
+
+    assert [f["path"] for f in scanned["found"]] == [str(repo.resolve())]
+    assert scanned["found"][0]["relative"] == "."
 
 
 def test_not_interested_records_an_exclusion_with_a_passkey(

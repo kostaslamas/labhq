@@ -23,7 +23,18 @@ const PURPOSE = 'session_scan:roots'
 // Below this width the panel starts as one summary line that opens on tap.
 const WIDE = '(min-width: 640px)'
 
-const emit = defineEmits<{ add: [project: FoundProject] }>()
+const emit = defineEmits<{
+  add: [project: FoundProject]
+  start: [project: FoundProject, kind: string]
+}>()
+const props = withDefaults(
+  defineProps<{
+    kinds?: { name: string; display_name: string; available: boolean }[]
+    // `found` shows only the projects the scan found; the folders are edited in the CEO tab.
+    show?: 'all' | 'found'
+  }>(),
+  { kinds: () => [], show: 'all' },
+)
 const { t, locale } = useI18n()
 const route = useRoute()
 const stepUp = useStepUp()
@@ -36,6 +47,8 @@ const warnings = ref<string[]>([])
 const busy = ref(false)
 const scanning = ref(false)
 const path = ref('')
+// The program a found folder is started with; empty until the owner picks one.
+const startWith = ref('')
 const open = ref(typeof matchMedia === 'function' ? matchMedia(WIDE).matches : true)
 const panel = ref<HTMLElement | null>(null)
 
@@ -137,7 +150,10 @@ onMounted(async () => {
 
 <template>
   <section ref="panel" class="flex flex-col gap-4" data-testid="session-scan">
-    <div class="glass flex flex-col gap-4 rounded-xl border border-line p-4">
+    <div
+      v-if="props.show === 'all'"
+      class="glass flex flex-col gap-4 rounded-xl border border-line p-4"
+    >
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-lg font-semibold">{{ t('sessions.title') }}</h2>
         <button
@@ -178,7 +194,18 @@ onMounted(async () => {
             :data-testid="`root-${root.path}`"
             class="flex flex-wrap items-center justify-between gap-3"
           >
-            <Mono class="min-w-0 break-all">{{ root.path }}</Mono>
+            <div class="flex min-w-0 flex-col">
+              <Mono class="min-w-0 break-all">{{ root.path }}</Mono>
+              <span v-if="root.found != null" class="text-xs text-muted" data-testid="root-summary">
+                {{
+                  t('sessions.root_summary', {
+                    found: root.found,
+                    sessions: root.with_sessions ?? 0,
+                    added: root.in_labhq ?? 0,
+                  })
+                }}
+              </span>
+            </div>
             <Button
               v-if="root.removable"
               size="sm"
@@ -285,6 +312,9 @@ onMounted(async () => {
             <Mono class="break-all text-xs text-muted">{{ project.relative }}</Mono>
             <span class="text-xs text-muted">
               {{ project.markers.join(', ') }}
+              <template v-if="project.sessions > 0">
+                · {{ t('sessions.found_sessions', { count: project.sessions }) }}
+              </template>
               <template v-if="project.last_commit_at">
                 · {{ t('sessions.last_commit', { date: when(project.last_commit_at) }) }}
               </template>
@@ -294,6 +324,32 @@ onMounted(async () => {
             <Button size="sm" data-testid="found-add" @click="emit('add', project)">
               {{ t('sessions.add_project') }}
             </Button>
+            <template v-if="kinds && kinds.length > 0">
+              <select
+                v-model="startWith"
+                :class="[FIELD, 'w-auto']"
+                :aria-label="t('sessions.start_with')"
+                data-testid="found-kind"
+              >
+                <option
+                  v-for="kind in kinds"
+                  :key="kind.name"
+                  :value="kind.name"
+                  :disabled="!kind.available"
+                >
+                  {{ kind.display_name }}
+                </option>
+              </select>
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="busy || startWith === ''"
+                data-testid="found-start"
+                @click="emit('start', project, startWith)"
+              >
+                {{ t('sessions.add_and_start') }}
+              </Button>
+            </template>
             <Button
               size="sm"
               variant="outline"

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from labhq.adoption.checkout import changed_paths, is_git_repository, toplevel
 from labhq.inventory.model import GitFacts
+from labhq.inventory.worktree import main_checkout
 from labhq.worktrees.git import GitError, run_git
 
 # Runs a command in a folder; returns stdout, or None when it cannot run or fails.
@@ -33,10 +34,14 @@ def run_command(argv: Sequence[str], cwd: Path, timeout: float) -> str | None:
 
 
 def git_root(folder: Path) -> Path | None:
-    """The git root of `folder`, or None for a folder without a repository."""
+    """The git root of `folder`, or None for a folder without a repository.
+
+    A linked worktree answers with its main checkout, so its sessions join that project.
+    """
     if not folder.is_dir() or not is_git_repository(folder):
         return None
-    return toplevel(folder).resolve()
+    top = toplevel(folder).resolve()
+    return main_checkout(top) or top
 
 
 def _git(root: Path, *args: str) -> str | None:

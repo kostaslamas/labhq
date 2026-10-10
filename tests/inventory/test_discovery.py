@@ -59,6 +59,14 @@ def test_it_finds_exactly_the_projects_and_nothing_else(tree: Path) -> None:
     }
 
 
+def test_a_folder_with_only_requirements_txt_is_a_python_project(tmp_path: Path) -> None:
+    root = tmp_path / "dev"
+    touch(root / "silogos", "requirements.txt")
+    touch(root / "ai" / "architect", "requirements.txt")
+
+    assert names(root) == {"silogos", "ai/architect"}
+
+
 def test_markers_are_reported_per_project(tree: Path) -> None:
     scope = build_scope([tree], [])
 
@@ -86,12 +94,22 @@ def test_the_folder_cap_stops_the_walk_and_says_so(tree: Path) -> None:
     assert not complete.capped
 
 
-def test_no_file_is_opened_by_discovery(tree: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_no_file_is_opened_by_discovery_but_a_git_file(
+    tree: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A `.git` file is read (its first line) to tell a linked worktree from a repository.
+    real_open = Path.open
+
+    def only_git(self: Path, *args: object, **kwargs: object):  # type: ignore[no-untyped-def]
+        if self.name != ".git":
+            raise AssertionError(f"discovery opened {self}")
+        return real_open(self, *args, **kwargs)  # type: ignore[arg-type]
+
     def forbidden(*args: object, **kwargs: object) -> None:
         raise AssertionError("discovery opened a file")
 
     monkeypatch.setattr(builtins, "open", forbidden)
-    monkeypatch.setattr(Path, "open", forbidden)
+    monkeypatch.setattr(Path, "open", only_git)
     monkeypatch.setattr(Path, "read_text", forbidden)
     monkeypatch.setattr(Path, "read_bytes", forbidden)
 

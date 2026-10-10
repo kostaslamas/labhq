@@ -16,9 +16,10 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from labhq import work
 from labhq.clock import Clock
 from labhq.db.models import ProgramState, Project
-from labhq.inventory.found import not_yet_added
+from labhq.inventory.found import addable
 from labhq.inventory.roots import stored_exclusions
 from labhq.inventory.scan import SessionScanner
 from labhq.inventory.scope import real
@@ -125,6 +126,29 @@ def message(paths: list[str], roots: tuple[Path, ...]) -> tuple[str, str]:
 class AutoScanResult:
     ran: bool
     announced: int = 0
+    added: int = 0
+
+
+async def add_found(db: AsyncSession, clock: Clock, paths: list[str]) -> list[str]:
+    """Add each folder as a project named after it; returns the folders that were added.
+
+    A name already taken is tried again with the parent folder's name in front. A folder that
+    still cannot be added is left to the owner, who then sees it in the found list.
+    """
+    added: list[str] = []
+    for text in paths:
+        folder = Path(text)
+        for name in (folder.name, f"{folder.parent.name}-{folder.name}"):
+            try:
+                async with db.begin_nested():
+                    await work.add_project(
+                        db, clock, name=name, repo=work.check_project_directory(folder), budget=None
+                    )
+            except work.WorkError:
+                continue
+            added.append(text)
+            break
+    return added
 
 
 async def run_autoscan(
@@ -142,8 +166,10 @@ async def run_autoscan(
         return AutoScanResult(ran=False)
     found_scanner = scanner or await scanner_for(db, clock, settings=settings)
     inventory = await asyncio.to_thread(found_scanner.scan)
-    found = [str(f.root) for f in await not_yet_added(db, inventory.found)]
+    found = [str(f.root) for f in await addable(db, inventory)]
     state.last_run = now
+    added = await add_found(db, clock, found) if settings.auto_add_projects else []
+    found = [p for p in found if p not in added]
     fresh = announce(state, found, now)
     await save_state(db, clock, state)
     if fresh:
@@ -158,7 +184,18 @@ async def run_autoscan(
             click_url=f"{public_url}/ceo?panel=scan" if public_url else None,
             now=now,
         )
-    return AutoScanResult(ran=True, announced=len(fresh))
+    if added:
+        await enqueue(
+            db,
+            kind=KIND,
+            subject="added",
+            title=f"{len(added)} {'project' if len(added) == 1 else 'projects'} added",
+            body=", ".join(Path(p).name for p in added[:LISTED]),
+            idempotency_key=f"{KIND}:added:{now.isoformat()}",
+            click_url=f"{public_url}/projects" if public_url else None,
+            now=now,
+        )
+    return AutoScanResult(ran=True, announced=len(fresh), added=len(added))
 
 
 async def pending_projects(db: AsyncSession) -> list[str]:
