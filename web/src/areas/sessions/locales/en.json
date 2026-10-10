@@ -69,5 +69,7 @@
     "lead": "These folders hold several projects. One manager could look after them; nothing is created until you approve it.",
     "count": "{count} projects",
     "create": "Propose a manager"
-  }
+  },
+  "start_with": "Program to start with",
+  "add_and_start": "Add and start"
 }

@@ -23,7 +23,11 @@ const PURPOSE = 'session_scan:roots'
 // Below this width the panel starts as one summary line that opens on tap.
 const WIDE = '(min-width: 640px)'
 
-const emit = defineEmits<{ add: [project: FoundProject] }>()
+const emit = defineEmits<{
+  add: [project: FoundProject]
+  start: [project: FoundProject, kind: string]
+}>()
+defineProps<{ kinds?: { name: string; display_name: string; available: boolean }[] }>()
 const { t, locale } = useI18n()
 const route = useRoute()
 const stepUp = useStepUp()
@@ -36,6 +40,8 @@ const warnings = ref<string[]>([])
 const busy = ref(false)
 const scanning = ref(false)
 const path = ref('')
+// The program a found folder is started with; empty until the owner picks one.
+const startWith = ref('')
 const open = ref(typeof matchMedia === 'function' ? matchMedia(WIDE).matches : true)
 const panel = ref<HTMLElement | null>(null)
 
@@ -294,6 +300,32 @@ onMounted(async () => {
             <Button size="sm" data-testid="found-add" @click="emit('add', project)">
               {{ t('sessions.add_project') }}
             </Button>
+            <template v-if="kinds && kinds.length > 0">
+              <select
+                v-model="startWith"
+                :class="[FIELD, 'w-auto']"
+                :aria-label="t('sessions.start_with')"
+                data-testid="found-kind"
+              >
+                <option
+                  v-for="kind in kinds"
+                  :key="kind.name"
+                  :value="kind.name"
+                  :disabled="!kind.available"
+                >
+                  {{ kind.display_name }}
+                </option>
+              </select>
+              <Button
+                size="sm"
+                variant="outline"
+                :disabled="busy || startWith === ''"
+                data-testid="found-start"
+                @click="emit('start', project, startWith)"
+              >
+                {{ t('sessions.add_and_start') }}
+              </Button>
+            </template>
             <Button
               size="sm"
               variant="outline"

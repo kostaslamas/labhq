@@ -127,3 +127,37 @@ async def test_the_first_pass_after_the_roots_are_set_finds_them(
         await db.commit()
 
     assert (result.ran, result.announced) == (True, 1)
+
+
+async def test_found_projects_are_added_when_the_setting_is_on(
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, scanner: Scan, tmp_path: Path
+) -> None:
+    root = tmp_path / "dev"
+    project(root, "a")
+    project(root / "other", "a")
+    settings = InventorySettings(auto_scan_minutes=30, auto_add_projects=True, roots=[str(root)])
+
+    async with sessions() as db:
+        result = await run_autoscan(db, clock, settings, scanner=scanner(roots=[str(root)]))
+        await db.commit()
+    async with sessions() as db:
+        names = sorted(await db.scalars(select(Project.name)))
+
+    assert (result.announced, result.added) == (0, 2)
+    # The second "a" took its parent folder's name, so neither was left out.
+    assert names == ["a", "other-a"]
+
+
+async def test_found_projects_are_only_announced_when_the_setting_is_off(
+    sessions: async_sessionmaker[AsyncSession], clock: FakeClock, scanner: Scan, tmp_path: Path
+) -> None:
+    root = tmp_path / "dev"
+    project(root, "a")
+    settings = InventorySettings(auto_scan_minutes=30, roots=[str(root)])
+
+    async with sessions() as db:
+        result = await run_autoscan(db, clock, settings, scanner=scanner(roots=[str(root)]))
+        await db.commit()
+        count = len(list(await db.scalars(select(Project.id))))
+
+    assert (result.announced, result.added, count) == (1, 0, 0)

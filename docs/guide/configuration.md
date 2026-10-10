@@ -257,6 +257,7 @@ Session inventory settings, from `LABHQ_INVENTORY_*`. Thresholds and prices are 
 | `LABHQ_INVENTORY_PROJECT_MARKERS` | `dict[str, str]` | *computed* | File names that make a folder a project, with the label shown for each. A `.git` entry (folder or file) always does. |
 | `LABHQ_INVENTORY_DISCOVERY_SKIP_DIRS` | `list[str]` | *computed* | Folders discovery never enters, besides every hidden folder. |
 | `LABHQ_INVENTORY_AUTO_SCAN_MINUTES` | `int` | `0` | Minutes between automatic scans while labhq serves; 0 keeps them off. A scan that finds projects labhq does not have raises one notification per new set, at most one a day. |
+| `LABHQ_INVENTORY_AUTO_ADD_PROJECTS` | `bool` | `false` | An automatic scan adds the projects it finds to labhq itself (a project row only: no agent is created and nothing runs), instead of asking. Off unless the owner sets it. |
 | `LABHQ_INVENTORY_SUGGESTED_ROOTS` | `list[str]` | *computed* | Where onboarding looks for the folder that holds the owner's projects; the first that exists is offered as a suggestion, never applied by itself. |
 | `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. Kept inside the scope. |
 | `LABHQ_INVENTORY_FOLDER_MANAGER_MIN_PROJECTS` | `int` | `2` | A parent folder with at least this many projects gets a folder-manager proposal. |
