@@ -75,11 +75,11 @@ describe('free text to the CEO', () => {
     expect(outside.map((file) => file.name)).toEqual([])
   })
 
-  it('has no /ceo page and no CEO entry in the sidebar', () => {
+  it('has no CEO chat page (the /ceo tab holds settings only, ADR 0012)', () => {
     const routes = files.filter((file) => file.name.endsWith(`${sep}routes.ts`))
     expect(routes.length).toBeGreaterThan(5)
     for (const file of routes) {
-      expect(file.text, file.name).not.toMatch(/path:\s*['"]\/ceo|ceo-chat|['"]ceo\.nav['"]/)
+      expect(file.text, file.name).not.toMatch(/ceo-chat/)
     }
   })
 })

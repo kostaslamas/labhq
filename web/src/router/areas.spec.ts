@@ -25,6 +25,7 @@ describe('area discovery', () => {
     const items = navItems(collectAreaRoutes(discoveredAreaRoutes))
     expect(items.map((item) => item.path)).toEqual([
       '/today',
+      '/ceo',
       '/projects',
       '/sessions',
       '/meetings',

@@ -36,7 +36,7 @@ def test_without_roots_the_answer_says_machine_wide_and_links_the_page(cli: Cli)
     answer = asyncio.run(scan_scope_tool())
 
     assert "όλο το μηχάνημα" in answer
-    assert "https://labhq.example.org/projects?panel=scan" in answer
+    assert "https://labhq.example.org/ceo?panel=scan" in answer
 
 
 def test_with_roots_it_names_them_and_counts_the_rest_without_paths(

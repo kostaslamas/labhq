@@ -25,7 +25,7 @@ const { t } = useI18n()
       </li>
     </ul>
     <RouterLink
-      :to="{ name: 'projects', query: { panel: 'scan' } }"
+      :to="{ name: 'ceo', query: { panel: 'scan' } }"
       class="w-fit text-accent underline"
       data-testid="new-projects-link"
     >

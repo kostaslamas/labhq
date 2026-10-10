@@ -1,7 +1,7 @@
 import { Terminal } from 'lucide-vue-next'
 import type { RouteRecordRaw } from 'vue-router'
 
-// A fifth sidebar item, by the owner's decision on #205: sessions are worth a place of their own.
+// A sidebar item of its own, by the owner's decision on #205: sessions are worth a place of their own.
 const routes: RouteRecordRaw[] = [
   {
     path: '/sessions',

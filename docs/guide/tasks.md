@@ -5,7 +5,7 @@ CEO; the CEO uses `delegate_task` to give the objective to that project's active
 The voice `order` tool sends your words to the CEO the same way. A project needs an active
 manager for the CEO to delegate to.
 
-On the Projects page, choose the CEO's main and backup agent. One CEO serves every project.
+In the CEO tab, choose the CEO's main and backup agent. One CEO serves every project.
 Project managers added from the UI report to that CEO automatically.
 For a project without a manager, **Assign a saved agent session** lists the sessions of the
 chosen Claude Code, Codex, Gemini or Aider CLI in that project's exact folder. The list

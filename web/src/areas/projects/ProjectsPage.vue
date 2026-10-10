@@ -4,13 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { api, type components } from '@/api'
-import SessionScan from '@/areas/sessions/SessionScan.vue'
-import type { FoundProject } from '@/areas/sessions/scan'
 import { useLiveTopic } from '@/live'
 import { Button } from '@/ui'
 
 import AddProjectForm from './AddProjectForm.vue'
-import CeoAssignmentForm from './CeoAssignmentForm.vue'
 import ProjectCard from './ProjectCard.vue'
 
 type Card = components['schemas']['ProjectCard']
@@ -21,7 +18,8 @@ const router = useRouter()
 const cards = ref<Card[]>([])
 const state = ref<'loading' | 'ready' | 'failed'>('loading')
 const adding = ref(false)
-const prefill = ref<FoundProject | null>(null)
+// The folder and name the form starts with, when the CEO's found list sent one here.
+const prefill = ref<{ path: string; name: string } | null>(null)
 
 // Follows the cursors to the end: a person's projects are a handful, and a grid with a
 // hidden tail would hide a project that is over its budget.
@@ -51,8 +49,20 @@ async function openTaskProject(): Promise<void> {
   if (data) await router.replace({ name: 'project', params: { id: data.project_id } })
 }
 
-// "Add project" on a found project opens the same form with the folder already chosen.
-function addFound(project: FoundProject): void {
+// `/projects?add=<folder>&name=<name>` (from the CEO's found list) opens the form filled in.
+// Old notification links to `/projects?panel=scan` go to the CEO tab, where the folders live now.
+async function openFromQuery(): Promise<void> {
+  if (route.query.panel === 'scan') {
+    await router.replace({ name: 'ceo', query: { panel: 'scan' } })
+    return
+  }
+  const folder = route.query.add
+  if (typeof folder !== 'string' || folder === '') return
+  const name = route.query.name
+  addFound({ path: folder, name: typeof name === 'string' ? name : '' })
+}
+
+function addFound(project: { path: string; name: string }): void {
   prefill.value = project
   adding.value = true
 }
@@ -66,6 +76,7 @@ async function opened(id: number): Promise<void> {
 onMounted(() => {
   void load()
   void openTaskProject()
+  void openFromQuery()
 })
 for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
 </script>
@@ -88,10 +99,6 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
       @added="opened"
       @cancel="adding = false"
     />
-
-    <SessionScan @add="addFound" />
-
-    <CeoAssignmentForm />
 
     <div v-if="state === 'failed'" role="alert" class="flex flex-wrap items-center gap-3">
       <p class="text-status-failed">{{ t('projects.loadFailed') }}</p>

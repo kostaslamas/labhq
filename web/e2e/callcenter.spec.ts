@@ -56,16 +56,17 @@ async function overflowsHorizontally(page: Page): Promise<boolean> {
   )
 }
 
-test('the widget is on every page, opens and closes, and the CEO page is gone', async ({
+test('the widget is on every page, opens and closes, and the CEO tab has no chat', async ({
   signedInPage: page,
 }) => {
-  for (const path of ['/today', '/projects', '/meetings', '/approvals']) {
+  for (const path of ['/today', '/ceo', '/projects', '/meetings', '/approvals']) {
     await page.goto(path)
     await expect(page.getByTestId('callcenter-launcher'), path).toBeVisible()
   }
-  await expect(page.getByTestId('nav-item').filter({ hasText: 'CEO' })).toHaveCount(0)
+  // The CEO tab holds settings only; the chat stays in the widget (ADR 0012).
   await page.goto('/ceo')
-  await expect(page).toHaveURL(/\/today$/)
+  await expect(page).toHaveURL(/\/ceo$/)
+  await expect(page.getByTestId('callcenter-launcher')).toHaveCount(1)
 
   const launcher = page.getByTestId('callcenter-launcher')
   await expect(page.getByTestId('callcenter-panel')).toHaveCount(0)
