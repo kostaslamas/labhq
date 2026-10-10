@@ -95,20 +95,21 @@ test('a report waiting for the owner puts a badge on the widget; Discuss pins it
     }),
   )
   let body: { text: string; context: { pinned: { kind: string; id: number } } } | undefined
+  // The server would list the queued turn on every reload; other specs make live updates.
+  const turns: unknown[] = []
   await page.route('**/api/org/ceo/messages', async (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
+    if (route.request().method() !== 'POST') return json(route, turns)
     body = route.request().postDataJSON() as typeof body
-    return route.fulfill({
-      status: 202,
-      json: {
-        id: 1,
-        text: body?.text,
-        reply: null,
-        status: 'queued',
-        created_at: new Date().toISOString(),
-        actions: [],
-      },
-    })
+    const turn = {
+      id: 1,
+      text: body?.text,
+      reply: null,
+      status: 'queued',
+      created_at: new Date().toISOString(),
+      actions: [],
+    }
+    turns.push(turn)
+    return route.fulfill({ status: 202, json: turn })
   })
   await page.goto('/today')
   await expect(page.getByTestId('callcenter-badge')).toHaveText('1')
