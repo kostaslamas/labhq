@@ -14,6 +14,7 @@ from labhq.inventory.login import StatusRunner, Which, run_status, tool_statuses
 from labhq.inventory.model import Inventory, ProjectInventory, SessionInfo, ToolStatus
 from labhq.inventory.report import report_to_ceo, spoken
 from labhq.inventory.scan import SessionScanner
+from labhq.inventory.scoped import scanner_for
 from labhq.inventory.settings import InventorySettings, get_inventory_settings
 
 
@@ -41,7 +42,7 @@ async def scan_and_report(
 ) -> ScanResult:
     """Scan without a model, then give the CEO one report per project. The caller commits."""
     settings = settings or get_inventory_settings()
-    found = scanner or SessionScanner(kinds=kinds, settings=settings, clock=clock)
+    found = scanner or await scanner_for(db, clock, kinds=kinds, settings=settings)
     inventory = await asyncio.to_thread(found.scan)
     tools = await tool_statuses(db, kinds, clock, settings, run=run, which=which)
     ids: list[int] = []

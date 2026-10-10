@@ -19,6 +19,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 from labhq.inventory.model import SavedEntry
+from labhq.inventory.scope import ScopeFilter
 from labhq.inventory.stores.files import modified
 from labhq.inventory.stores.layout import StoreLayout, register_format
 from labhq.inventory.stores.opencode import connect_read_only, from_millis
@@ -52,7 +53,7 @@ def _timestamp(value: object) -> datetime | None:
 
 
 @register_format("cursor-cli-meta")
-def cursor_cli_meta(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def cursor_cli_meta(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     for meta in root.glob(layout.options["glob"]):
         if meta.is_symlink() or not meta.is_file():
             continue
@@ -62,6 +63,8 @@ def cursor_cli_meta(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
             continue
         cwd = document.get("cwd") if isinstance(document, dict) else None
         if not isinstance(cwd, str) or not document.get("hasConversation", True):
+            continue
+        if not scope.allows(Path(cwd)):
             continue
         when = _timestamp(document.get("updatedAtMs")) or modified(meta)
         yield SavedEntry(layout.tool, meta.parent.name, Path(cwd), when, meta.parent)
@@ -109,7 +112,7 @@ def _workspace_folders(root: Path) -> Iterator[tuple[Path, Path]]:
 
 
 @register_format("cursor-ide-vscdb")
-def cursor_ide(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def cursor_ide(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     global_db = root / "globalStorage" / "state.vscdb"
     if not global_db.is_file():
         return
@@ -126,6 +129,9 @@ def cursor_ide(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
                 if isinstance(item, dict) and isinstance(item.get("composerId"), str):
                     known.setdefault(item["composerId"], workspace_folder)
         for composer_id, folder in sorted(known.items()):
+            # The chat's own record is only queried once its folder is in the scope.
+            if folder is None or not scope.allows(folder):
+                continue
             when = _times(connection, composer_id)
-            if folder is not None and when is not None:
+            if when is not None:
                 yield SavedEntry(layout.tool, composer_id, folder, when, global_db)

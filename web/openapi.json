@@ -2787,6 +2787,69 @@
         "title": "RoomMessage",
         "type": "object"
       },
+      "RootAdded": {
+        "properties": {
+          "scope": {
+            "$ref": "#/components/schemas/ScanScopeOut"
+          },
+          "warning": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning"
+          }
+        },
+        "required": ["scope", "warning"],
+        "title": "RootAdded",
+        "type": "object"
+      },
+      "RootIn": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": ["path"],
+        "title": "RootIn",
+        "type": "object"
+      },
+      "RootOut": {
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "removable": {
+            "title": "Removable",
+            "type": "boolean"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": ["path", "source", "removable"],
+        "title": "RootOut",
+        "type": "object"
+      },
       "RowIn": {
         "properties": {
           "effort": {
@@ -2930,6 +2993,42 @@
         },
         "required": ["kind", "session_id", "updated_at"],
         "title": "SavedSessionChoice",
+        "type": "object"
+      },
+      "ScanScopeOut": {
+        "properties": {
+          "exclude": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Exclude",
+            "type": "array"
+          },
+          "machine_wide": {
+            "title": "Machine Wide",
+            "type": "boolean"
+          },
+          "roots": {
+            "items": {
+              "$ref": "#/components/schemas/RootOut"
+            },
+            "title": "Roots",
+            "type": "array"
+          },
+          "suggestion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggestion"
+          }
+        },
+        "required": ["roots", "exclude", "machine_wide", "suggestion"],
+        "title": "ScanScopeOut",
         "type": "object"
       },
       "SendCeoMessage": {
@@ -6253,6 +6352,112 @@
         },
         "summary": "Repository Browser Suggest",
         "tags": ["authoring", "authoring"]
+      }
+    },
+    "/api/session-scan": {
+      "get": {
+        "operationId": "scan_scope_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanScopeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan Scope Get",
+        "tags": ["sessions"]
+      }
+    },
+    "/api/session-scan/roots": {
+      "delete": {
+        "operationId": "scan_scope_remove",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RootIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanScopeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan Scope Remove",
+        "tags": ["sessions"]
+      },
+      "post": {
+        "description": "Add a folder. A missing folder or a filesystem root changes nothing.",
+        "operationId": "scan_scope_add",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RootIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootAdded"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Scan Scope Add",
+        "tags": ["sessions"]
       }
     },
     "/api/today": {

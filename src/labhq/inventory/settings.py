@@ -17,8 +17,20 @@ class InventorySettings(BaseSettings):
     sample_seconds: float = Field(default=0.5, ge=0)
     # CPU seconds per sample above which a process counts as working.
     busy_cpu_seconds: float = Field(default=0.05, ge=0)
+    # The folders the scan may look in; `~` is expanded. A session counts only if its working
+    # directory is inside one (symlinks and `..` resolved). Empty means machine-wide. Roots the
+    # owner adds with `labhq sessions roots add` or in the web UI are kept in the database and
+    # join these.
+    roots: list[str] = Field(default_factory=list)
+    # Folders or glob patterns inside the roots that the scan skips, for example `~/Developer/old`.
+    exclude: list[str] = Field(default_factory=list)
+    # Where onboarding looks for the folder that holds the owner's projects; the first that
+    # exists is offered as a suggestion, never applied by itself.
+    suggested_roots: list[str] = Field(
+        default_factory=lambda: ["~/Developer", "~/projects", "~/code", "~/src"]
+    )
     # Folders searched for tools that keep a history file inside the project (Aider), besides
-    # every folder another tool or a running agent already named.
+    # every folder another tool or a running agent already named. Kept inside the scope.
     extra_roots: list[str] = Field(default_factory=list)
     # A parent folder with at least this many projects gets a folder-manager proposal.
     folder_manager_min_projects: int = Field(default=2, ge=2)

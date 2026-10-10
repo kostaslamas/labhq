@@ -250,7 +250,10 @@ Session inventory settings, from `LABHQ_INVENTORY_*`. Thresholds and prices are 
 | `LABHQ_INVENTORY_HISTORY_DAYS` | `float` | `14.0` | A saved conversation older than this is kept as history, not continued. |
 | `LABHQ_INVENTORY_SAMPLE_SECONDS` | `float` | `0.5` | How long the process table is sampled to tell a working agent from a quiet one. |
 | `LABHQ_INVENTORY_BUSY_CPU_SECONDS` | `float` | `0.05` | CPU seconds per sample above which a process counts as working. |
-| `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. |
+| `LABHQ_INVENTORY_ROOTS` | `list[str]` | `[]` | The folders the scan may look in; `~` is expanded. A session counts only if its working directory is inside one (symlinks and `..` resolved). Empty means machine-wide. Roots the owner adds with `labhq sessions roots add` or in the web UI are kept in the database and join these. |
+| `LABHQ_INVENTORY_EXCLUDE` | `list[str]` | `[]` | Folders or glob patterns inside the roots that the scan skips, for example `~/Developer/old`. |
+| `LABHQ_INVENTORY_SUGGESTED_ROOTS` | `list[str]` | *computed* | Where onboarding looks for the folder that holds the owner's projects; the first that exists is offered as a suggestion, never applied by itself. |
+| `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. Kept inside the scope. |
 | `LABHQ_INVENTORY_FOLDER_MANAGER_MIN_PROJECTS` | `int` | `2` | A parent folder with at least this many projects gets a folder-manager proposal. |
 | `LABHQ_INVENTORY_USE_GH` | `bool` | `true` | Ask GitHub for the open pull request of a branch, if `gh` is logged in. |
 | `LABHQ_INVENTORY_COMMAND_TIMEOUT_SECONDS` | `float` | `15.0` |  |

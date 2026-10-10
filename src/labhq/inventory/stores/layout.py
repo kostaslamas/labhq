@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from labhq.inventory.model import SavedEntry
+from labhq.inventory.scope import ScopeFilter
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,7 @@ class StoreLayout:
     options: Mapping[str, str] = field(default_factory=dict)
 
 
-Reader = Callable[[StoreLayout, Path], Iterator[SavedEntry]]
+Reader = Callable[[StoreLayout, Path, ScopeFilter], Iterator[SavedEntry]]
 FORMATS: dict[str, Reader] = {}
 
 
@@ -104,8 +105,15 @@ def register_layout(layout: StoreLayout) -> StoreLayout:
     return layout
 
 
-def read_all(context: Context, tools: set[str] | None = None) -> list[SavedEntry]:
-    """Every saved conversation of every registered tool (or of `tools`), on this machine."""
+def read_all(
+    context: Context, tools: set[str] | None = None, scope: ScopeFilter | None = None
+) -> list[SavedEntry]:
+    """Every saved conversation of every registered tool (or of `tools`) inside the scope.
+
+    A reader asks the scope before it opens anything beyond the file that names the folder, so
+    a conversation outside the scope is turned away without its text being read.
+    """
+    scope = scope or ScopeFilter()
     entries: dict[tuple[str, str, Path], SavedEntry] = {}
     for layout in LAYOUTS.values():
         if tools is not None and layout.tool not in tools:
@@ -114,7 +122,9 @@ def read_all(context: Context, tools: set[str] | None = None) -> list[SavedEntry
         for root in layout.roots:
             path = root.resolve(context.bases, context.environ)
             if path.is_dir() or path.is_file():
-                for entry in _safe(reader(layout, path)):
+                for entry in _safe(reader(layout, path, scope)):
+                    if not scope.scope.contains(entry.folder):
+                        continue
                     entries.setdefault((entry.tool, entry.session_id, entry.folder), entry)
     return list(entries.values())
 

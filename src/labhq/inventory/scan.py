@@ -24,6 +24,8 @@ from labhq.inventory.model import (
 from labhq.inventory.probe import Probe, ProcessProbe
 from labhq.inventory.projects import RootOf, group_by_project, propose_folder_managers
 from labhq.inventory.propose import propose
+from labhq.inventory.roots import scope_of
+from labhq.inventory.scope import Scope, ScopeFilter
 from labhq.inventory.settings import InventorySettings, get_inventory_settings
 from labhq.inventory.stores import AIDER, Bases, Context, aider_entries, read_all
 
@@ -34,6 +36,7 @@ class SessionScanner:
         *,
         kinds: AgentKinds = default_kinds,
         settings: InventorySettings | None = None,
+        scope: Scope | None = None,
         clock: Clock | None = None,
         processes: Processes = all_processes,
         probe: Probe | None = None,
@@ -44,6 +47,7 @@ class SessionScanner:
     ) -> None:
         self._kinds = kinds
         self._settings = settings or get_inventory_settings()
+        self._scope = scope or scope_of(self._settings, [])
         self._clock = clock or SystemClock()
         self._processes = processes
         self._probe = probe or ProcessProbe(kinds, self._settings)
@@ -54,8 +58,9 @@ class SessionScanner:
 
     def scan(self) -> Inventory:
         now = self._clock.now()
-        running = discover(self._kinds, self._processes)
-        saved = self._saved(running)
+        turned_away = ScopeFilter(self._scope)
+        running = [a for a in discover(self._kinds, self._processes) if turned_away.allows(a.cwd)]
+        saved = self._saved(running, turned_away)
         sessions = self._merge(running, saved)
         kwargs = {} if self._root_of is None else {"root_of": self._root_of}
         projects = group_by_project(sessions, **kwargs)
@@ -64,10 +69,20 @@ class SessionScanner:
             project.proposals = [
                 propose(session, project.git, now, self._settings) for session in project.sessions
             ]
-        folders = propose_folder_managers(
-            projects, minimum=self._settings.folder_manager_min_projects, home=self._bases.home
+        folders = [
+            f
+            for f in propose_folder_managers(
+                projects, minimum=self._settings.folder_manager_min_projects, home=self._bases.home
+            )
+            if self._scope.contains(f.folder)
+        ]
+        return Inventory(
+            scanned_at=now,
+            projects=projects,
+            folders=folders,
+            roots=self._scope.roots,
+            left_out=turned_away.left_out,
         )
-        return Inventory(scanned_at=now, projects=projects, folders=folders)
 
     def _git(self, project: ProjectInventory) -> GitFacts:
         if not project.has_repo:
@@ -79,12 +94,25 @@ class SessionScanner:
             command=self._command,
         )
 
-    def _saved(self, running: list[RunningAgent]) -> list[SavedEntry]:
+    def _saved(self, running: list[RunningAgent], turned_away: ScopeFilter) -> list[SavedEntry]:
         context = Context(self._bases, self._environ)
-        entries = read_all(context)
+        entries = read_all(context, scope=turned_away)
         folders = {a.cwd for a in running} | {e.folder for e in entries}
-        folders |= {Path(root) for root in self._settings.extra_roots}
-        return entries + aider_entries(AIDER, tuple(sorted(f for f in folders if f.is_dir())))
+        folders |= {Path(root).expanduser() for root in self._settings.extra_roots}
+        folders |= self._root_folders()
+        inside = (f for f in folders if f.is_dir() and self._scope.contains(f))
+        return entries + aider_entries(AIDER, tuple(sorted(inside)))
+
+    def _root_folders(self) -> set[Path]:
+        """The roots and the projects directly under them: where an Aider history can sit."""
+        found: set[Path] = set()
+        for root in self._scope.roots:
+            found.add(root)
+            try:
+                found |= {c for c in root.iterdir() if c.is_dir() and not c.is_symlink()}
+            except OSError:
+                continue
+        return found
 
     def _merge(self, running: list[RunningAgent], saved: list[SavedEntry]) -> list[SessionInfo]:
         """A running agent claims the newest unclaimed saved entry of its tool and folder."""

@@ -36,8 +36,10 @@ def codex(home: Path, folder: Path, session_id: str = CODEX_ID) -> Path:
     return path
 
 
-def gemini(home: Path, folder: Path, session_id: str = GEMINI_ID) -> Path:
-    directory = home / ".gemini" / "tmp" / "abc123"
+def gemini(
+    home: Path, folder: Path, session_id: str = GEMINI_ID, *, directory_name: str = "abc123"
+) -> Path:
+    directory = home / ".gemini" / "tmp" / directory_name
     (directory / "chats").mkdir(parents=True, exist_ok=True)
     (directory / ".project_root").write_text(str(folder), encoding="utf-8")
     path = directory / "chats" / "session-2026-10-01T10-00-abc.json"

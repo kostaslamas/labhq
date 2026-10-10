@@ -20,6 +20,7 @@ const NOT_THE_CEO: Record<string, string> = {
   [`areas${sep}meetings${sep}MeetingPage.vue`]:
     'joining a standup, planning or review; the API refuses a decision room (room_in_call_center)',
   [`areas${sep}channels${sep}ChannelsPage.vue`]: 'chat channel setup fields',
+  [`areas${sep}sessions${sep}SessionScanPage.vue`]: 'a folder path for the session scan',
 }
 
 const NON_TEXT_INPUT = /type=["'](checkbox|radio|hidden|submit|button|file|range|color)["']/

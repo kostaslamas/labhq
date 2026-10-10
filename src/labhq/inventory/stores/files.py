@@ -12,6 +12,7 @@ from pathlib import Path
 from uuid import UUID
 
 from labhq.inventory.model import SavedEntry
+from labhq.inventory.scope import ScopeFilter
 from labhq.inventory.stores.layout import StoreLayout, register_format
 
 MAX_LINE = 131_072
@@ -52,20 +53,25 @@ def _real_files(root: Path, pattern: str) -> Iterator[Path]:
 
 
 @register_format("jsonl-cwd-field")
-def jsonl_cwd_field(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def jsonl_cwd_field(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     """Claude Code: `<projects>/<dir>/<uuid>.jsonl`; some row near the top has a `cwd`."""
     for path in _real_files(root, layout.options["glob"]):
         if not is_uuid(path.stem):
             continue
+        # The folder's name encodes the working directory: one outside the scope is never opened.
+        if not scope.dir_may_hold(path.parent.name):
+            scope.skip()
+            continue
         for row in _head(path):
             cwd = row.get("cwd")
             if isinstance(cwd, str) and Path(cwd).is_absolute():
-                yield SavedEntry(layout.tool, path.stem, Path(cwd), modified(path), path)
+                if scope.allows(Path(cwd)):
+                    yield SavedEntry(layout.tool, path.stem, Path(cwd), modified(path), path)
                 break
 
 
 @register_format("jsonl-meta-row")
-def jsonl_meta_row(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def jsonl_meta_row(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     """Codex: `rollout-*.jsonl` whose first row is `session_meta` with `id` and `cwd`."""
     for path in _real_files(root, layout.options["glob"]):
         first = next(_head(path), {})
@@ -73,19 +79,26 @@ def jsonl_meta_row(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
         if first.get("type") != "session_meta" or not isinstance(meta, dict):
             continue
         session_id, cwd = meta.get("id"), meta.get("cwd")
-        if isinstance(session_id, str) and is_uuid(session_id) and isinstance(cwd, str):
+        if not (isinstance(session_id, str) and is_uuid(session_id) and isinstance(cwd, str)):
+            continue
+        # Only the first row was read, and it is all this file gives up.
+        if scope.allows(Path(cwd)):
             yield SavedEntry(layout.tool, session_id, Path(cwd), modified(path), path)
 
 
 @register_format("gemini-marker")
-def gemini_marker(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def gemini_marker(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     """Gemini CLI: `<tmp>/<dir>/.project_root` names the folder; chats sit beside it."""
     for directory in root.iterdir():
         marker = directory / ".project_root"
         if directory.is_symlink() or not marker.is_file() or marker.is_symlink():
             continue
         folder = Path(marker.read_text(encoding="utf-8").strip())
-        for path in _real_files(directory, layout.options["glob"]):
+        files = list(_real_files(directory, layout.options["glob"]))
+        if not scope.scope.contains(folder):
+            scope.skip(len(files))
+            continue
+        for path in files:
             with path.open("rb") as stream:
                 header = stream.read(4096)
             match = re.search(rb'"sessionId"\s*:\s*"([^"]+)"', header)
