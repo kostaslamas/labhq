@@ -22,6 +22,7 @@ from labhq.auth.routes import SignedIn
 from labhq.db.models import Project
 from labhq.inventory import register  # noqa: F401  (registers the approval executors)
 from labhq.inventory.analysis import Analyses, AnalysisError
+from labhq.inventory.autoscan import pending_projects
 from labhq.inventory.chooser import NoRunnerError
 from labhq.inventory.close import SessionCloser
 from labhq.inventory.continuing import continue_session
@@ -270,3 +271,14 @@ async def action_folder(
         raise _refused(ValueError(f"no single folder-manager proposal for {body.folder!r}"))
     approval = await propose(ApprovalService(context.sessions, clock=clock), match[0])
     return Requested(approval_id=approval.id, summary=f"Folder manager for {match[0].folder.name}.")
+
+
+class NewProject(BaseModel):
+    path: str
+    name: str
+
+
+@router.get("/new-projects")
+async def new_projects(owner: SignedIn, db: SessionDep) -> list[NewProject]:
+    """Projects the automatic scan announced that the owner has not yet added or skipped."""
+    return [NewProject(path=p, name=Path(p).name) for p in await pending_projects(db)]

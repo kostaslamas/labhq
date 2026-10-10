@@ -193,3 +193,25 @@ def test_a_folder_manager_is_proposed_and_requested_as_an_approval(
     assert asked.json()["approval_id"] is not None
     nope = signed_in.post("/api/inventory/actions/folder", json={"folder": "x"}, headers=WRITE)
     assert nope.status_code == 422
+
+
+def test_new_projects_lists_what_the_automatic_scan_announced_and_not_yet_resolved(
+    signed_in: TestClient, tmp_path: Path, context: Context
+) -> None:
+    from labhq.inventory.autoscan import AutoState, save_state
+
+    kept, gone = make_project(tmp_path / "dev" / "kept"), tmp_path / "dev" / "gone"
+
+    async def announce() -> None:
+        async with context.sessions() as db:
+            state = AutoState(seen=[str(kept), str(gone)], pending=[str(kept), str(gone)])
+            await save_state(db, context.clock, state)
+            await db.commit()
+
+    assert signed_in.get("/api/inventory/new-projects").json() == []
+    asyncio.run(announce())
+
+    # A folder that no longer exists is not offered any more.
+    assert signed_in.get("/api/inventory/new-projects").json() == [
+        {"path": str(kept), "name": "kept"}
+    ]

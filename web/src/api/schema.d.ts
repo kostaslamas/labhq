@@ -706,6 +706,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/inventory/new-projects': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * New Projects
+     * @description Projects the automatic scan announced that the owner has not yet added or skipped.
+     */
+    get: operations['new_projects']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/inventory/roots': {
     parameters: {
       query?: never
@@ -2061,6 +2081,13 @@ export interface components {
       role: string
       /** Title */
       title: string
+    }
+    /** NewProject */
+    NewProject: {
+      /** Name */
+      name: string
+      /** Path */
+      path: string
     }
     /** NewProjectBody */
     NewProjectBody: {
@@ -4148,6 +4175,35 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ScopeOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  new_projects: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NewProject'][]
         }
       }
       /** @description Error */

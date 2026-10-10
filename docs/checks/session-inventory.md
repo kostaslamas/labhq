@@ -19,11 +19,15 @@ Run this once on a developer machine that has real sessions, and record the resu
    **Analyse** only record approvals (Analyse shows its estimate first), and each project's card
    on `/projects` shows its session counts. The CLI shows the same: `labhq sessions scan --no-report`.
    Running agents show `waiting for input` or `idle`; Cursor IDE chats show `idle` and are not resumable.
-3. Compare one OpenCode, one Cursor CLI and one Cursor IDE session with the tool's own list.
+3. Optional auto-scan: serve with `LABHQ_INVENTORY_AUTO_SCAN_MINUTES=5`, put a new git repository
+   under a scan folder, wait one interval. One notification "1 new project found in <folder>" must
+   arrive and the project must be listed on Today; it must not arrive again for the same project,
+   and adding or skipping the project removes it from Today.
+4. Compare one OpenCode, one Cursor CLI and one Cursor IDE session with the tool's own list.
    If a store layout changed, update `labhq.inventory.stores` and its fixture builder.
-4. `labhq sessions analyse <project>` shows an estimate and an approval. Approve it with
+5. `labhq sessions analyse <project>` shows an estimate and an approval. Approve it with
    `labhq approvals approve <id>`; open the md file under `<data dir>/inventory/analyses/`.
-5. `labhq sessions close <project> <pid>` on an idle agent, then approve; the process ends
+6. `labhq sessions close <project> <pid>` on an idle agent, then approve; the process ends
    and the conversation can be resumed.
 
 Result (date, tools, versions, outcome):

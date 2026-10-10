@@ -30,5 +30,9 @@
     "floor": "Pause below",
     "waiting": "Waiting for room",
     "paused": "New runs are paused: free memory {free}% is below {floor}%. Nothing is dropped; work resumes when memory recovers."
+  },
+  "newProjects": {
+    "title": "{count} new project found | {count} new projects found",
+    "review": "Add or skip them on the Projects page"
   }
 }

@@ -14,6 +14,7 @@ from labhq.cli.statuses import ingest_statuses
 from labhq.db.models import Run
 from labhq.economy.graphify import refresh_loop
 from labhq.health.monitor import health_step
+from labhq.inventory.autoscan_step import autoscan_step
 from labhq.it import it_step
 from labhq.live import live_feed
 from labhq.logins.program import login_duty
@@ -78,6 +79,13 @@ def _meetings(services: Services) -> Step:
     return due
 
 
+def _inventory(services: Services) -> Step:
+    async def look() -> int:
+        return await autoscan_step(services.context)
+
+    return look
+
+
 def _gates(services: Services) -> Step:
     async def relay_pass() -> int:
         # Read per pass, so configuring a gate needs no restart of the loop's wiring.
@@ -112,3 +120,4 @@ default_loops.register("gates", "gate_interval_seconds", _gates)
 default_loops.register("logins", "status_interval_seconds", _logins)
 default_loops.register("heartbeat", "heartbeat_interval_seconds", _heartbeat)
 default_loops.register("meetings", "meetings_interval_seconds", _meetings)
+default_loops.register("inventory", "inventory_interval_seconds", _inventory)

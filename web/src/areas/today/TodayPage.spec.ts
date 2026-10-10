@@ -75,10 +75,18 @@ const capacity: RunCapacity = {
   waiting: 0,
 }
 
-function respondWith(data: Today, reading: RunCapacity = capacity): void {
-  // The page reads two endpoints; each gets its own answer.
+function respondWith(
+  data: Today,
+  reading: RunCapacity = capacity,
+  found: { path: string; name: string }[] = [],
+): void {
+  // The page reads three endpoints; each gets its own answer.
+  const bodies: Record<string, unknown> = {
+    '/api/capacity': reading,
+    '/api/inventory/new-projects': found,
+  }
   const answer = (path: string) =>
-    Promise.resolve({ data: path === '/api/capacity' ? reading : data, response: new Response() })
+    Promise.resolve({ data: (bodies[path] ?? data) as Today, response: new Response() })
   vi.spyOn(api, 'GET').mockImplementation(answer)
 }
 
@@ -87,6 +95,25 @@ afterEach(() => {
 })
 
 describe('TodayPage', () => {
+  it('lists the projects the automatic scan found, and nothing when it found none', async () => {
+    respondWith(answer, capacity, [{ path: '/home/o/code/site', name: 'site' }])
+    const { root } = await renderApp('/today')
+    await settle()
+
+    const card = root.querySelector('[data-testid="new-projects"]')
+    expect(card?.textContent).toContain('1 new project found')
+    expect(card?.textContent).toContain('/home/o/code/site')
+    expect(root.querySelector('[data-testid="new-projects-link"]')).not.toBeNull()
+  })
+
+  it('shows no new-projects card while the scan has announced nothing', async () => {
+    respondWith(answer)
+    const { root } = await renderApp('/today')
+    await settle()
+
+    expect(root.querySelector('[data-testid="new-projects"]')).toBeNull()
+  })
+
   it('shows deliverables, what needs you and spend warnings in integer-micro amounts', async () => {
     respondWith(answer)
     const { root } = await renderApp('/today')
