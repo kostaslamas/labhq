@@ -606,6 +606,86 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/api/inventory/actions/analyse': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Action Analyse
+     * @description Estimate the analysis of one project and ask for the approval that starts it.
+     */
+    post: operations['action_analyse']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/actions/close': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Action Close
+     * @description Ask to end an idle session's process (never mid-turn); the conversation stays saved.
+     */
+    post: operations['action_close']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/actions/continue': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Action Continue
+     * @description Adopt a running session, resume a saved one, or hand a Cursor IDE chat to a CLI agent.
+     */
+    post: operations['action_continue']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/actions/folder': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Action Folder
+     * @description Ask for the approval that creates a folder manager for a parent folder.
+     */
+    post: operations['action_folder']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/api/inventory/exclusions': {
     parameters: {
       query?: never
@@ -662,6 +742,26 @@ export interface paths {
      * @description Scan now: sessions and projects in the roots. No model is called, no transcript read.
      */
     post: operations['scan_now']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/api/inventory/sessions': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Sessions Get
+     * @description The last scan's projects with their sessions; empty until a scan has run.
+     */
+    get: operations['sessions_get']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -1706,6 +1806,11 @@ export interface components {
       /** Secret */
       secret: boolean
     }
+    /** FolderIn */
+    FolderIn: {
+      /** Folder */
+      folder: string
+    }
     /** FolderOut */
     FolderOut: {
       /** Path */
@@ -1714,6 +1819,13 @@ export interface components {
       removable: boolean
       /** Source */
       source: string
+    }
+    /** FolderProposalOut */
+    FolderProposalOut: {
+      /** Folder */
+      folder: string
+      /** Projects */
+      projects: string[]
     }
     /** FoundOut */
     FoundOut: {
@@ -1727,6 +1839,19 @@ export interface components {
       path: string
       /** Relative */
       relative: string
+    }
+    /** GitOut */
+    GitOut: {
+      /** Branch */
+      branch: string | null
+      /** Dirty Files */
+      dirty_files: number
+      /** Last Commit At */
+      last_commit_at: string | null
+      /** Last Commit Subject */
+      last_commit_subject: string | null
+      /** Open Pr */
+      open_pr: string | null
     }
     /** Health */
     Health: {
@@ -2093,7 +2218,13 @@ export interface components {
       name: string
       /** Open Tasks */
       open_tasks: components['schemas']['TaskCount'][]
+      sessions?: components['schemas']['SessionCounts'] | null
       status: components['schemas']['ProjectStatus']
+    }
+    /** ProjectIn */
+    ProjectIn: {
+      /** Project */
+      project: string
     }
     /**
      * ProjectStatus
@@ -2117,6 +2248,13 @@ export interface components {
       tasks: components['schemas']['TaskCount'][]
       /** Team */
       team: components['schemas']['TeamMember'][]
+    }
+    /** ProposalOut */
+    ProposalOut: {
+      /** Action */
+      action: string
+      /** Reason */
+      reason: string
     }
     /**
      * ProposalStatus
@@ -2145,6 +2283,18 @@ export interface components {
       credential?: {
         [key: string]: unknown
       } | null
+    }
+    /**
+     * Requested
+     * @description What an action recorded: the approval to decide, or a hand-off task.
+     */
+    Requested: {
+      /** Approval Id */
+      approval_id: number | null
+      /** Summary */
+      summary: string
+      /** Task Id */
+      task_id?: number | null
     }
     /**
      * RiskClass
@@ -2284,6 +2434,20 @@ export interface components {
       /** Session Count */
       session_count: number
     }
+    /** ScannedProject */
+    ScannedProject: {
+      git: components['schemas']['GitOut']
+      /** Has Repo */
+      has_repo: boolean
+      /** Name */
+      name: string
+      /** Project Id */
+      project_id: number | null
+      /** Root */
+      root: string
+      /** Sessions */
+      sessions: components['schemas']['SessionOut'][]
+    }
     /**
      * ScopeIn
      * @description The stored lists, whole: what the page shows minus the environment's entries.
@@ -2336,6 +2500,60 @@ export interface components {
       key: string
       /** Screen */
       screen: string
+    }
+    /**
+     * SessionCounts
+     * @description Agent sessions in the project's folder, from the last scan.
+     */
+    SessionCounts: {
+      /** Idle */
+      idle: number
+      /** Running */
+      running: number
+      /** Total */
+      total: number
+      /** Waiting */
+      waiting: number
+    }
+    /** SessionIn */
+    SessionIn: {
+      /** Pid */
+      pid?: number | null
+      /** Project */
+      project: string
+      /** Session Id */
+      session_id?: string | null
+    }
+    /** SessionOut */
+    SessionOut: {
+      /** Idle Seconds */
+      idle_seconds: number | null
+      /** Last Activity */
+      last_activity: string | null
+      /** Pid */
+      pid: number | null
+      proposal: components['schemas']['ProposalOut']
+      /** Resumable */
+      resumable: boolean
+      /** Session Id */
+      session_id: string | null
+      /** State */
+      state: string
+      /** Tool */
+      tool: string
+    }
+    /** SessionsOut */
+    SessionsOut: {
+      /** Folders */
+      folders: components['schemas']['FolderProposalOut'][]
+      /** Left Out */
+      left_out: number
+      /** Projects */
+      projects: components['schemas']['ScannedProject'][]
+      /** Scanned At */
+      scanned_at: string | null
+      /** Tools */
+      tools: components['schemas']['ToolOut'][]
     }
     /** SetCeoAssignment */
     SetCeoAssignment: {
@@ -2458,6 +2676,19 @@ export interface components {
       task_id: number
       /** Title */
       title: string
+    }
+    /** ToolOut */
+    ToolOut: {
+      /** Account */
+      account: string | null
+      /** Logged In */
+      logged_in: boolean | null
+      /** Plan */
+      plan: string | null
+      /** Plan Used Percent */
+      plan_used_percent: number | null
+      /** Tool */
+      tool: string
     }
     /**
      * TranscriptSource
@@ -3765,6 +3996,138 @@ export interface operations {
       }
     }
   }
+  action_analyse: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProjectIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Requested']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  action_close: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Requested']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  action_continue: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SessionIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Requested']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  action_folder: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['FolderIn']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Requested']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
   exclusions_add: {
     parameters: {
       query?: never
@@ -3905,6 +4268,35 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ScanOut']
+        }
+      }
+      /** @description Error */
+      default: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ErrorEnvelope']
+        }
+      }
+    }
+  }
+  sessions_get: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionsOut']
         }
       }
       /** @description Error */

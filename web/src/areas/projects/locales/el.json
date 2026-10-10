@@ -9,7 +9,9 @@
   "card": {
     "openTasks": "Ανοιχτές εργασίες",
     "latest": "Τελευταίο παραδοτέο",
-    "noDeliverable": "Δεν έχει παραδοθεί τίποτα ακόμη."
+    "noDeliverable": "Δεν έχει παραδοθεί τίποτα ακόμη.",
+    "sessions": "Sessions: {total} · {running} σε εξέλιξη · {idle} αδρανή",
+    "sessionsWaiting": " · {waiting} περιμένουν"
   },
   "budget": {
     "label": "Budget που έχει χρησιμοποιηθεί",
@@ -152,5 +154,6 @@
     "agent_not_found": "Αυτός ο agent δεν είναι πλέον ενεργός σε αυτό το έργο.",
     "project_not_found": "Το έργο δεν υπάρχει πια.",
     "validation_error": "Έλεγξε τα πεδία και δοκίμασε ξανά."
-  }
+  },
+  "sessionsTitle": "Sessions των agents"
 }

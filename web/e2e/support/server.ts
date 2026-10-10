@@ -18,6 +18,9 @@ export const BASE_URL_ENV = 'LABHQ_E2E_BASE_URL'
 export const SEED_ENV = 'LABHQ_E2E_SEED'
 // Where the seeded database lives, so `labhq passkey enroll` can run against it (support/auth.ts).
 export const DATA_DIR_ENV = 'LABHQ_E2E_DATA_DIR'
+// Where the server looks for Claude Code's saved conversations, so a spec can place a fixture
+// there without touching the real home folder.
+export const CLAUDE_DIR_ENV = 'LABHQ_E2E_CLAUDE_DIR'
 
 // The tmux agent kind (`aider`) whose program the e2e server finds on its PATH.
 export const FAKE_AGENT_BINARY = 'aider'
@@ -135,6 +138,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
   try {
     const summary = seed(dataDir)
     const binDir = await installFakeAgents(root)
+    const claudeDir = join(root, 'claude')
     const sinkPort = await listen(sink)
     const port = await freePort()
     const url = `http://${HOST}:${port}`
@@ -149,6 +153,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
           // has one kind to pick on a machine (or CI runner) that has no agent installed.
           PATH: `${binDir}${delimiter}${process.env.PATH ?? ''}`,
           LABHQ_DATA_DIR: dataDir,
+          CLAUDE_CONFIG_DIR: claudeDir,
           LABHQ_API_UI_DIR: uiDir,
           // Deterministic data: the fake agents never report, and by default an agent that
           // ends a turn without a report gets another turn without limit, so the scheduler
@@ -169,6 +174,7 @@ export default async function globalSetup(): Promise<() => Promise<void>> {
     process.env[BASE_URL_ENV] = url
     process.env[SEED_ENV] = summary
     process.env[DATA_DIR_ENV] = dataDir
+    process.env[CLAUDE_DIR_ENV] = claudeDir
   } catch (error) {
     await teardown()
     throw error

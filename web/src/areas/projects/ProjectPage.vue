@@ -6,6 +6,8 @@ import { useI18n } from 'vue-i18n'
 import { api, uiState, type components } from '@/api'
 import { useLiveTopic } from '@/live'
 import { StatusBadge } from '@/status'
+import ProjectSessions from '@/areas/sessions/ProjectSessions.vue'
+import { loadSessions, type ScannedProject } from '@/areas/sessions/sessions'
 import { Button, Mono } from '@/ui'
 
 import AddAgentForm from './AddAgentForm.vue'
@@ -24,6 +26,8 @@ const { t, locale } = useI18n()
 const view = ref<View | null>(null)
 const state = ref<'loading' | 'ready' | 'missing' | 'failed'>('loading')
 const adding = ref(false)
+// This project's sessions from the last scan, with the proposed actions; none before a scan.
+const scanned = ref<ScannedProject | null>(null)
 const editing = ref<number | null>(null)
 const awaiting = ref(false)
 const adopting = ref(false)
@@ -99,7 +103,15 @@ function since(instant: string): string {
   return new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(new Date(instant))
 }
 
-onMounted(load)
+async function loadScanned(): Promise<void> {
+  const sessions = await loadSessions()
+  scanned.value = sessions?.projects.find((p) => p.project_id === Number(props.id)) ?? null
+}
+
+onMounted(() => {
+  void load()
+  void loadScanned()
+})
 watch(() => props.id, load)
 for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
 </script>
@@ -149,6 +161,13 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
             })
           }}
         </p>
+      </section>
+
+      <section v-if="scanned" class="flex flex-col gap-3" data-testid="project-sessions">
+        <h2 class="text-lg font-semibold">{{ t('projects.sessionsTitle') }}</h2>
+        <ul>
+          <ProjectSessions :project="scanned" />
+        </ul>
       </section>
 
       <section class="flex flex-col gap-3">

@@ -1478,6 +1478,17 @@
         "title": "FieldOut",
         "type": "object"
       },
+      "FolderIn": {
+        "properties": {
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          }
+        },
+        "required": ["folder"],
+        "title": "FolderIn",
+        "type": "object"
+      },
       "FolderOut": {
         "properties": {
           "path": {
@@ -1495,6 +1506,24 @@
         },
         "required": ["path", "source", "removable"],
         "title": "FolderOut",
+        "type": "object"
+      },
+      "FolderProposalOut": {
+        "properties": {
+          "folder": {
+            "title": "Folder",
+            "type": "string"
+          },
+          "projects": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Projects",
+            "type": "array"
+          }
+        },
+        "required": ["folder", "projects"],
+        "title": "FolderProposalOut",
         "type": "object"
       },
       "FoundOut": {
@@ -1533,6 +1562,62 @@
         },
         "required": ["path", "name", "relative", "markers", "last_commit_at"],
         "title": "FoundOut",
+        "type": "object"
+      },
+      "GitOut": {
+        "properties": {
+          "branch": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Branch"
+          },
+          "dirty_files": {
+            "title": "Dirty Files",
+            "type": "integer"
+          },
+          "last_commit_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Commit At"
+          },
+          "last_commit_subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Commit Subject"
+          },
+          "open_pr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Pr"
+          }
+        },
+        "required": ["branch", "dirty_files", "last_commit_subject", "last_commit_at", "open_pr"],
+        "title": "GitOut",
         "type": "object"
       },
       "Health": {
@@ -2513,12 +2598,33 @@
             "title": "Open Tasks",
             "type": "array"
           },
+          "sessions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SessionCounts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "status": {
             "$ref": "#/components/schemas/ProjectStatus"
           }
         },
         "required": ["id", "name", "status", "budget", "open_tasks", "latest_deliverable"],
         "title": "ProjectCard",
+        "type": "object"
+      },
+      "ProjectIn": {
+        "properties": {
+          "project": {
+            "title": "Project",
+            "type": "string"
+          }
+        },
+        "required": ["project"],
+        "title": "ProjectIn",
         "type": "object"
       },
       "ProjectStatus": {
@@ -2585,6 +2691,21 @@
         "title": "ProjectView",
         "type": "object"
       },
+      "ProposalOut": {
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "title": "Reason",
+            "type": "string"
+          }
+        },
+        "required": ["action", "reason"],
+        "title": "ProposalOut",
+        "type": "object"
+      },
       "ProposalStatus": {
         "enum": ["pending", "sent", "rejected"],
         "title": "ProposalStatus",
@@ -2641,6 +2762,40 @@
           }
         },
         "title": "RemoveBody",
+        "type": "object"
+      },
+      "Requested": {
+        "description": "What an action recorded: the approval to decide, or a hand-off task.",
+        "properties": {
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id"
+          }
+        },
+        "required": ["approval_id", "summary"],
+        "title": "Requested",
         "type": "object"
       },
       "RiskClass": {
@@ -3066,6 +3221,46 @@
         "title": "ScanOut",
         "type": "object"
       },
+      "ScannedProject": {
+        "properties": {
+          "git": {
+            "$ref": "#/components/schemas/GitOut"
+          },
+          "has_repo": {
+            "title": "Has Repo",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          },
+          "sessions": {
+            "items": {
+              "$ref": "#/components/schemas/SessionOut"
+            },
+            "title": "Sessions",
+            "type": "array"
+          }
+        },
+        "required": ["root", "name", "has_repo", "project_id", "git", "sessions"],
+        "title": "ScannedProject",
+        "type": "object"
+      },
       "ScopeIn": {
         "description": "The stored lists, whole: what the page shows minus the environment's entries.",
         "properties": {
@@ -3204,6 +3399,183 @@
         },
         "required": ["key", "screen"],
         "title": "SentKey",
+        "type": "object"
+      },
+      "SessionCounts": {
+        "description": "Agent sessions in the project's folder, from the last scan.",
+        "properties": {
+          "idle": {
+            "title": "Idle",
+            "type": "integer"
+          },
+          "running": {
+            "title": "Running",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "waiting": {
+            "title": "Waiting",
+            "type": "integer"
+          }
+        },
+        "required": ["total", "running", "waiting", "idle"],
+        "title": "SessionCounts",
+        "type": "object"
+      },
+      "SessionIn": {
+        "properties": {
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "project": {
+            "title": "Project",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "required": ["project"],
+        "title": "SessionIn",
+        "type": "object"
+      },
+      "SessionOut": {
+        "properties": {
+          "idle_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idle Seconds"
+          },
+          "last_activity": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Activity"
+          },
+          "pid": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pid"
+          },
+          "proposal": {
+            "$ref": "#/components/schemas/ProposalOut"
+          },
+          "resumable": {
+            "title": "Resumable",
+            "type": "boolean"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool",
+          "session_id",
+          "state",
+          "idle_seconds",
+          "last_activity",
+          "pid",
+          "resumable",
+          "proposal"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
+      "SessionsOut": {
+        "properties": {
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/FolderProposalOut"
+            },
+            "title": "Folders",
+            "type": "array"
+          },
+          "left_out": {
+            "title": "Left Out",
+            "type": "integer"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ScannedProject"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "scanned_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scanned At"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ToolOut"
+            },
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "required": ["scanned_at", "left_out", "projects", "folders", "tools"],
+        "title": "SessionsOut",
         "type": "object"
       },
       "SetCeoAssignment": {
@@ -3539,6 +3911,61 @@
           "cost_micros"
         ],
         "title": "TodayDeliverable",
+        "type": "object"
+      },
+      "ToolOut": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "logged_in": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Logged In"
+          },
+          "plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan"
+          },
+          "plan_used_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plan Used Percent"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": ["tool", "logged_in", "account", "plan", "plan_used_percent"],
+        "title": "ToolOut",
         "type": "object"
       },
       "TranscriptSource": {
@@ -5330,6 +5757,166 @@
         "tags": ["rules"]
       }
     },
+    "/api/inventory/actions/analyse": {
+      "post": {
+        "description": "Estimate the analysis of one project and ask for the approval that starts it.",
+        "operationId": "action_analyse",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Requested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Action Analyse",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/actions/close": {
+      "post": {
+        "description": "Ask to end an idle session's process (never mid-turn); the conversation stays saved.",
+        "operationId": "action_close",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Requested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Action Close",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/actions/continue": {
+      "post": {
+        "description": "Adopt a running session, resume a saved one, or hand a Cursor IDE chat to a CLI agent.",
+        "operationId": "action_continue",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Requested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Action Continue",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/actions/folder": {
+      "post": {
+        "description": "Ask for the approval that creates a folder manager for a parent folder.",
+        "operationId": "action_folder",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FolderIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Requested"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Action Folder",
+        "tags": ["inventory"]
+      }
+    },
     "/api/inventory/exclusions": {
       "post": {
         "description": "\"Not interested\" in a found project: the scan skips that folder from now on.",
@@ -5491,6 +6078,36 @@
           }
         },
         "summary": "Scan Now",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/sessions": {
+      "get": {
+        "description": "The last scan's projects with their sessions; empty until a scan has run.",
+        "operationId": "sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Sessions Get",
         "tags": ["inventory"]
       }
     },

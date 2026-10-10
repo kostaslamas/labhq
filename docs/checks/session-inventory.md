@@ -14,8 +14,11 @@ Run this once on a developer machine that has real sessions, and record the resu
    appear under "Found in your folders"; "Add project" opens the add form with its folder filled
    in, and "Not interested" removes it for good (the exclusion shows in the panel, where it can
    be removed).
-2. `labhq sessions scan --no-report`. Every project you expect appears; running agents show
-   `waiting for input` or `idle`; Cursor IDE chats show `idle` and are not resumable.
+2. Open **Sessions** in the sidebar (it scans by itself the first time). Every project you expect
+   appears with its sessions, git facts and a proposed action; **Continue**, **Close** and
+   **Analyse** only record approvals (Analyse shows its estimate first), and each project's card
+   on `/projects` shows its session counts. The CLI shows the same: `labhq sessions scan --no-report`.
+   Running agents show `waiting for input` or `idle`; Cursor IDE chats show `idle` and are not resumable.
 3. Compare one OpenCode, one Cursor CLI and one Cursor IDE session with the tool's own list.
    If a store layout changed, update `labhq.inventory.stores` and its fixture builder.
 4. `labhq sessions analyse <project>` shows an estimate and an approval. Approve it with

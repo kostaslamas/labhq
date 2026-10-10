@@ -38,6 +38,18 @@ const { t } = useI18n()
       {{ t('projects.rulesLink') }}
     </RouterLink>
 
+    <p v-if="card.sessions" class="text-sm text-muted" data-testid="session-counts">
+      {{
+        t('projects.card.sessions', {
+          total: card.sessions.total,
+          running: card.sessions.running,
+          idle: card.sessions.idle,
+        })
+      }}<template v-if="card.sessions.waiting > 0">{{
+        t('projects.card.sessionsWaiting', { waiting: card.sessions.waiting })
+      }}</template>
+    </p>
+
     <BudgetMeter :budget="card.budget" />
 
     <section class="flex flex-col gap-1.5">
