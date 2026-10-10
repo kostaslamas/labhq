@@ -256,6 +256,7 @@ Session inventory settings, from `LABHQ_INVENTORY_*`. Thresholds and prices are 
 | `LABHQ_INVENTORY_DISCOVERY_MAX_FOLDERS` | `int` | `20000` | The most folders one discovery walk lists; a walk the cap stops is reported as capped. |
 | `LABHQ_INVENTORY_PROJECT_MARKERS` | `dict[str, str]` | *computed* | File names that make a folder a project, with the label shown for each. A `.git` entry (folder or file) always does. |
 | `LABHQ_INVENTORY_DISCOVERY_SKIP_DIRS` | `list[str]` | *computed* | Folders discovery never enters, besides every hidden folder. |
+| `LABHQ_INVENTORY_AUTO_SCAN_MINUTES` | `int` | `0` | Minutes between automatic scans while labhq serves; 0 keeps them off. A scan that finds projects labhq does not have raises one notification per new set, at most one a day. |
 | `LABHQ_INVENTORY_SUGGESTED_ROOTS` | `list[str]` | *computed* | Where onboarding looks for the folder that holds the owner's projects; the first that exists is offered as a suggestion, never applied by itself. |
 | `LABHQ_INVENTORY_EXTRA_ROOTS` | `list[str]` | `[]` | Folders searched for tools that keep a history file inside the project (Aider), besides every folder another tool or a running agent already named. Kept inside the scope. |
 | `LABHQ_INVENTORY_FOLDER_MANAGER_MIN_PROJECTS` | `int` | `2` | A parent folder with at least this many projects gets a folder-manager proposal. |
@@ -402,6 +403,7 @@ How often each background duty of the always-on program runs, from `LABHQ_PROGRA
 | `LABHQ_PROGRAM_GATE_INTERVAL_SECONDS` | `float` | `5.0` | How often an external approval gate is polled; unused while no gate is configured. |
 | `LABHQ_PROGRAM_HEARTBEAT_INTERVAL_SECONDS` | `float` | `30.0` | How often the CEO heartbeat is considered; the heartbeat's own period is a separate setting, so a shorter interval here never wakes the CEO more often. |
 | `LABHQ_PROGRAM_MEETINGS_INTERVAL_SECONDS` | `float` | `60.0` | How often due meetings are requested and decided ones started. |
+| `LABHQ_PROGRAM_INVENTORY_INTERVAL_SECONDS` | `float` | `60.0` | How often the automatic inventory scan is considered; its own period is `LABHQ_INVENTORY_AUTO_SCAN_MINUTES`, and 0 there keeps the scan off. |
 | `LABHQ_PROGRAM_SHUTDOWN_GRACE_SECONDS` | `float` | `10.0` | Time the server gets to stop before it is cancelled on shutdown. |
 
 ## `labhq.scheduler.settings.SchedulerSettings`

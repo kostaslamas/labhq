@@ -2159,6 +2159,21 @@
         "title": "NewAgentBody",
         "type": "object"
       },
+      "NewProject": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": ["path", "name"],
+        "title": "NewProject",
+        "type": "object"
+      },
       "NewProjectBody": {
         "additionalProperties": false,
         "properties": {
@@ -5954,6 +5969,40 @@
           }
         },
         "summary": "Exclusions Add",
+        "tags": ["inventory"]
+      }
+    },
+    "/api/inventory/new-projects": {
+      "get": {
+        "description": "Projects the automatic scan announced that the owner has not yet added or skipped.",
+        "operationId": "new_projects",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/NewProject"
+                  },
+                  "title": "Response New Projects",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "New Projects",
         "tags": ["inventory"]
       }
     },
