@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from labhq.inventory.model import SavedEntry
+from labhq.inventory.scope import ScopeFilter
 from labhq.inventory.stores.layout import StoreLayout, register_format
 
 QUERY = (
@@ -33,7 +34,7 @@ def from_millis(value: object) -> datetime | None:
 
 
 @register_format("opencode-sqlite")
-def opencode_sqlite(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
+def opencode_sqlite(layout: StoreLayout, root: Path, scope: ScopeFilter) -> Iterator[SavedEntry]:
     database = root / layout.options["file"] if root.is_dir() else root
     if not database.is_file():
         return
@@ -44,5 +45,7 @@ def opencode_sqlite(layout: StoreLayout, root: Path) -> Iterator[SavedEntry]:
         return
     for session_id, directory, updated in rows:
         when = from_millis(updated)
-        if isinstance(session_id, str) and isinstance(directory, str) and when is not None:
+        if not (isinstance(session_id, str) and isinstance(directory, str) and when is not None):
+            continue
+        if scope.allows(Path(directory)):
             yield SavedEntry(layout.tool, session_id, Path(directory), when, database)

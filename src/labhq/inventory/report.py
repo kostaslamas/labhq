@@ -60,10 +60,24 @@ def project_report(project: ProjectInventory, tools: list[ToolStatus]) -> str:
     return "\n".join(lines)
 
 
+def scope_text(inventory: Inventory) -> str:
+    """Where the scan looked. Out-of-scope sessions are a number only, never a path."""
+    if not inventory.roots:
+        return "machine-wide: no scope set"
+    names = ", ".join(str(root) for root in inventory.roots)
+    left = inventory.left_out
+    return f"looked in {names}; {left} session{'' if left == 1 else 's'} left out"
+
+
 def spoken(inventory: Inventory) -> str:
     """A short answer to "what sessions do I have open?"; the full report is in the chat."""
+    return f"{_spoken_projects(inventory)} ({scope_text(inventory)})"
+
+
+def _spoken_projects(inventory: Inventory) -> str:
     if not inventory.projects:
-        return "I found no agent sessions on this machine."
+        where = "in the scan scope" if inventory.roots else "on this machine"
+        return f"I found no agent sessions {where}."
     parts = []
     for project in inventory.projects:
         live = [s for s in project.sessions if s.pid is not None]

@@ -91,7 +91,9 @@ def test_the_spoken_answer_counts_open_and_saved_sessions_per_project(
 
 
 def test_an_empty_machine_says_so(scanner: Scan) -> None:
-    assert spoken(scanner().scan()) == "I found no agent sessions on this machine."
+    assert spoken(scanner().scan()) == (
+        "I found no agent sessions on this machine. (machine-wide: no scope set)"
+    )
 
 
 def test_login_comes_from_the_status_command_alone() -> None:

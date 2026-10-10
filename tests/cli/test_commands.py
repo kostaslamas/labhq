@@ -103,6 +103,9 @@ FAILURES: dict[tuple[str, ...], tuple[tuple[str, ...], ...]] = {
     ("sessions", "close"): (("init",), ("sessions", "close", "nope", "1")),
     ("sessions", "continue"): (("init",), ("sessions", "continue", "nope", "--pid", "1")),
     ("sessions", "folder"): (("init",), ("sessions", "folder", "nope")),
+    ("sessions", "roots", "list"): (("sessions", "roots", "list"),),
+    ("sessions", "roots", "add"): (("init",), ("sessions", "roots", "add", "/no/such/folder")),
+    ("sessions", "roots", "remove"): (("init",), ("sessions", "roots", "remove", "/no/such")),
 }
 
 

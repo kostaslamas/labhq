@@ -87,4 +87,11 @@ def scanner(home: Path) -> Scan:
     return build
 
 
+@pytest.fixture
+def make_ids() -> Callable[[], str]:
+    """Distinct, valid session ids for tests that need many Claude conversations."""
+    counter = iter(range(1, 10_000))
+    return lambda: f"{next(counter):08d}-1111-4111-8111-111111111111"
+
+
 __all__ = ["FakeProcess", "FixedProbe", "default_kinds", "git", "make_repo", "psutil", "sessions"]

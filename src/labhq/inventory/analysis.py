@@ -32,6 +32,7 @@ from labhq.inventory.estimate import Estimate, estimate, tracked_bytes
 from labhq.inventory.gather import build_prompt, gather, tracked_files
 from labhq.inventory.model import ProjectInventory, SavedEntry
 from labhq.inventory.scan import SessionScanner
+from labhq.inventory.scoped import scanner_for
 from labhq.inventory.settings import InventorySettings, get_inventory_settings
 from labhq.money import format_micros
 from labhq.runs import RunService
@@ -121,13 +122,18 @@ class Analyses:
         self._sessions = sessions
         self._clock = clock
         self._settings = settings or get_inventory_settings()
-        self._scanner = scanner or SessionScanner(settings=self._settings, clock=clock)
+        self._scanner = scanner
         self._approvals = approvals or ApprovalService(sessions, clock=clock)
         self._runners = runners
 
+    async def _scoped_scanner(self) -> SessionScanner:
+        async with self._sessions() as db:
+            return await scanner_for(db, self._clock, settings=self._settings)
+
     async def request(self, reference: str) -> AnalysisRequest:
         """Estimate the analysis of one project and record the approval that starts it."""
-        inventory = await asyncio.to_thread(self._scanner.scan)
+        scanner = self._scanner or await self._scoped_scanner()
+        inventory = await asyncio.to_thread(scanner.scan)
         project = find_project(inventory.projects, reference)
         refs = tuple(
             SessionRef(

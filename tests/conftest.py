@@ -18,6 +18,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 def isolated_data_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """No test reads the developer's own data directory (a persisted public URL, say)."""
     monkeypatch.setenv("LABHQ_DATA_DIR", str(tmp_path / "isolated-data"))
+    # The developer's own scan scope would hide the fixture sessions of an inventory test.
+    for name in ("LABHQ_INVENTORY_ROOTS", "LABHQ_INVENTORY_EXCLUDE"):
+        monkeypatch.delenv(name, raising=False)
 
 
 @pytest.fixture(autouse=True)

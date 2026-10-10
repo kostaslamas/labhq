@@ -97,3 +97,7 @@ class Inventory:
     projects: list[ProjectInventory] = field(default_factory=list)
     tools: list[ToolStatus] = field(default_factory=list)
     folders: list[FolderProposal] = field(default_factory=list)
+    # The roots the scan used; empty when it was machine-wide.
+    roots: tuple[Path, ...] = ()
+    # Sessions the scope turned away, as a number only: their folders are not kept.
+    left_out: int = 0
