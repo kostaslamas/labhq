@@ -155,7 +155,7 @@ async def run_autoscan(
             title=title,
             body=body,
             idempotency_key=f"{KIND}:found:{now.isoformat()}",
-            click_url=f"{public_url}/projects?panel=scan" if public_url else None,
+            click_url=f"{public_url}/ceo?panel=scan" if public_url else None,
             now=now,
         )
     return AutoScanResult(ran=True, announced=len(fresh))

@@ -3,7 +3,7 @@ import { expect, test } from './support/auth.ts'
 test('the owner assigns a main and backup agent to the global CEO', async ({
   signedInPage: page,
 }) => {
-  await page.goto('/projects')
+  await page.goto('/ceo')
   const assignment = page.getByTestId('ceo-assignment')
   await expect(assignment).toBeVisible()
   await assignment.getByTestId('ceo-primary').selectOption('claude')

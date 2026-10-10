@@ -33,6 +33,6 @@
   },
   "newProjects": {
     "title": "{count} new project found | {count} new projects found",
-    "review": "Add or skip them on the Projects page"
+    "review": "Add or skip them in the CEO tab"
   }
 }

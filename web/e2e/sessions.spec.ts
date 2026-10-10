@@ -30,14 +30,14 @@ function repository(path: string): void {
   )
 }
 
-test('the owner sets a folder on /projects, finds projects in it, adds one and skips another', async ({
+test('the owner sets a folder on /ceo, finds projects in it, adds one and skips another', async ({
   signedInPage: page,
 }) => {
   const root = realpathSync(mkdtempSync(join(tmpdir(), 'labhq-scan-')))
   repository(join(root, 'wanted-site'))
   repository(join(root, 'skipped-site'))
 
-  await page.goto('/projects?panel=scan')
+  await page.goto('/ceo?panel=scan')
   await expect(page.getByTestId('machine-wide')).toBeVisible()
   expect(
     await page.evaluate(
@@ -69,7 +69,7 @@ test('the owner sets a folder on /projects, finds projects in it, adds one and s
   await expect(page).toHaveURL(/\/projects\/\d+$/)
 
   // Leave the shared seed as found for the specs that run after this one.
-  await page.goto('/projects')
+  await page.goto('/ceo')
   await expect(page.getByTestId('roots')).toBeVisible()
   const removals = page.getByTestId('session-scan').getByRole('button', { name: 'Remove' })
   for (let left = await removals.count(); left > 0; left--) {
@@ -114,12 +114,12 @@ test('the owner sees sessions per project, continues one, reads an analysis esti
   const stranger = realpathSync(mkdtempSync(join(tmpdir(), 'labhq-stranger-')))
   claudeSession(stranger, '5e55a0a0-2222-4222-8222-222222222222')
 
-  await page.goto('/projects')
+  await page.goto('/ceo')
   await page.getByTestId('root-path').fill(root)
   await page.getByTestId('add-button').click()
   await expect(page.getByTestId(`root-${root}`)).toBeVisible()
 
-  // The fifth sidebar item opens the full view, with the project's session and its action.
+  // The Sessions sidebar item opens the full view, with the project's session and its action.
   await page.getByTestId('nav-item').filter({ hasText: 'Sessions' }).click()
   await expect(page).toHaveURL(/\/sessions$/)
   // The panel's own scan may still be running, and an earlier scan may be on record: ask again.
@@ -163,7 +163,7 @@ test('the owner sees sessions per project, continues one, reads an analysis esti
   await expect(page.getByTestId('project-sessions')).toContainText('claude-code')
 
   // Leave the shared seed as found for the specs that run after this one.
-  await page.goto('/projects')
+  await page.goto('/ceo')
   await expect(page.getByTestId('roots')).toBeVisible()
   const removals = page.getByTestId('session-scan').getByRole('button', { name: 'Remove' })
   for (let left = await removals.count(); left > 0; left--) {

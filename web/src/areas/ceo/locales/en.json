@@ -1,4 +1,6 @@
 {
+  "nav": "CEO",
+  "lead": "The CEO looks for projects and sessions in the folders you give it. One list for all projects.",
   "report": "CEO report",
   "accept": "Accept",
   "return": "Return",

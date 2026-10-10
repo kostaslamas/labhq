@@ -55,7 +55,7 @@ describe('rules page', () => {
     expect(root.querySelector('[data-testid="rule-creator"]')?.textContent).toContain('agent:infra')
     expect(root.querySelector('[data-state="failed"]')).not.toBeNull()
     // The page adds no sidebar item of its own.
-    expect(root.querySelectorAll('[data-testid="nav-item"]')).toHaveLength(5)
+    expect(root.querySelectorAll('[data-testid="nav-item"]')).toHaveLength(6)
   })
 
   it('disables a rule and shows it as disabled', async () => {

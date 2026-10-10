@@ -61,7 +61,7 @@ async def send_owner_message(
         return SentMessage(existing, duplicate=True)
     ceo = await find_ceo(db)
     if ceo is None:
-        raise CeoMessageError(Refusal.UNCONFIGURED, "Assign the CEO on the Projects page first.")
+        raise CeoMessageError(Refusal.UNCONFIGURED, "Assign the CEO in the CEO tab first.")
     if ceo.status is not AgentStatus.ACTIVE:
         raise CeoMessageError(Refusal.INACTIVE, "The CEO is not active.")
     earlier = await conversation(db, ceo.id)

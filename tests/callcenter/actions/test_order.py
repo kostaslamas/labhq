@@ -84,7 +84,7 @@ async def test_without_a_ceo_nothing_is_stored_or_sent(
 ) -> None:
     answer = await order(session, clock, text=WORDS, request_id="r1")
 
-    assert answer == "Nothing was sent. Assign the CEO on the Projects page first."
+    assert answer == "Nothing was sent. Assign the CEO in the CEO tab first."
     assert await _messages(session) == []
     assert await _count(session, CallRequest) == 0
 

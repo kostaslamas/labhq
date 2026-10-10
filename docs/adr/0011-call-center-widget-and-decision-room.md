@@ -4,6 +4,7 @@
 
 Accepted (2026-10-10). Amends ADR 0009: the CEO's prompt carries one pinned line besides the
 owner's words.
+ADR 0012 later allows a `/ceo` tab for settings (no chat).
 
 ## Date
 
