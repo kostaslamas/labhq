@@ -3,6 +3,7 @@ Center share, so the scheduler, the budget and the backup retry treat them alike
 
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -38,7 +39,13 @@ class SentMessage:
 
 
 async def send_owner_message(
-    db: AsyncSession, clock: Clock, text: str, *, key: str, refuse_busy: bool
+    db: AsyncSession,
+    clock: Clock,
+    text: str,
+    *,
+    key: str,
+    refuse_busy: bool,
+    context: dict[str, Any] | None = None,
 ) -> SentMessage:
     """Queue `text`, exactly as given, as an owner message to the CEO. Commits.
 
@@ -68,7 +75,7 @@ async def send_owner_message(
             agent_id=ceo.id,
             source=WakeupSource.OWNER_MESSAGE,
             idempotency_key=idempotency_key,
-            reason=message_reason(text, earlier),
+            reason=message_reason(text, earlier, context),
         ),
         clock,
     )
