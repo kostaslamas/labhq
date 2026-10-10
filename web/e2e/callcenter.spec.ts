@@ -29,6 +29,20 @@ function json(route: Route, body: unknown): Promise<void> {
   return route.fulfill({ json: body })
 }
 
+// Today as the server serves it, with the latest report replaced. A fetch still in flight when
+// the test ends is dropped, not reported as a failure.
+async function serveTodayWith(page: Page, report: unknown): Promise<void> {
+  await page.route('**/api/today', async (route) => {
+    try {
+      const response = await route.fetch()
+      const today = (await response.json()) as Record<string, unknown>
+      await json(route, { ...today, ceo_report: report })
+    } catch {
+      // The page closed under the request.
+    }
+  })
+}
+
 async function overflowsHorizontally(page: Page): Promise<boolean> {
   return page.evaluate(
     () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -88,12 +102,7 @@ test('a report waiting for the owner puts a badge on the widget; Discuss pins it
     json(route, { id: 41, primary_kind: 'claude-code', backup_kind: null }),
   )
   await page.route('**/api/org/ceo/reports', (route) => json(route, [report]))
-  await page.route('**/api/today', (route) =>
-    route.fetch().then(async (response) => {
-      const today = (await response.json()) as Record<string, unknown>
-      return json(route, { ...today, ceo_report: report })
-    }),
-  )
+  await serveTodayWith(page, report)
   let body: { text: string; context: { pinned: { kind: string; id: number } } } | undefined
   // The server would list the queued turn on every reload; other specs make live updates.
   const turns: unknown[] = []
@@ -124,6 +133,7 @@ test('a report waiting for the owner puts a badge on the widget; Discuss pins it
   // The proposal travels as structured context; the typed words are only the question.
   expect(body?.text).toBe('Why this one?')
   expect(body?.context.pinned).toMatchObject({ kind: 'report', id: 77 })
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
 
 test('the CEO offers a decision room; the owner sees the cost and starts it', async ({
@@ -223,23 +233,15 @@ test('the owner, the CEO and the manager share one thread, and a busy tmux manag
 test('what a room decided shows on the proposal card as "Decided:"', async ({
   signedInPage: page,
 }) => {
-  await page.route('**/api/today', (route) =>
-    route.fetch().then(async (response) => {
-      const today = (await response.json()) as Record<string, unknown>
-      return json(route, {
-        ...today,
-        ceo_report: {
-          id: 77,
-          text: 'Hire two reviewers.',
-          refs: [],
-          task_id: null,
-          task_title: null,
-          awaiting_decision: false,
-          created_at: ROOM.created_at,
-        },
-      })
-    }),
-  )
+  await serveTodayWith(page, {
+    id: 77,
+    text: 'Hire two reviewers.',
+    refs: [],
+    task_id: null,
+    task_title: null,
+    awaiting_decision: false,
+    created_at: ROOM.created_at,
+  })
   await page.route('**/api/callcenter/decisions', (route) =>
     json(route, [
       {
@@ -258,4 +260,5 @@ test('what a room decided shows on the proposal card as "Decided:"', async ({
   await expect(decided).toContainText('Decided: Hire one reviewer')
   await expect(decided).toContainText('Open the role')
   await expect(decided).toContainText('waits for your approval')
+  await page.unrouteAll({ behavior: 'ignoreErrors' })
 })
