@@ -36,7 +36,12 @@ class Scope:
         target = real(folder)
         if not any(target.is_relative_to(root) for root in self.roots):
             return False
-        return not any(_excluded(target, pattern) for pattern in self.exclude)
+        return not self.excluded(target)
+
+    def excluded(self, folder: Path) -> bool:
+        """Whether an exclusion covers this folder (compared on its real path)."""
+        target = real(folder)
+        return any(_excluded(target, pattern) for pattern in self.exclude)
 
     def may_hold(self, encoded: str) -> bool:
         """Whether a folder name that encodes a path (Claude Code's) can lie in a root.

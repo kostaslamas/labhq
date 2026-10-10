@@ -91,6 +91,15 @@ class FolderProposal:
     projects: tuple[Path, ...]
 
 
+@dataclass(frozen=True)
+class FoundProject:
+    """A project folder inside the roots that no session points at."""
+
+    root: Path
+    under: Path
+    markers: tuple[str, ...]
+
+
 @dataclass
 class Inventory:
     scanned_at: datetime
@@ -101,3 +110,8 @@ class Inventory:
     roots: tuple[Path, ...] = ()
     # Sessions the scope turned away, as a number only: their folders are not kept.
     left_out: int = 0
+    # Projects found in the roots that have no session (merged by real path with `projects`).
+    found: list[FoundProject] = field(default_factory=list)
+    folders_visited: int = 0
+    # True when the folder cap stopped the discovery walk.
+    discovery_capped: bool = False
