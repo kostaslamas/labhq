@@ -962,6 +962,63 @@
         "title": "ChannelOut",
         "type": "object"
       },
+      "CostOut": {
+        "properties": {
+          "cost_micros": {
+            "title": "Cost Micros",
+            "type": "integer"
+          },
+          "input_tokens": {
+            "title": "Input Tokens",
+            "type": "integer"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "output_tokens": {
+            "title": "Output Tokens",
+            "type": "integer"
+          },
+          "reference_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Micros"
+          },
+          "runs": {
+            "title": "Runs",
+            "type": "integer"
+          },
+          "saved_micros": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved Micros"
+          }
+        },
+        "required": [
+          "model",
+          "runs",
+          "cost_micros",
+          "input_tokens",
+          "output_tokens",
+          "reference_micros",
+          "saved_micros"
+        ],
+        "title": "CostOut",
+        "type": "object"
+      },
       "Credential": {
         "description": "What the UI may know about a passkey. The public key stays on the server.",
         "properties": {
@@ -1678,6 +1735,29 @@
         "title": "Message",
         "type": "object"
       },
+      "ModelOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_micros_per_mtok": {
+            "title": "Input Micros Per Mtok",
+            "type": "integer"
+          },
+          "output_micros_per_mtok": {
+            "title": "Output Micros Per Mtok",
+            "type": "integer"
+          }
+        },
+        "required": ["id", "display_name", "input_micros_per_mtok", "output_micros_per_mtok"],
+        "title": "ModelOut",
+        "type": "object"
+      },
       "NeedsYou": {
         "properties": {
           "approvals": {
@@ -2096,6 +2176,60 @@
         "title": "PendingQuestion",
         "type": "object"
       },
+      "PolicyIn": {
+        "properties": {
+          "credential": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credential"
+          },
+          "rows": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/RowIn"
+            },
+            "title": "Rows",
+            "type": "object"
+          }
+        },
+        "required": ["rows"],
+        "title": "PolicyIn",
+        "type": "object"
+      },
+      "PolicyOut": {
+        "properties": {
+          "efforts": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Efforts",
+            "type": "array"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/ModelOut"
+            },
+            "title": "Models",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/RowOut"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": ["models", "efforts", "rows"],
+        "title": "PolicyOut",
+        "type": "object"
+      },
       "ProjectCard": {
         "properties": {
           "budget": {
@@ -2260,6 +2394,66 @@
         "enum": ["light", "heavy"],
         "title": "RiskClass",
         "type": "string"
+      },
+      "RowIn": {
+        "properties": {
+          "effort": {
+            "title": "Effort",
+            "type": "string"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": ["model", "effort"],
+        "title": "RowIn",
+        "type": "object"
+      },
+      "RowOut": {
+        "properties": {
+          "effort": {
+            "title": "Effort",
+            "type": "string"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "max_output_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Output Tokens"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": ["key", "kind", "model", "effort", "max_output_tokens"],
+        "title": "RowOut",
+        "type": "object"
       },
       "RunCapacity": {
         "properties": {
@@ -4386,6 +4580,121 @@
         },
         "summary": "Meetings Join",
         "tags": ["meetings"]
+      }
+    },
+    "/api/models": {
+      "get": {
+        "operationId": "models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Models Get",
+        "tags": ["models"]
+      },
+      "put": {
+        "description": "Save rows over the stored table. An unknown model or effort changes nothing.",
+        "operationId": "models_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Models Put",
+        "tags": ["models"]
+      }
+    },
+    "/api/models/usage": {
+      "get": {
+        "description": "Cost by model over the last `days`, in micro-USD, with what the policy saved.",
+        "operationId": "models_usage",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CostOut"
+                  },
+                  "title": "Response Models Usage",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Models Usage",
+        "tags": ["models"]
       }
     },
     "/api/org/ceo": {

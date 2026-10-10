@@ -1,0 +1,35 @@
+{
+  "title": "Models",
+  "lead": "Which model and effort each role and task kind uses. Strong models decide and code; the cheapest one writes summaries and runs checks.",
+  "loading": "Loading models…",
+  "load_failed": "The model table could not be loaded.",
+  "role": "Role",
+  "task": "Task kind",
+  "model": "Model",
+  "effort": "Effort",
+  "price": "{input} in / {output} out per million tokens",
+  "save": "Save with passkey",
+  "saved": "Saved.",
+  "passkey_note": "Saving changes what every agent costs, so it asks for your passkey. A change asked for by voice needs the same passkey in your approvals.",
+  "usage": "Cost by model, last 30 days",
+  "usage_empty": "No runs yet.",
+  "usage_runs": "{count} runs",
+  "usage_saved": "saved about {amount} against the worker model",
+  "keys": {
+    "ceo": "CEO",
+    "manager": "Manager",
+    "head": "Department head",
+    "lead": "Lead",
+    "worker": "Worker (code)",
+    "it": "IT",
+    "project_analysis": "Project analysis",
+    "summary": "Summaries and classification",
+    "check": "Checks and “what happened” reports"
+  },
+  "errors": {
+    "refused": "Your passkey was not accepted. Nothing changed.",
+    "invalid": "That model or effort is not known. Nothing changed.",
+    "failed": "That did not work. Try again.",
+    "network": "labhq could not be reached. Try again."
+  }
+}
