@@ -53,7 +53,7 @@ not suit them, they want to talk it over with the CEO and the project's manager 
   wakes its assignee only after the owner approved. A pinned card shows "Decided: ..." from the
   room's decisions.
 - **Models.** Turns and minutes use each agent's own settings. `LABHQ_MEETINGS_MINUTES_CONFIG`
-  is laid over the facilitator's run settings for the minutes: the seam for the cheaper model
+  is laid over the facilitator's run settings for the minutes: the seam for the lighter model
   policy of #198, which sets no keys yet.
 
 ## Consequences

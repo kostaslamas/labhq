@@ -22,7 +22,7 @@ class MeetingSettings(BaseSettings):
     # Shown to the owner when no past turn of the room's agents gives a better figure.
     decision_turn_estimate_micros: int = Field(default=200_000, gt=0)
     # Run settings laid over the facilitator's own for the minutes. This is the seam for a
-    # cheaper model for the minutes (issue #198 decides the keys); empty changes nothing.
+    # lighter model for the minutes (issue #198 decides the keys); empty changes nothing.
     minutes_config: dict[str, Any] = Field(default_factory=dict)
 
 
