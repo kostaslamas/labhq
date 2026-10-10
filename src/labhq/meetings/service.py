@@ -11,12 +11,16 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from labhq.approvals import ApprovalService
+from labhq.approvals.policy import default_confirmations
 from labhq.approvals.registry import Registry
 from labhq.clock import Clock
 from labhq.db.enums import AgentStatus, ApprovalStatus, MeetingStatus
 from labhq.db.models import Agent, Approval, Meeting, MeetingParticipant, Project
+from labhq.hierarchy import find_ceo
+from labhq.meetings.estimate import room_estimate_micros
 from labhq.meetings.kinds import MeetingKind
 from labhq.meetings.kinds import default_kinds as builtin_kinds
+from labhq.meetings.room import DecisionRoom
 from labhq.meetings.runner import MeetingRunner
 from labhq.meetings.settings import MeetingSettings, get_meeting_settings
 
@@ -44,13 +48,24 @@ class MeetingService:
         runner: MeetingRunner,
         kinds: Registry[MeetingKind] = builtin_kinds,
         settings: MeetingSettings | None = None,
+        room: DecisionRoom | None = None,
     ) -> None:
         self._sessions = sessions
         self._clock = clock
         self._approvals = approvals
         self._runner = runner
+        self._room = room
         self._kinds = kinds
         self._settings = settings or get_meeting_settings()
+
+    def kind(self, key: str) -> MeetingKind:
+        return self._kinds.get(key)
+
+    @property
+    def room(self) -> DecisionRoom:
+        if self._room is None:
+            raise MeetingError("no decision room is configured")
+        return self._room
 
     async def request(
         self,
@@ -60,20 +75,32 @@ class MeetingService:
         agenda: str | None = None,
         participants: Sequence[int] | None = None,
         requested_by: int | None = None,
+        pinned: tuple[str, int] | None = None,
     ) -> Meeting:
-        """Record a meeting and its pending approval. Nothing runs until it is approved."""
+        """Record a meeting and its pending approval. Nothing runs until it is approved.
+
+        `pinned` is the `(kind, id)` of the CEO proposal a decision room discusses.
+        """
         meeting_kind = self._kinds.get(kind)
         async with self._sessions() as db:
             project = await db.get(Project, project_id)
             if project is None:
                 raise MeetingError(f"no project {project_id}")
             agents = await _attendees(db, project, meeting_kind, participants)
+            estimate = (
+                await room_estimate_micros(db, [agent.id for agent in agents], self._settings)
+                if meeting_kind.live
+                else None
+            )
             meeting = Meeting(
                 project_id=project.id,
                 kind=meeting_kind.key,
                 agenda=agenda or meeting_kind.agenda.format(project=project.name),
                 status=MeetingStatus.REQUESTED,
                 facilitator_agent_id=agents[0].id,
+                pinned_kind=pinned[0] if pinned else None,
+                pinned_id=pinned[1] if pinned else None,
+                estimate_micros=estimate,
                 created_at=self._clock.now(),
             )
             db.add(meeting)
@@ -87,7 +114,12 @@ class MeetingService:
             await db.commit()
         approval = await self._approvals.request(
             START_MEETING_ACTION,
-            {"meeting_id": meeting.id, "project_id": project_id, "kind": meeting_kind.key},
+            {
+                "meeting_id": meeting.id,
+                "project_id": project_id,
+                "kind": meeting_kind.key,
+                **({"estimate_micros": estimate} if estimate is not None else {}),
+            },
             agent_id=requested_by,
         )
         async with self._sessions() as db:
@@ -105,10 +137,23 @@ class MeetingService:
             approval = await db.get(Approval, meeting.approval_id) if meeting.approval_id else None
         status = approval.status if approval is not None else None
         if status in _STARTABLE:
-            return await self._runner.run(meeting_id)
+            self._require_person(meeting.kind, approval)
+            if not self._kinds.get(meeting.kind).live:
+                return await self._runner.run(meeting_id)
+            if self._room is None:
+                raise MeetingError(f"no room is configured for a {meeting.kind} meeting")
+            return await self._room.run(meeting_id)
         if status in _REFUSED:
             return await self._cancel(meeting_id)
         raise MeetingNotApprovedError(f"meeting {meeting_id} has no approved start")
+
+    def _require_person(self, kind: str, approval: Approval | None) -> None:
+        """A room the owner must start is never started on an agent's own approval."""
+        if approval is None or not self._kinds.get(kind).owner_starts:
+            return
+        confirmation = approval.confirmation_kind
+        if confirmation is not None and default_confirmations.get(confirmation).by_agent:
+            raise MeetingNotApprovedError(f"a {kind} meeting needs the owner's approval")
 
     async def start_decided(self) -> list[Meeting]:
         """Start or cancel every requested meeting whose approval a human has decided."""
@@ -174,6 +219,13 @@ async def _attendees(
     outsiders = [agent.id for agent in agents if agent.project_id != project.id]
     if outsiders:
         raise MeetingError(f"agents {outsiders} do not belong to project {project.name!r}")
+    if kind.includes_ceo:
+        ceo = await find_ceo(db)
+        if ceo is None or ceo.status is not AgentStatus.ACTIVE:
+            raise MeetingError("the CEO is not set up or not active")
+        if not agents:
+            raise MeetingError(f"project {project.name!r} has no manager to call")
+        agents.insert(0, ceo)
     if not agents:
         raise MeetingError(f"project {project.name!r} has no agents for a {kind.key} meeting")
     # A stable sort keeps id order among the rest.

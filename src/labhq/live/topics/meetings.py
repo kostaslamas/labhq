@@ -15,6 +15,8 @@ default_topics.register(
     aggregates(
         func.max(Meeting.id),
         func.count(Meeting.id),
+        # A live room waiting for an agent changes what the widget shows, with no new entry.
+        func.count(Meeting.waiting_agent_id),
         *status_counts(Meeting.status, MeetingStatus),
         # Scalar subqueries keep the four tables from multiplying into one cross join.
         select(func.max(MeetingTranscriptEntry.id)).scalar_subquery(),

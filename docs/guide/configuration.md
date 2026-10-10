@@ -321,6 +321,9 @@ Meeting settings, read from `LABHQ_MEETINGS_*` environment variables.
 | `LABHQ_MEETINGS_CADENCE_SECONDS` | `dict[str, int]` | `{}` | Seconds between two meetings of a kind, per kind. Empty means no meeting is requested on a schedule: the owner has not decided a cadence (plan §13, question 3). |
 | `LABHQ_MEETINGS_MINUTES_ATTEMPTS` | `int` | `2` | One retry of the facilitator's minutes, then the meeting fails (issue #73). |
 | `LABHQ_MEETINGS_OWNER_NAME` | `str` | `Owner` |  |
+| `LABHQ_MEETINGS_DECISION_TURN_CAP` | `int` | `12` | Agent turns a decision room may take before it closes itself: a live thread has no rounds, so this is what bounds its cost (issue #199). |
+| `LABHQ_MEETINGS_DECISION_TURN_ESTIMATE_MICROS` | `int` | `200000` | Shown to the owner when no past turn of the room's agents gives a better figure. |
+| `LABHQ_MEETINGS_MINUTES_CONFIG` | `dict[str, Any]` | `{}` | Run settings laid over the facilitator's own for the minutes. This is the seam for a cheaper model for the minutes (issue #198 decides the keys); empty changes nothing. |
 
 ## `labhq.memory.settings.MemorySettings`
 

@@ -3,6 +3,7 @@
 Kinds and event listeners are registries: a new kind or a new mirror is a registration.
 """
 
+from labhq.meetings.actions import DECISION_ACTION
 from labhq.meetings.cost import meeting_cost_micros
 from labhq.meetings.events import (
     Listener,
@@ -14,6 +15,7 @@ from labhq.meetings.events import (
 from labhq.meetings.kinds import MeetingKind, default_kinds
 from labhq.meetings.minutes import MeetingNotFoundError, MinutesView, read_minutes
 from labhq.meetings.reply import InvalidMinutesError, MinutesReply, parse_minutes
+from labhq.meetings.room import DecisionRoom, RoomClosedError
 from labhq.meetings.runner import MeetingNotStartableError, MeetingRunner
 from labhq.meetings.service import (
     START_MEETING_ACTION,
@@ -25,7 +27,9 @@ from labhq.meetings.settings import MeetingSettings, get_meeting_settings
 from labhq.meetings.transcript import MeetingClosedError, add_owner_entry
 
 __all__ = [
+    "DECISION_ACTION",
     "START_MEETING_ACTION",
+    "DecisionRoom",
     "InvalidMinutesError",
     "Listener",
     "MeetingClosedError",
@@ -42,6 +46,7 @@ __all__ = [
     "MeetingSettings",
     "MinutesReply",
     "MinutesView",
+    "RoomClosedError",
     "add_owner_entry",
     "default_kinds",
     "default_listeners",

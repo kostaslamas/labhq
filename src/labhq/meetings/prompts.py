@@ -77,3 +77,26 @@ def _transcript(transcript: Sequence[Line]) -> str:
         return "Transcript so far: (empty)"
     body = "\n".join(f"[{line.speaker}] {line.text}" for line in transcript)
     return f"Transcript so far:\n{body}"
+
+
+def room_turn_prompt(
+    *,
+    project: str,
+    seat: Seat,
+    others: Sequence[Seat],
+    proposal: str | None,
+    transcript: Sequence[Line],
+) -> str:
+    """One turn in a live decision room: the pinned proposal, the thread so far, the rules."""
+    present = ", ".join(f"{other.name} ({other.role})" for other in others)
+    parts = [
+        f"You are {seat.name} ({seat.role}) in a live decision room of project {project}, "
+        f"with the owner and {present}.",
+        f"Proposal under discussion:\n{proposal}" if proposal else "No proposal is pinned.",
+        _transcript(transcript),
+        "Add one short contribution that answers the owner and the others. The owner decides: "
+        "suggest, never announce a decision for them. Nothing said here is done until the owner "
+        "confirms it afterwards. Relay only what was agreed in this thread, in the same words.",
+        MEETING_STYLE,
+    ]
+    return "\n\n".join(parts)

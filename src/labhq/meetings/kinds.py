@@ -20,6 +20,12 @@ class MeetingKind:
     rounds: int
     minutes_instruction: str
     facilitator_role: str = "manager"
+    # A live kind is a thread the owner takes part in, driven by `labhq.meetings.room`.
+    live: bool = False
+    # The global CEO attends besides the project's own agents.
+    includes_ceo: bool = False
+    # Only the owner may approve its start; the CEO's own `start_meeting` refuses it.
+    owner_starts: bool = False
 
     def __post_init__(self) -> None:
         if self.rounds < 1:
@@ -58,6 +64,21 @@ REVIEW = MeetingKind(
     "item.",
 )
 
+DECISION = MeetingKind(
+    key="decision",
+    agenda="Decision room for {project}: the owner, the CEO and the project's manager settle "
+    "one proposal.",
+    participant_roles=frozenset({"manager"}),
+    rounds=1,
+    facilitator_role="ceo",
+    live=True,
+    includes_ceo=True,
+    owner_starts=True,
+    minutes_instruction="Record as a decision only what the owner agreed in the thread. Add an "
+    "action item only for a step the owner asked for or accepted; leave out anything the "
+    "owner did not confirm.",
+)
+
 default_kinds = Registry[MeetingKind]("meeting kind")
-for _kind in (STANDUP, PLANNING, REVIEW):
+for _kind in (STANDUP, PLANNING, REVIEW, DECISION):
     default_kinds.register(_kind.key, _kind)

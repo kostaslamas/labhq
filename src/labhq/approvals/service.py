@@ -135,6 +135,10 @@ class ApprovalService:
             raise ConfirmationNotAllowedError(
                 f"{confirmation!r} confirmation cannot approve a {approval.risk_class} action"
             )
+        if kind.by_agent and self._actions.get(approval.type).owner_only:
+            raise ConfirmationNotAllowedError(
+                f"{approval.type!r} can only be approved by the owner, not by {confirmation!r}"
+            )
         await self._decide(
             approval_id,
             ApprovalStatus.APPROVED,
