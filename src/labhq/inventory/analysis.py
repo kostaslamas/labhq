@@ -227,7 +227,9 @@ class AnalysisEngine:
         runs = RunService(sessions, clock=self.clock, registry=self.registry)
         scratch = self.data_dir() / "inventory" / "scratch"
         scratch.mkdir(parents=True, exist_ok=True)
-        run = await runs.execute(agent_id=agent_id, task_id=None, prompt=prompt, cwd=scratch)
+        run = await runs.execute(
+            agent_id=agent_id, task_id=None, prompt=prompt, cwd=scratch, task_kind="summary"
+        )
         if run.status is not RunStatus.SUCCEEDED:
             raise AnalysisError(f"the analysis run {run.id} ended {run.status}")
         async with sessions() as db:

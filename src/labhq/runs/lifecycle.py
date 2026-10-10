@@ -32,6 +32,7 @@ from labhq.clock import Clock
 from labhq.db.enums import RunStatus
 from labhq.db.models import Agent, AgentTaskSession, CostEvent, Run, RunEvent, Task
 from labhq.memory import AgentMemory, PreparedMemory
+from labhq.modelpolicy.run import resolve_for_run
 from labhq.money import usd_to_micros
 from labhq.prompts import PromptRegistry
 from labhq.prompts import default_registry as builtin_prompts
@@ -95,6 +96,8 @@ class RunService:
         config: dict[str, Any] | None = None,
         adapter: str | None = None,
         tools_server: Sequence[str] = (),
+        model: str | None = None,
+        task_kind: str | None = None,
     ) -> "ActiveRun":
         """Start a run. `run_id` adopts a queued run instead of creating one.
 
@@ -102,7 +105,9 @@ class RunService:
         checkout with it; it queues the run, checks out, then hands the id here.
         `resume_session_id` continues a session kept outside `agent_task_sessions`, such as
         a call's; it wins over the task's stored session. `config` is laid over
-        `agents.config` for this run only, for example a fallback agent kind.
+        `agents.config` for this run only, for example a fallback agent kind. `model` is an
+        explicit request that wins over the policy; `task_kind` names the policy row
+        (`summary`, `check`, ...) that applies before the agent's role does.
         """
         db = self._sessions()
         try:
@@ -143,6 +148,17 @@ class RunService:
             now = self._clock.now()
             run = await _queued_run(db, run_id, agent_id, task_id, now)
             run.adapter = selected_adapter
+            kind = agent_kind(selected_adapter, effective_config)
+            resolution = await resolve_for_run(
+                db,
+                self._clock,
+                kind=kind,
+                role=agent.role,
+                config=effective_config,
+                request_model=model,
+                task_kind=task_kind,
+            )
+            run.model = resolution.model if resolution is not None else None
             run.status = RunStatus.RUNNING
             run.session_id_before = (
                 resume_session_id
@@ -169,6 +185,9 @@ class RunService:
                     else None
                 ),
                 persistent_turn_prompt=persistent_turn_prompt,
+                model=resolution.model if resolution is not None else None,
+                effort=resolution.effort if resolution is not None else None,
+                max_output_tokens=resolution.max_output_tokens if resolution is not None else None,
             )
             project_id = task.project_id if task is not None else agent.project_id
             active = ActiveRun(
@@ -191,6 +210,8 @@ class RunService:
         run_id: int | None = None,
         resume_session_id: str | None = None,
         config: dict[str, Any] | None = None,
+        model: str | None = None,
+        task_kind: str | None = None,
     ) -> Run:
         active = await self.start(
             agent_id=agent_id,
@@ -201,6 +222,8 @@ class RunService:
             run_id=run_id,
             resume_session_id=resume_session_id,
             config=config,
+            model=model,
+            task_kind=task_kind,
         )
         return await active.wait()
 
@@ -306,6 +329,7 @@ class ActiveRun:
         run.status = status_for(result)
         run.finished_at = run.heartbeat_at = now
         run.session_id_after = result.session_id
+        run.model = run.model or result.model
         run.usage = result.usage
         run.exit = {
             "subtype": result.subtype,
