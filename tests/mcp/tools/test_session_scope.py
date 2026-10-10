@@ -36,7 +36,7 @@ def test_without_roots_the_answer_says_machine_wide_and_links_the_page(cli: Cli)
     answer = asyncio.run(scan_scope_tool())
 
     assert "όλο το μηχάνημα" in answer
-    assert "https://labhq.example.org/session-scan" in answer
+    assert "https://labhq.example.org/projects?panel=scan" in answer
 
 
 def test_with_roots_it_names_them_and_counts_the_rest_without_paths(
@@ -57,7 +57,7 @@ def test_with_roots_it_names_them_and_counts_the_rest_without_paths(
     assert "Άφησα έξω 1 sessions" in answer
     assert "secret-client" not in answer + spoken
     assert "1 session left out" in spoken
-    assert "/session-scan" in answer  # no public address: the page is named, not linked
+    assert "/projects" in answer  # no public address: the page is named, not linked
 
 
 def test_asking_to_search_another_folder_changes_nothing(cli: Cli, tmp_path: Path) -> None:
