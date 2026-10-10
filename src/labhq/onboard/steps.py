@@ -8,6 +8,7 @@ from labhq.onboard.model import ModelLoginStep
 from labhq.onboard.notifications import NotificationsStep
 from labhq.onboard.public_url import PublicUrlStep
 from labhq.onboard.registry import StepRegistry
+from labhq.onboard.scope import SessionScopeStep
 
 default_steps = StepRegistry()
 default_steps.register(DatabaseStep(), order=10)
@@ -17,3 +18,4 @@ default_steps.register(NotificationsStep(), order=40)
 default_steps.register(ChannelsStep(), order=45)
 default_steps.register(ModelLoginStep(), order=50)
 default_steps.register(DiscordStep(), order=60)
+default_steps.register(SessionScopeStep(), order=55)

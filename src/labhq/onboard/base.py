@@ -59,6 +59,8 @@ class OnboardContext:
     say: Callable[[str], None]
     # None runs non-interactively: a step that needs the owner fails instead of asking.
     confirm: Callable[[str], bool] | None = None
+    # Asks a free-text question with a pre-filled answer; None when there is no terminal.
+    ask: Callable[[str, str], str] | None = None
     # Optional steps the owner named (`labhq onboard discord`); such a step otherwise stays idle.
     offered: frozenset[str] = frozenset()
     resources: ExitStack = field(default_factory=ExitStack)

@@ -43,6 +43,12 @@ def _quiet() -> Iterator[None]:
             logger.setLevel(level)
 
 
+def _ask(question: str, default: str) -> str:
+    # An empty default would make typer repeat the question; show it as "skip" instead.
+    answer: str = typer.prompt(question, default=default, show_default=bool(default))
+    return answer
+
+
 def _summary(reports: list[StepReport]) -> None:
     for step in reports:
         outcome = step.outcome
@@ -88,6 +94,7 @@ def onboard(
         which=shutil.which,
         say=typer.echo,
         confirm=None if non_interactive else (lambda prompt: typer.confirm(prompt)),
+        ask=None if non_interactive else _ask,
         offered=frozenset(offer or ()),
     )
     with context.resources:
