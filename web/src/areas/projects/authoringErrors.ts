@@ -11,6 +11,7 @@ const KNOWN = new Set([
   'agent_not_valid',
   'agent_not_found',
   'agent_busy',
+  'project_busy',
   'adopted_agent',
   'kind_unavailable',
   'project_not_found',

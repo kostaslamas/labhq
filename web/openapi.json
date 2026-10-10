@@ -6863,6 +6863,38 @@
       }
     },
     "/api/projects/{project_id}": {
+      "delete": {
+        "description": "Remove a project with its agents, tasks, meetings and costs; the folder is not touched.",
+        "operationId": "project_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            },
+            "description": "Error"
+          }
+        },
+        "summary": "Project Delete",
+        "tags": ["authoring"]
+      },
       "get": {
         "description": "The project's team tree, deliverables, tasks by status and budget.",
         "operationId": "projects_get",

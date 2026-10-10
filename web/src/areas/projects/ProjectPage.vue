@@ -2,6 +2,7 @@
 import { ArrowLeft } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 import { api, uiState, type components } from '@/api'
 import { useLiveTopic } from '@/live'
@@ -10,6 +11,7 @@ import ProjectSessions from '@/areas/sessions/ProjectSessions.vue'
 import { loadSessions, type ScannedProject } from '@/areas/sessions/sessions'
 import { Button, Mono } from '@/ui'
 
+import { errorKey } from './authoringErrors'
 import AddAgentForm from './AddAgentForm.vue'
 import EditAgentForm from './EditAgentForm.vue'
 import AdoptManagerForm from './AdoptManagerForm.vue'
@@ -23,12 +25,16 @@ type View = components['schemas']['ProjectView']
 
 const props = defineProps<{ id: string }>()
 const { t, locale } = useI18n()
+const router = useRouter()
 const view = ref<View | null>(null)
 const state = ref<'loading' | 'ready' | 'missing' | 'failed'>('loading')
 const adding = ref(false)
 // This project's sessions from the last scan, with the proposed actions; none before a scan.
 const scanned = ref<ScannedProject | null>(null)
 const editing = ref<number | null>(null)
+const confirmingDelete = ref(false)
+const deleting = ref(false)
+const deleteFailure = ref<string | null>(null)
 const awaiting = ref(false)
 const adopting = ref(false)
 const adoptingKind = ref<string | null>(null)
@@ -80,6 +86,23 @@ async function agentAdded(): Promise<void> {
   adding.value = false
   awaiting.value = true
   await load()
+}
+
+async function deleteProject(): Promise<void> {
+  if (deleting.value) return
+  deleting.value = true
+  deleteFailure.value = null
+  try {
+    const { error, response } = await api.DELETE('/api/projects/{project_id}', {
+      params: { path: { project_id: Number(props.id) } },
+    })
+    if (response.ok) await router.push({ name: 'projects' })
+    else deleteFailure.value = errorKey(error)
+  } catch {
+    deleteFailure.value = 'projects.errors.network'
+  } finally {
+    deleting.value = false
+  }
 }
 
 async function load(): Promise<void> {
@@ -256,6 +279,37 @@ for (const topic of ['tasks', 'runs', 'costs']) useLiveTopic(topic, load)
           @click="adding = true"
         >
           {{ t('projects.agent.button') }}
+        </Button>
+      </section>
+
+      <section class="flex flex-col gap-3" data-testid="delete-project">
+        <p v-if="deleteFailure" role="alert" class="text-sm text-status-failed">
+          {{ t(deleteFailure) }}
+        </p>
+        <div v-if="confirmingDelete" class="flex flex-col gap-3">
+          <p class="text-sm">{{ t('projects.deleteProject.deleteConfirm') }}</p>
+          <div class="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              :disabled="deleting"
+              data-testid="delete-project-confirm"
+              @click="deleteProject"
+            >
+              {{ t('projects.deleteProject.deleteYes') }}
+            </Button>
+            <Button variant="outline" @click="confirmingDelete = false">
+              {{ t('projects.deleteProject.deleteNo') }}
+            </Button>
+          </div>
+        </div>
+        <Button
+          v-else
+          class="w-fit"
+          variant="outline"
+          data-testid="delete-project-button"
+          @click="confirmingDelete = true"
+        >
+          {{ t('projects.deleteProject.delete') }}
         </Button>
       </section>
     </template>

@@ -153,7 +153,14 @@
     "kind_unavailable": "That agent program is not installed on this server.",
     "agent_not_found": "This agent is no longer active on this project.",
     "project_not_found": "This project no longer exists.",
-    "validation_error": "Check the fields and try again."
+    "validation_error": "Check the fields and try again.",
+    "project_busy": "Wait for the project's current runs to finish before deleting it."
   },
-  "sessionsTitle": "Agent sessions"
+  "sessionsTitle": "Agent sessions",
+  "deleteProject": {
+    "delete": "Delete project",
+    "deleteConfirm": "Delete this project, its agents, tasks, meetings and costs? The folder on disk is not touched.",
+    "deleteYes": "Yes, delete",
+    "deleteNo": "Keep"
+  }
 }
